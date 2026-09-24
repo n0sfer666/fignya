@@ -1,15 +1,13 @@
-import { readFile, stat } from "node:fs/promises";
-import { importFig, type FigImport } from "@fignya/fig-import";
+import { stat } from "node:fs/promises";
+import type { Page } from "@fignya/model";
+import { startImport, type ImportClient, type ImportEvents } from "./import-client";
 import { cacheKey } from "./thumb-cache";
 
-export type LoadedDocument = FigImport & { cacheKey: string };
+export type LoadedDocument = Omit<ImportClient, "pages"> & { pages: Page[]; cacheKey: string };
 
-export const loadDocument = async (path: string | undefined): Promise<LoadedDocument> => {
+export const loadDocument = async (path: string | undefined, events: ImportEvents): Promise<LoadedDocument> => {
   if (!path) throw new Error("FIG_FILE is not set");
-  const [data, info] = await Promise.all([readFile(path), stat(path)]);
-  const started = performance.now();
-  const imported = importFig(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
-  const screens = imported.document.pages.reduce((sum, p) => sum + p.screens.length, 0);
-  console.log(`fignya: imported ${imported.document.pages.length} pages, ${screens} screens in ${Math.round(performance.now() - started)} ms`);
-  return { ...imported, cacheKey: cacheKey(path, info.size, info.mtimeMs, RENDER_HASH) };
+  const info = await stat(path);
+  const { pages, screen, image } = startImport(path, events);
+  return { pages: await pages, screen, image, cacheKey: cacheKey(path, info.size, info.mtimeMs, RENDER_HASH) };
 };

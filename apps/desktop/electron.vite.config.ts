@@ -11,7 +11,7 @@ const RENDER_SOURCES = ["packages/model/src", "packages/fig-import/src", "packag
 export default defineConfig({
   main: {
     define: { RENDER_HASH: JSON.stringify(sourceHash(at("../.."), RENDER_SOURCES)) },
-    build: { rollupOptions: { input: { index: at("main/index.ts") } } },
+    build: { rollupOptions: { input: { index: at("main/index.ts"), importer: at("importer/index.ts") } } },
   },
   preload: { build: { rollupOptions: { input: { index: at("preload/index.ts") } } } },
   renderer: {

@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": { "types": ["node"] },
-  "include": ["main", "preload", "shared", "test", "config", "electron.vite.config.ts"]
+  "include": ["main", "importer", "preload", "shared", "test", "config", "electron.vite.config.ts"]
 }

@@ -1,4 +1,5 @@
-import { createResource, createSignal, Match, Switch } from "solid-js";
+import { createResource, createSignal, Match, onCleanup, Switch } from "solid-js";
+import { ImportStatus } from "./import-status";
 import { Sidebar } from "./sidebar";
 import { Workspace } from "./workspace";
 
@@ -10,9 +11,11 @@ export const App = () => {
     const current = state();
     return current?.status === "ready" ? current.pages : [];
   };
+  const [lost, setLost] = createSignal<string>();
+  onCleanup(window.fignya.onLost((message) => setLost(message)));
   const error = () => {
     const current = state();
-    return current?.status === "error" ? current.message : undefined;
+    return lost() ?? (current?.status === "error" ? current.message : undefined);
   };
   const page = () => pages().find((p) => p.id === pageId()) ?? pages()[0];
   const choosePage = (id: string): void => {
@@ -22,7 +25,7 @@ export const App = () => {
   return (
     <Switch>
       <Match when={state.loading}>
-        <div class="status">Importing FIG_FILE…</div>
+        <ImportStatus />
       </Match>
       <Match when={error()}>{(message) => <div class="status error">{message()}</div>}</Match>
       <Match when={state()?.status === "ready"}>

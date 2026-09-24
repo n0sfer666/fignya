@@ -1,4 +1,4 @@
-import { screenModel, type Page, type Screen } from "@fignya/model";
+import type { Page, Screen } from "@fignya/model";
 import type { LoadedDocument } from "./load-document";
 import { serialQueue } from "./serial-queue";
 import { createThumbRenderer, type ThumbRenderer } from "./thumb-renderer";
@@ -36,7 +36,7 @@ export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string):
   };
 
   const render = async (doc: LoadedDocument, screen: Screen): Promise<Uint8Array | undefined> => {
-    const model = screenModel(doc.document.nodes, screen.id);
+    const model = await doc.screen(screen.id);
     if (!model) return undefined;
     const scale = thumbScale(screen.width, screen.height);
     const draw = await rendererOf();
@@ -46,7 +46,7 @@ export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string):
 
   const generate = async (id: string): Promise<Uint8Array | undefined> => {
     const doc = await loaded;
-    const screen = findScreen(doc.document.pages, id);
+    const screen = findScreen(doc.pages, id);
     if (!screen) return undefined;
     const cache = await store;
     const cached = await cache.read(id);

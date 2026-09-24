@@ -108,6 +108,17 @@ body,
   color: var(--muted);
 }
 
+.import {
+  display: grid;
+  gap: 8px;
+  width: 320px;
+}
+
+.import progress {
+  width: 100%;
+  accent-color: #0d99ff;
+}
+
 .status.error {
   color: #ff6b6b;
 }
