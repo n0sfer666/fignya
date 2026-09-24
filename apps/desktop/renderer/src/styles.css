@@ -1,0 +1,113 @@
+:root {
+  color-scheme: dark;
+  --bg: #1e1e1e;
+  --panel: #2c2c2c;
+  --line: #3a3a3a;
+  --text: #e6e6e6;
+  --muted: #9a9a9a;
+  --accent: #0d99ff;
+  font: 12px/1.4 system-ui, sans-serif;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  height: 100%;
+}
+
+.sidebar {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  overflow: auto;
+  padding: 8px 0;
+}
+
+.sidebar h2 {
+  margin: 12px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar li {
+  padding: 4px 12px;
+  cursor: default;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar li:hover {
+  background: var(--line);
+}
+
+.sidebar li.active {
+  color: var(--accent);
+}
+
+.count {
+  color: var(--muted);
+}
+
+.workspace {
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.screen {
+  position: absolute;
+  background: #fff;
+  outline: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.screen img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.screen.live {
+  outline: 2px solid var(--accent);
+}
+
+.screen.live img {
+  display: none;
+}
+
+.status {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--muted);
+}
+
+.status.error {
+  color: #ff6b6b;
+}
