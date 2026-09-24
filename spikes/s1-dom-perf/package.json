@@ -1,0 +1,24 @@
+{
+  "name": "s1-dom-perf",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "electron": "^44.4.5",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3",
+    "fzstd": "^0.1.1",
+    "kiwi-schema": "^0.5.0"
+  },
+  "scripts": {
+    "build": "bun src/build.ts",
+    "build:host": "bun build host/bench.ts --outfile=out/bench.cjs --target=node --format=cjs --external=electron && bun build host/thumbs.ts --outfile=out/thumbs.cjs --target=node --format=cjs --external=electron",
+    "build:tauri": "cargo build --release --manifest-path tauri/Cargo.toml",
+    "thumbs": "electron out/thumbs.cjs",
+    "build:all": "bun run build && bun run build:host && bun run build:tauri && bun run thumbs",
+    "bench": "bun src/run/bench.ts",
+    "types": "tsc --noEmit -p ."
+  }
+}
