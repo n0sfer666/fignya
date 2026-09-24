@@ -58,3 +58,13 @@ macOS (M3 Pro, 18 GB) в приоритете, кросс-платформенн
 - Фичи без CSS: squircle (`corner-shape`), diamond-градиент, outside/center stroke на
   произвольной форме, progressive blur, noise/glass, text on path.
 - Шрифты: проприетарные (YS Text) только системные; кэш Google Fonts по согласию; отчёт о подменах.
+
+## Раунд 3 (2026-09-24): каркас приложения
+
+- Ядро (импорт, модель) пока на **TS**, пакетами с чистыми границами; перенос в Rust/napi-rs —
+  когда упрёмся в перф или дойдём до Loro/ИИ. `stack.md` в части Core — цель, не текущее состояние.
+- DoD раунда — **просмотрщик**: `FIG_FILE` → страницы/экраны → обзор миниатюрами (offscreen
+  `capturePage`, `will-change: transform` на слое мира) с pan/zoom → клик открывает живой DOM экрана.
+  Выделение, инспектор, правка — следующий раунд.
+- Сборка: Bun workspaces + `electron-vite` + `vite-plugin-solid`, тесты Vitest (TDD на синтетических фикстурах).
+- План и статус — `notes/round3-skeleton.md`.
