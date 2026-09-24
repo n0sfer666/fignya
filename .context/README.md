@@ -1,7 +1,8 @@
 # fignya — контекст
 
 OSS desktop-аналог Figma: дизайн — живой HTML/CSS, импорт `.fig`, работа offline, локальный ИИ.
-Стадия: раунд 3 — каркас приложения (`packages/*`, `apps/desktop`), статус — `notes/round3-skeleton.md`.
+Стадия: раунд 3 — каркас приложения (`packages/*`, `apps/desktop`), статус — `notes/round3-skeleton.md`,
+потоковый импорт — `notes/round3-streaming-import.md`.
 
 ## Карта
 

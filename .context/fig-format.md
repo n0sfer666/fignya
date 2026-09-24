@@ -4,6 +4,10 @@
 - `canvas.fig`: `fig-kiwi` (8 байт) + u32 версия + чанки `[u32 LE size][bytes]`.
   Чанк 0 — kiwi-схема (deflate raw), чанк 1 — данные (zstd; различать по magic `28 b5 2f fd`).
 - Сообщение: `nodeChanges[]` (плоский список), `blobs[].bytes`.
+- Декодирование потоковое (`fig/read-message.ts`): верхний `Message` разбирается вручную по id полей,
+  `nodeChanges` — по одному узлу скомпилированным `decodeNodeChange`, из узла сразу остаётся только
+  allowlist `fig/kept-fields.ts` (у `symbolData` — `symbolID`, у `textData` — `characters`).
+  Derived-поля (`derivedSymbolData`, `derivedTextData`…) — основная масса сырья, в память не попадают.
 - Узел: `guid {sessionID, localID}`, `parentIndex {guid, position}` — порядок детей = сортировка
   строк `position`. `transform` m00..m12 (m02/m12 — смещение от родителя), `size {x,y}`.
 - Auto layout: `stackMode` HORIZONTAL/VERTICAL, `stackSpacing`, `stackHorizontalPadding`,
