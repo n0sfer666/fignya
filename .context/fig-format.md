@@ -17,4 +17,11 @@
 - Текст: `textData.characters`, `fontName {family, style}`, `fontSize`, `lineHeight {value, units}`,
   `letterSpacing {value, units}`.
 
-Реализация — `spikes/s1-dom-perf/src/fig`, `src/tree`.
+- Оверрайды (замер раунда 3 на ROI Navigator): `symbolOverrides[].guidPath.guids` ссылаются на
+  `overrideKey` узлов SYMBOL-дерева (254264 из 255455 совпали), а не на их `guid`. Чаще всего
+  переопределяют `size`, `fillPaints`, `name`, `font*`, `textData`.
+- Векторы: дети `BOOLEAN_OPERATION` — операнды, в модель не попадают (рисуется
+  результат `fillGeometry`).
+- Без zip-обёртки файл может быть «голым» `fig-kiwi` — `readArchive` принимает оба варианта.
+
+Реализация — `packages/fig-import/src/fig`, `src/tree`, `src/convert` (перенесено из спайка S1).
