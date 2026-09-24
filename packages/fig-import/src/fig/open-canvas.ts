@@ -1,9 +1,10 @@
-import { compileSchema, decodeBinarySchema } from "kiwi-schema";
+import { decodeBinarySchema, type Schema } from "kiwi-schema";
 import { inflateSync } from "fflate";
 import { decompress } from "fzstd";
-import { isRec, type Rec } from "./guards";
 
 const MAGIC = "fig-kiwi";
+
+export type CanvasPayload = { schema: Schema; body: Uint8Array };
 
 const magicOf = (data: Uint8Array): string => new TextDecoder().decode(data.subarray(0, MAGIC.length));
 
@@ -28,14 +29,8 @@ const isZstd = (chunk: Uint8Array): boolean =>
 
 const unpack = (chunk: Uint8Array): Uint8Array => (isZstd(chunk) ? decompress(chunk) : inflateSync(chunk));
 
-export const decodeCanvas = (data: Uint8Array): Rec => {
+export const openCanvas = (data: Uint8Array): CanvasPayload => {
   const [schemaChunk, dataChunk] = readChunks(data);
   if (!schemaChunk || !dataChunk) throw new Error("fig-kiwi: missing chunks");
-  const compiled: unknown = compileSchema(decodeBinarySchema(unpack(schemaChunk)));
-  if (!isRec(compiled) || typeof compiled.decodeMessage !== "function") {
-    throw new Error("kiwi: decodeMessage not compiled");
-  }
-  const message: unknown = compiled.decodeMessage(unpack(dataChunk));
-  if (!isRec(message)) throw new Error("kiwi: message is not an object");
-  return message;
+  return { schema: decodeBinarySchema(unpack(schemaChunk)), body: unpack(dataChunk) };
 };

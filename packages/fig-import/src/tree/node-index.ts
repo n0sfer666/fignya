@@ -24,15 +24,15 @@ const comparePosition = (a: FigNode, b: FigNode): number => {
   return pa < pb ? -1 : pa > pb ? 1 : 0;
 };
 
-const readBlobs = (message: Rec): Uint8Array[] =>
+export const blobsOf = (message: Rec): Uint8Array[] =>
   recs(message, "blobs").map((b) => {
     const v = b.bytes;
     return v instanceof Uint8Array ? v : new Uint8Array();
   });
 
-export const buildIndex = (message: Rec): NodeIndex => {
+export const buildIndex = (nodeChanges: Rec[], blobs: Uint8Array[]): NodeIndex => {
   const byKey = new Map<string, FigNode>();
-  for (const raw of recs(message, "nodeChanges")) {
+  for (const raw of nodeChanges) {
     const key = guidKey(rec(raw, "guid"));
     byKey.set(key, { key, type: str(raw, "type") ?? "UNKNOWN", raw, children: [] });
   }
@@ -45,5 +45,5 @@ export const buildIndex = (message: Rec): NodeIndex => {
   }
   if (!root) throw new Error("DOCUMENT node not found");
   for (const node of byKey.values()) node.children.sort(comparePosition);
-  return { root, byKey, blobs: readBlobs(message) };
+  return { root, byKey, blobs };
 };

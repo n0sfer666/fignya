@@ -8,8 +8,10 @@ enum NodeType { DOCUMENT = 1; CANVAS = 2; FRAME = 3; TEXT = 4; }
 struct GUID { uint sessionID; uint localID; }
 message ParentIndex { GUID guid = 1; string position = 2; }
 message Vector { float x = 1; float y = 2; }
-message NodeChange { GUID guid = 1; ParentIndex parentIndex = 2; NodeType type = 3; string name = 4; Vector size = 5; }
-message Message { NodeChange[] nodeChanges = 1; }
+enum MessageType { JOIN_START = 0; NODE_CHANGES = 1; }
+message Blob { byte[] bytes = 1; }
+message NodeChange { GUID guid = 1; ParentIndex parentIndex = 2; NodeType type = 3; string name = 4; Vector size = 5; Vector derivedSize = 6; }
+message Message { MessageType type = 2; uint sessionID = 3; string[] labels = 5; GUID origin = 6; NodeChange[] nodeChanges = 1; Blob[] blobs = 4; }
 `;
 
 const chunk = (bytes: Uint8Array): Uint8Array[] => {

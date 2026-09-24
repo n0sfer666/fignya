@@ -5,7 +5,8 @@
   "exports": { ".": "./src/index.ts" },
   "scripts": {
     "types": "tsc --noEmit -p .",
-    "inspect": "bun scripts/inspect.ts"
+    "inspect": "bun scripts/inspect.ts",
+    "bench": "bun build scripts/bench.ts --target=node --outfile=node_modules/.cache/bench.mjs && node --expose-gc node_modules/.cache/bench.mjs"
   },
   "dependencies": {
     "@fignya/model": "workspace:*",

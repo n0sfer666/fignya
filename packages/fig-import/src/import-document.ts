@@ -1,25 +1,26 @@
 import type { DesignDocument, DesignNode, NodeId } from "@fignya/model";
-import type { Rec } from "./fig/guards";
+import { recs, type Rec } from "./fig/guards";
 import { convertNode } from "./convert/convert-node";
-import { blobPaths, VECTOR_TYPES } from "./convert/vector";
-import { buildIndex, type FigNode } from "./tree/node-index";
+import { blobPaths } from "./convert/vector";
+import { drain } from "./drain";
+import { PROGRESS_EVERY, type ImportProgress } from "./import-progress";
+import { blobsOf, buildIndex, type NodeIndex } from "./tree/node-index";
 import { pagesOf } from "./tree/pages";
+import { childIdsOf, placementsOf } from "./tree/placements";
 
 export const SERVICE_PAGES: ReadonlySet<string> = new Set(["Internal Only Canvas"]);
 
-const SKIPPED_TYPES = new Set(["SLICE", "STICKY", "CONNECTOR", "WIDGET"]);
-
-export const importDocument = (message: Rec): DesignDocument => {
-  const index = buildIndex(message);
+export function* convertSteps(index: NodeIndex): Generator<ImportProgress, DesignDocument> {
   const pathOf = blobPaths(index.blobs);
-  const nodes = new Map<NodeId, DesignNode>();
-  const visit = (node: FigNode, parent: FigNode, parentId: NodeId | undefined): NodeId[] => {
-    if (SKIPPED_TYPES.has(node.type)) return [];
-    const children = VECTOR_TYPES.has(node.type) ? [] : node.children.flatMap((child) => visit(child, node, node.key));
-    nodes.set(node.key, convertNode(node, { parent: parent.raw, parentId, children }, pathOf));
-    return [node.key];
-  };
   const canvases = index.root.children.filter((c) => c.type === "CANVAS");
-  for (const canvas of canvases) for (const child of canvas.children) visit(child, canvas, undefined);
+  const placements = placementsOf(canvases);
+  const nodes = new Map<NodeId, DesignNode>();
+  for (const [done, { node, parent, parentId }] of placements.entries()) {
+    if (done % PROGRESS_EVERY === 0) yield { phase: "convert", done, total: placements.length };
+    nodes.set(node.key, convertNode(node, { parent: parent.raw, parentId, children: childIdsOf(node) }, pathOf));
+  }
   return { nodes, pages: pagesOf(canvases, SERVICE_PAGES) };
-};
+}
+
+export const importDocument = (message: Rec): DesignDocument =>
+  drain(convertSteps(buildIndex(recs(message, "nodeChanges"), blobsOf(message))));

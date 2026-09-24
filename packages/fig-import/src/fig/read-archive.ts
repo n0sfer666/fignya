@@ -1,5 +1,5 @@
 import { unzipSync } from "fflate";
-import { isFigKiwi } from "./decode-canvas";
+import { isFigKiwi } from "./open-canvas";
 
 export type FigArchive = {
   canvas: Uint8Array;

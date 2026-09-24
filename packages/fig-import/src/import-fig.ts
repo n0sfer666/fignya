@@ -1,11 +1,5 @@
-import type { DesignDocument } from "@fignya/model";
-import { decodeCanvas } from "./fig/decode-canvas";
+import { drain } from "./drain";
 import { readArchive } from "./fig/read-archive";
-import { importDocument } from "./import-document";
+import { importSteps, type FigImport } from "./import-steps";
 
-export type FigImport = { document: DesignDocument; images: ReadonlyMap<string, Uint8Array> };
-
-export const importFig = (zipped: Uint8Array): FigImport => {
-  const { canvas, images } = readArchive(zipped);
-  return { document: importDocument(decodeCanvas(canvas)), images };
-};
+export const importFig = (zipped: Uint8Array): FigImport => drain(importSteps(readArchive(zipped)));
