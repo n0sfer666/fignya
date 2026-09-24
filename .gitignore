@@ -1,0 +1,8 @@
+*.fig
+node_modules/
+dist/
+out/
+target/
+.DS_Store
+.env
+.env.*
