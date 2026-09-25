@@ -48,7 +48,7 @@ const SERIALIZERS: Serializers = {
   overflowWrap: (v) => one("overflow-wrap", v),
 };
 
-const isStyleKey = (key: string): key is keyof StyleValues => key in SERIALIZERS;
+export const isStyleKey = (key: string): key is keyof StyleValues => key in SERIALIZERS;
 
 const KEYS = Object.keys(SERIALIZERS).filter(isStyleKey);
 

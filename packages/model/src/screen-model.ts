@@ -1,5 +1,5 @@
 import type { ScreenModel } from "./document";
-import { expandedComponentId } from "./instance";
+import { expandedComponentId, swapTargets } from "./instance";
 import type { DesignNode, NodeId, NodeMap } from "./node";
 
 export const screenModel = (nodes: NodeMap, rootId: NodeId): ScreenModel | undefined => {
@@ -12,7 +12,7 @@ export const screenModel = (nodes: NodeMap, rootId: NodeId): ScreenModel | undef
     picked.set(id, node);
     stack.push(...node.children);
     const componentId = expandedComponentId(node);
-    if (componentId !== undefined) stack.push(componentId);
+    if (componentId !== undefined) stack.push(componentId, ...swapTargets(node));
   }
   return { rootId, nodes: picked };
 };

@@ -5,7 +5,16 @@ import { slimNode } from "../src/fig/kept-fields";
 import { importDocument } from "../src/import-document";
 import { box, figMessage, guid, solid, type FigSpec } from "./fixtures";
 
-const noise = { derivedSymbolData: [{ size: { x: 1, y: 1 } }], symbolOverrides: [{ guidPath: {} }], exportSettings: [{}] };
+const noise = { derivedSymbolData: [{ guidPath: { guids: [guid(31)] }, size: { x: 1, y: 1 }, fillGeometry: [{}] }], exportSettings: [{}], variableConsumptionMap: {} };
+
+const lines = [{ lineType: "PLAIN" }];
+
+const assignment = (def: number, value: Rec): Rec => ({ defID: guid(def), value, varValue: { value } });
+
+const symbolOverrides = [
+  { guidPath: { guids: [guid(131)] }, styleIdForFill: {}, fillPaints: [solid(0, 1, 0)], fontSize: 30, textData: { characters: "Over", lines } },
+  { guidPath: { guids: [guid(33)] }, componentPropAssignments: [assignment(8, { textValue: { characters: "Prop", lines } })] },
+];
 
 const stops = [
   { position: 0, color: { r: 1, g: 0, b: 0, a: 1 } },
@@ -37,9 +46,17 @@ const specs: FigSpec[] = [
     letterSpacing: { value: -2, units: "PERCENT" }, textAlignHorizontal: "CENTER", fillPaints: [solid(1, 0, 0)],
     stackChildPrimaryGrow: 1, stackChildAlignSelf: "STRETCH",
   },
-  { id: 12, parent: 10, position: "b", type: "INSTANCE", name: "Button", ...box(3, 4, 10, 10), ...noise, cornerRadius: 6, symbolData: { symbolID: guid(30), symbolOverrides: [{}] }, stackPositioning: "ABSOLUTE" },
+  {
+    id: 12, parent: 10, position: "b", type: "INSTANCE", name: "Button", ...box(3, 4, 10, 10), ...noise, cornerRadius: 6, stackPositioning: "ABSOLUTE",
+    symbolData: { symbolID: guid(30), symbolOverrides }, componentPropAssignments: [assignment(7, { boolValue: false })],
+  },
   { id: 13, parent: 10, position: "c", type: "VECTOR", name: "Icon", ...box(0, 0, 5, 5), ...noise, visible: false, fillPaints: [solid(0, 0, 0)], fillGeometry: [{ commandsBlob: 0, windingRule: "ODD" }], strokePaints: [solid(0, 0, 0)], strokeGeometry: [{ commandsBlob: 0 }] },
   { id: 30, parent: 3, position: "a", type: "SYMBOL", name: "C", ...box(0, 0, 10, 10), ...noise },
+  { id: 31, parent: 30, position: "a", type: "TEXT", name: "L", overrideKey: guid(131), textData: { characters: "Base" }, fontSize: 12, ...box(0, 0, 5, 5) },
+  { id: 32, parent: 30, position: "b", type: "FRAME", name: "Opt", componentPropRefs: [{ defID: guid(7), componentPropNodeField: "VISIBLE" }], ...box(0, 0, 5, 5) },
+  { id: 33, parent: 30, position: "c", type: "INSTANCE", name: "Nested", symbolData: { symbolID: guid(40) }, ...box(0, 0, 5, 5) },
+  { id: 40, parent: 3, position: "b", type: "SYMBOL", name: "D", ...box(0, 0, 5, 5) },
+  { id: 41, parent: 40, position: "a", type: "TEXT", name: "N", textData: { characters: "Inner" }, componentPropRefs: [{ defID: guid(8), componentPropNodeField: "TEXT_DATA" }], ...box(0, 0, 5, 5) },
 ];
 
 const message = figMessage(specs, [new Uint8Array([1, 0, 0, 0, 0, 0, 0, 0, 0])]);
@@ -50,10 +67,23 @@ describe("slimNode", () => {
     expect(importDocument(slimmed)).toEqual(importDocument(message));
   });
 
-  it("drops derived and override data", () => {
+  it("applies overrides, props and derived sizes after slimming", () => {
+    const [instance] = [...importDocument(slimmed).nodes.values()].filter((n) => n.id === "1:12");
+    expect(instance?.kind === "instance" ? instance.overrides.map((o) => o.path) : []).toEqual([["1:32"], ["1:31"], ["1:33", "1:41"]]);
+  });
+
+  it("slims override, prop and derived data", () => {
     const [, , , screen, text, instance] = recs(slimmed, "nodeChanges");
-    expect(screen).not.toHaveProperty("derivedSymbolData");
+    expect(screen?.derivedSymbolData).toEqual([{ guidPath: { guids: [guid(31)] }, size: { x: 1, y: 1 } }]);
+    expect(screen).not.toHaveProperty("variableConsumptionMap");
     expect(text?.textData).toEqual({ characters: "Hi" });
-    expect(instance?.symbolData).toEqual({ symbolID: guid(30) });
+    expect(instance?.symbolData).toEqual({
+      symbolID: guid(30),
+      symbolOverrides: [
+        { guidPath: { guids: [guid(131)] }, fillPaints: [solid(0, 1, 0)], fontSize: 30, textData: { characters: "Over" } },
+        { guidPath: { guids: [guid(33)] }, componentPropAssignments: [{ defID: guid(8), value: { textValue: { characters: "Prop" } } }] },
+      ],
+    });
+    expect(instance?.componentPropAssignments).toEqual([{ defID: guid(7), value: { boolValue: false } }]);
   });
 });

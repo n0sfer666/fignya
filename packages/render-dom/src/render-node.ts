@@ -1,9 +1,10 @@
-import { cssText, expandedComponentId, type DesignNode, type ImageUrl, type NodeId, type NodeMap, type Style } from "@fignya/model";
+import { applyOverride, cssText, expandedComponentId, type DesignNode, type ImageUrl, type NodeId, type NodeMap, type Style } from "@fignya/model";
+import { EMPTY_SCOPE, nestedScope, type OverrideScope } from "./override-scope";
 import { renderSvg } from "./svg";
 
 export type RenderContext = { nodes: NodeMap; imageUrl: ImageUrl };
 
-type Branch = { depth: number; expanding: ReadonlySet<NodeId> };
+type Branch = { depth: number; expanding: ReadonlySet<NodeId>; scope: OverrideScope };
 
 const MAX_DEPTH = 64;
 
@@ -14,15 +15,16 @@ const childrenOf = (ctx: RenderContext, node: DesignNode, branch: Branch): { ids
   const componentId = expandedComponentId(node);
   if (componentId === undefined) {
     const ids = node.kind === "text" || node.kind === "vector" ? [] : node.children;
-    return { ids, branch: { depth, expanding: branch.expanding } };
+    return { ids, branch: { ...branch, depth } };
   }
   if (branch.expanding.has(componentId)) return { ids: [], branch };
   const ids = ctx.nodes.get(componentId)?.children ?? [];
-  return { ids, branch: { depth, expanding: new Set([...branch.expanding, componentId]) } };
+  return { ids, branch: { depth, expanding: new Set([...branch.expanding, componentId]), scope: nestedScope(branch.scope, node) } };
 };
 
 const renderTree = (ctx: RenderContext, id: NodeId, branch: Branch, style: (node: DesignNode) => Style): HTMLElement | undefined => {
-  const node = ctx.nodes.get(id);
+  const stored = ctx.nodes.get(id);
+  const node = stored && applyOverride(stored, branch.scope.get(id));
   if (!node || node.hidden || branch.depth > MAX_DEPTH) return undefined;
   const el = document.createElement("div");
   el.dataset.id = node.id;
@@ -39,4 +41,4 @@ const renderTree = (ctx: RenderContext, id: NodeId, branch: Branch, style: (node
 };
 
 export const renderRoot = (ctx: RenderContext, rootId: NodeId): HTMLElement | undefined =>
-  renderTree(ctx, rootId, { depth: 0, expanding: new Set() }, (n) => ({ ...n.style, ...IN_FLOW }));
+  renderTree(ctx, rootId, { depth: 0, expanding: new Set(), scope: EMPTY_SCOPE }, (n) => ({ ...n.style, ...IN_FLOW }));

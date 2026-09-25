@@ -53,7 +53,10 @@ describe("readMessage", () => {
 
 describe("slimNode", () => {
   it("keeps converter fields and drops derived data", () => {
-    const raw = { ...nodes[1], textData: { characters: "hi" }, derivedTextData: { glyphs: [1] }, derivedSymbolData: [{}] };
-    expect(slimNode(raw)).toEqual({ guid: guid(2), parentIndex: { guid: guid(1), position: "a" }, type: "CANVAS", name: "Page", textData: { characters: "hi" } });
+    const raw = { ...nodes[1], textData: { characters: "hi" }, derivedTextData: { glyphs: [1] }, derivedSymbolData: [{ size: { x: 1, y: 1 }, fillGeometry: [{}] }] };
+    expect(slimNode(raw)).toEqual({
+      guid: guid(2), parentIndex: { guid: guid(1), position: "a" }, type: "CANVAS", name: "Page",
+      textData: { characters: "hi" }, derivedSymbolData: [{ size: { x: 1, y: 1 } }],
+    });
   });
 });

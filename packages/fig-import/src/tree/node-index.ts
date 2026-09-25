@@ -16,6 +16,11 @@ export type NodeIndex = {
 export const guidKey = (guid: Rec | undefined): string =>
   guid ? `${num(guid, "sessionID") ?? 0}:${num(guid, "localID") ?? 0}` : "";
 
+export const parentKey = (raw: Rec): string => {
+  const parentIndex = raw.parentIndex;
+  return isRec(parentIndex) ? guidKey(rec(parentIndex, "guid")) : "";
+};
+
 const position = (n: FigNode): string => str(rec(n.raw, "parentIndex"), "position") ?? "";
 
 const comparePosition = (a: FigNode, b: FigNode): number => {
@@ -38,8 +43,7 @@ export const buildIndex = (nodeChanges: Rec[], blobs: Uint8Array[]): NodeIndex =
   }
   let root: FigNode | undefined;
   for (const node of byKey.values()) {
-    const parentIndex = node.raw.parentIndex;
-    const parent = isRec(parentIndex) ? byKey.get(guidKey(rec(parentIndex, "guid"))) : undefined;
+    const parent = byKey.get(parentKey(node.raw));
     if (parent) parent.children.push(node);
     else if (node.type === "DOCUMENT") root = node;
   }

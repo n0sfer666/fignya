@@ -5,7 +5,7 @@ export type NodeId = string;
 
 export type VectorPath = { d: string; fill: Color; rule: "nonzero" | "evenodd" };
 
-export type Override = { path: NodeId[]; style?: Style; text?: string; hidden?: boolean };
+export type Override = { path: NodeId[]; style?: Style; text?: string; hidden?: boolean; paths?: VectorPath[]; componentId?: NodeId };
 
 type NodeBase = {
   id: NodeId;
