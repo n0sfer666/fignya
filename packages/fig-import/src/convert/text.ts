@@ -29,22 +29,39 @@ const letterSpacing = (raw: Rec): LetterSpacing => {
   return str(ls, "units") === "PERCENT" ? { value: Number((value / 100).toFixed(4)), unit: "em" } : { value, unit: "px" };
 };
 
+const maxLines = (raw: Rec, lh: Px | "normal"): number | undefined => {
+  const lines = num(raw, "maxLines");
+  if (lines !== undefined) return lines;
+  const height = num(rec(raw, "size"), "y");
+  return lh === "normal" || height === undefined ? undefined : Math.max(1, Math.floor(height / lh));
+};
+
+const wrapStyle = (raw: Rec, lh: Px | "normal"): Style => {
+  const autoWidth = str(raw, "textAutoResize") === "WIDTH_AND_HEIGHT";
+  if (autoWidth) return { whiteSpace: "pre" };
+  const lines = str(raw, "textTruncation") === "ENDING" ? maxLines(raw, lh) : undefined;
+  if (lines === undefined) return { whiteSpace: "pre-wrap", overflowWrap: "break-word" };
+  const clip: Style = { overflow: "hidden", textOverflow: "ellipsis" };
+  if (lines === 1) return { ...clip, whiteSpace: "pre" };
+  return { ...clip, whiteSpace: "pre-wrap", overflowWrap: "break-word", display: "-webkit-box", lineClamp: lines };
+};
+
 export const textStyle = (raw: Rec): Style => {
   const font = rec(raw, "fontName");
   const fontSize = num(raw, "fontSize") ?? 12;
   const fontStyle = str(font, "style") ?? "Regular";
   const color = firstSolid(raw, "fillPaints");
+  const lh = lineHeight(raw, fontSize);
   return {
     fontFamily: str(font, "family") ?? "Inter",
     fontSize,
     fontWeight: weightOf(fontStyle),
     ...(fontStyle.toLowerCase().includes("italic") ? { fontStyle: "italic" } : {}),
-    lineHeight: lineHeight(raw, fontSize),
+    lineHeight: lh,
     letterSpacing: letterSpacing(raw),
     textAlign: ALIGN[str(raw, "textAlignHorizontal") ?? "LEFT"] ?? "left",
     ...(color ? { color } : {}),
-    whiteSpace: "pre-wrap",
-    overflowWrap: "break-word",
+    ...wrapStyle(raw, lh),
   };
 };
 

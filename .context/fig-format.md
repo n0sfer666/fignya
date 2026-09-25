@@ -18,13 +18,23 @@
 - INSTANCE: детей нет, дерево — у SYMBOL из `symbolData.symbolID`; оверрайды в
   `symbolData.symbolOverrides`, производные размеры и позиции в `derivedSymbolData[] {guidPath, size, transform}`.
 - Component properties: на инстансе и внутри оверрайда `componentPropAssignments[] {defID,
-  value {boolValue | textValue.characters | guidValue}}`; узел компонента ссылается на свойство через
+  value {boolValue | textValue.characters | guidValue}, varValue.value {boolValue |
+  textDataValue.characters | symbolIdValue.guid}}`. Где есть обе формы, они совпадают; только в
+  `varValue` на ROI Navigator ~3.5k bool, ~2.8k text, ~1.9k swap — читаем `varValue`, иначе legacy.
+  Узел компонента ссылается на свойство через
   `componentPropRefs[] {defID, componentPropNodeField: VISIBLE | TEXT_DATA | OVERRIDDEN_SYMBOL_ID}`.
   Своп — `overriddenSymbolID` (в оверрайде или через prop).
 - Геометрия: `fillGeometry/strokeGeometry[].commandsBlob` → blob: байт-команда
   (0 Z, 1 M, 2 L, 3 Q, 4 C) + float32 LE координаты в локальной системе узла.
 - Текст: `textData.characters`, `fontName {family, style}`, `fontSize`, `lineHeight {value, units}`,
-  `letterSpacing {value, units}`.
+  `letterSpacing {value, units}`. Перенос: `textAutoResize: WIDTH_AND_HEIGHT` — одна строка (`pre`),
+  `HEIGHT`/фикс — перенос; `textTruncation: ENDING` + `maxLines` (нет — `floor(size.y / lineHeight)`)
+  → `…` (1 строка) или line-clamp. У auto-width `ENDING` бывает устаревшим (135 шт.) — игнорируем.
+- Fill-потомок (`stackChildPrimaryGrow`) = `flex: 1 1 0; min-width|height: 0`, иначе ширина по контенту
+  выталкивает соседей; в `stackWrap: WRAP` basis = свой размер, чтобы переносился.
+- Обводка по сторонам: `borderStrokeWeightsIndependent` + `border{Top,Right,Bottom,Left}Weight` →
+  inset-тени по сторонам (подчёркивание вкладок), `OUTSIDE` — внешние тени. `strokeWeight` у таких узлов
+  часто 0 (1.2k) — не смотрим на него.
 
 - Оверрайды: `guidPath.guids` — ключи узлов SYMBOL-дерева, ключ = `overrideKey ?? guid` (`overrideKey`
   есть лишь у части узлов). Путь длины > 1 проходит через вложенные инстансы, каждый следующий ключ —

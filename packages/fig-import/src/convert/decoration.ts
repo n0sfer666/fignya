@@ -1,4 +1,4 @@
-import type { Shadow, Sides, Style } from "@fignya/model";
+import type { Color, Shadow, Sides, Style } from "@fignya/model";
 import { bool, num, rec, recs, str, type Rec } from "../fig/guards";
 import { colorOf } from "./color";
 import { firstSolid } from "./paint";
@@ -26,8 +26,8 @@ const shadowOf = (effect: Rec, inset: boolean): Shadow => {
   };
 };
 
-const effectsStyle = (raw: Rec, strokeShadow: Shadow | undefined): Style => {
-  const shadows: Shadow[] = strokeShadow ? [strokeShadow] : [];
+const effectsStyle = (raw: Rec, strokeShadows: Shadow[]): Style => {
+  const shadows: Shadow[] = [...strokeShadows];
   const style: Style = {};
   for (const e of recs(raw, "effects")) {
     if (bool(e, "visible") === false) continue;
@@ -40,22 +40,40 @@ const effectsStyle = (raw: Rec, strokeShadow: Shadow | undefined): Style => {
   return shadows.length > 0 ? { boxShadow: shadows, ...style } : style;
 };
 
-const strokeStyle = (raw: Rec): { shadow?: Shadow; style: Style } => {
+const SIDES: [string, number, number][] = [
+  ["borderTopWeight", 0, 1],
+  ["borderRightWeight", -1, 0],
+  ["borderBottomWeight", 0, -1],
+  ["borderLeftWeight", 1, 0],
+];
+
+const sideShadows = (raw: Rec, color: Color): Shadow[] => {
+  const inset = str(raw, "strokeAlign") !== "OUTSIDE";
+  const sign = inset ? 1 : -1;
+  return SIDES.flatMap(([key, x, y]) => {
+    const width = num(raw, key) ?? 0;
+    return width > 0 ? [{ inset, x: sign * x * width || 0, y: sign * y * width || 0, blur: 0, spread: 0, color }] : [];
+  });
+};
+
+const strokeStyle = (raw: Rec): { shadows: Shadow[]; style: Style } => {
   const color = firstSolid(raw, "strokePaints");
+  if (!color) return { shadows: [], style: {} };
+  if (bool(raw, "borderStrokeWeightsIndependent") === true) return { shadows: sideShadows(raw, color), style: {} };
   const width = num(raw, "strokeWeight") ?? 0;
-  if (!color || width <= 0) return { style: {} };
-  if (str(raw, "strokeAlign") === "OUTSIDE") return { style: { outline: { width, color } } };
-  return { shadow: { inset: true, x: 0, y: 0, blur: 0, spread: width, color }, style: {} };
+  if (width <= 0) return { shadows: [], style: {} };
+  if (str(raw, "strokeAlign") === "OUTSIDE") return { shadows: [], style: { outline: { width, color } } };
+  return { shadows: [{ inset: true, x: 0, y: 0, blur: 0, spread: width, color }], style: {} };
 };
 
 export const decorationStyle = (raw: Rec, type: string, isVector: boolean): Style => {
-  const stroke = isVector ? { style: {} } : strokeStyle(raw);
+  const stroke = isVector ? { shadows: [], style: {} } : strokeStyle(raw);
   const opacity = num(raw, "opacity") ?? 1;
   const clips = CLIPPING.has(type) && bool(raw, "frameMaskDisabled") !== true;
   return {
     ...radius(raw, type),
     ...stroke.style,
-    ...effectsStyle(raw, stroke.shadow),
+    ...effectsStyle(raw, stroke.shadows),
     ...(opacity < 1 ? { opacity: Number(opacity.toFixed(3)) } : {}),
     ...(clips ? { overflow: "hidden" } : {}),
   };

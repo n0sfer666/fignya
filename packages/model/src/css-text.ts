@@ -28,6 +28,7 @@ const SERIALIZERS: Serializers = {
   alignSelf: (v) => one("align-self", v),
   flexGrow: (v) => one("flex-grow", String(v)),
   flexShrink: (v) => one("flex-shrink", String(v)),
+  flexBasis: (v) => one("flex-basis", px(v)),
   borderRadius: (v) => one("border-radius", v === "50%" ? v : sides(v)),
   outline: (v) => one("outline", `${px(v.width)} solid ${rgba(v.color)}`),
   boxShadow: (v) => one("box-shadow", v.map(shadow).join(",")),
@@ -46,6 +47,11 @@ const SERIALIZERS: Serializers = {
   textAlign: (v) => one("text-align", v),
   whiteSpace: (v) => one("white-space", v),
   overflowWrap: (v) => one("overflow-wrap", v),
+  textOverflow: (v) => one("text-overflow", v),
+  lineClamp: (v) => [
+    ["-webkit-box-orient", "vertical"],
+    ["-webkit-line-clamp", String(v)],
+  ],
 };
 
 export const isStyleKey = (key: string): key is keyof StyleValues => key in SERIALIZERS;

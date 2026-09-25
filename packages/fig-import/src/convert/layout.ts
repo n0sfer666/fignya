@@ -36,11 +36,14 @@ const absoluteStyle = (raw: Rec, w: number, h: number): Style => {
   return transform ? { ...style, transform } : style;
 };
 
+const fillStyle = (row: boolean, wrap: boolean, size: number): Style =>
+  wrap ? { flexGrow: 1, flexShrink: 1, flexBasis: size } : { flexGrow: 1, flexShrink: 1, flexBasis: 0, ...(row ? { minWidth: 0 } : { minHeight: 0 }) };
+
 const flowStyle = (raw: Rec, parent: Rec, w: number, h: number): Style => {
   const row = str(parent, "stackMode") === "HORIZONTAL";
   const grow = (num(raw, "stackChildPrimaryGrow") ?? 0) > 0;
   const stretch = str(raw, "stackChildAlignSelf") === "STRETCH";
-  const main: Style = grow ? { flexGrow: 1, ...(row ? { minWidth: 0 } : { minHeight: 0 }) } : row ? { width: w } : { height: h };
+  const main: Style = grow ? fillStyle(row, str(parent, "stackWrap") === "WRAP", row ? w : h) : row ? { width: w } : { height: h };
   const cross: Style = stretch ? { alignSelf: "stretch" } : row ? { height: h } : { width: w };
   return { position: "relative", flexShrink: 0, ...main, ...cross };
 };

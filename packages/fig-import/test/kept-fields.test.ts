@@ -81,9 +81,9 @@ describe("slimNode", () => {
       symbolID: guid(30),
       symbolOverrides: [
         { guidPath: { guids: [guid(131)] }, fillPaints: [solid(0, 1, 0)], fontSize: 30, textData: { characters: "Over" } },
-        { guidPath: { guids: [guid(33)] }, componentPropAssignments: [{ defID: guid(8), value: { textValue: { characters: "Prop" } } }] },
+        { guidPath: { guids: [guid(33)] }, componentPropAssignments: [{ defID: guid(8), value: { textValue: { characters: "Prop" } }, varValue: { value: {} } }] },
       ],
     });
-    expect(instance?.componentPropAssignments).toEqual([{ defID: guid(7), value: { boolValue: false } }]);
+    expect(instance?.componentPropAssignments).toEqual([{ defID: guid(7), value: { boolValue: false }, varValue: { value: { boolValue: false } } }]);
   });
 });

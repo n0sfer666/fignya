@@ -33,7 +33,7 @@ export type StyleValues = {
   minWidth: Px;
   minHeight: Px;
   transform: Matrix2;
-  display: "flex";
+  display: "flex" | "-webkit-box";
   flexDirection: "row" | "column";
   flexWrap: "wrap";
   gap: Px;
@@ -43,6 +43,7 @@ export type StyleValues = {
   alignSelf: "stretch";
   flexGrow: number;
   flexShrink: number;
+  flexBasis: Px;
   borderRadius: Sides | "50%";
   outline: { width: Px; color: Color };
   boxShadow: Shadow[];
@@ -59,8 +60,10 @@ export type StyleValues = {
   lineHeight: Px | "normal";
   letterSpacing: LetterSpacing;
   textAlign: TextAlign;
-  whiteSpace: "pre-wrap";
+  whiteSpace: "pre-wrap" | "pre";
   overflowWrap: "break-word";
+  textOverflow: "ellipsis";
+  lineClamp: number;
 };
 
 export type Style = Partial<StyleValues>;

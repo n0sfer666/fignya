@@ -10,15 +10,20 @@ const STYLE_FIELDS = [
   "cornerRadius", "rectangleTopLeftCornerRadius", "rectangleTopRightCornerRadius",
   "rectangleBottomRightCornerRadius", "rectangleBottomLeftCornerRadius", "frameMaskDisabled",
   "fillPaints", "strokePaints", "strokeWeight", "strokeAlign", "effects",
+  "borderStrokeWeightsIndependent", "borderTopWeight", "borderRightWeight", "borderBottomWeight", "borderLeftWeight",
   "fillGeometry", "strokeGeometry",
   "textData", "fontName", "fontSize", "lineHeight", "letterSpacing", "textAlignHorizontal",
+  "textAutoResize", "textTruncation", "maxLines",
 ];
 
 const TEXT: Shape = { keep: new Set(["characters"]) };
 
 const ASSIGNMENT: Shape = {
-  keep: new Set(["defID", "value"]),
-  nested: { value: { keep: new Set(["boolValue", "textValue", "guidValue"]), nested: { textValue: TEXT } } },
+  keep: new Set(["defID", "value", "varValue"]),
+  nested: {
+    value: { keep: new Set(["boolValue", "textValue", "guidValue"]), nested: { textValue: TEXT } },
+    varValue: { keep: new Set(["value"]), nested: { value: { keep: new Set(["boolValue", "textDataValue", "symbolIdValue"]), nested: { textDataValue: TEXT } } } },
+  },
 };
 
 const OVERRIDE: Shape = {

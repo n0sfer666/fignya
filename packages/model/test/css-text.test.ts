@@ -24,8 +24,8 @@ describe("cssText", () => {
   });
 
   it("serializes flex child", () => {
-    expect(cssText({ flexGrow: 1, flexShrink: 0, alignSelf: "stretch", minWidth: 0 }, url)).toBe(
-      "min-width:0px;align-self:stretch;flex-grow:1;flex-shrink:0",
+    expect(cssText({ flexGrow: 1, flexShrink: 1, flexBasis: 0, alignSelf: "stretch", minWidth: 0 }, url)).toBe(
+      "min-width:0px;align-self:stretch;flex-grow:1;flex-shrink:1;flex-basis:0px",
     );
   });
 
@@ -125,6 +125,11 @@ describe("cssText", () => {
     expect(cssText({ fontFamily: "O'Brien\\\nX", whiteSpace: "pre-wrap", overflowWrap: "break-word" }, url)).toBe(
       "font-family:'O\\'Brien\\\\ X',sans-serif;white-space:pre-wrap;overflow-wrap:break-word",
     );
+  });
+
+  it("serializes truncation and line clamp", () => {
+    expect(cssText({ whiteSpace: "pre", overflow: "hidden", textOverflow: "ellipsis" }, url)).toBe("overflow:hidden;white-space:pre;text-overflow:ellipsis");
+    expect(cssText({ display: "-webkit-box", lineClamp: 2 }, url)).toBe("display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2");
   });
 
   it("serializes normal line height", () => {

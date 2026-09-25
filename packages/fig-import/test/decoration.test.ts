@@ -40,6 +40,27 @@ describe("decorationStyle", () => {
     expect(style.boxShadow).toEqual([{ inset: true, x: 0, y: 0, blur: 0, spread: 2, color: black }]);
   });
 
+  it("draws independent side strokes as inset shadows per side", () => {
+    const raw = { strokePaints: [solid(0, 0, 0)], strokeWeight: 2, borderStrokeWeightsIndependent: true, borderBottomWeight: 2, borderLeftWeight: 1 };
+    expect(decorationStyle(raw, "FRAME", false).boxShadow).toEqual([
+      { inset: true, x: 0, y: -2, blur: 0, spread: 0, color: black },
+      { inset: true, x: 1, y: 0, blur: 0, spread: 0, color: black },
+    ]);
+  });
+
+  it("draws independent side strokes without uniform stroke weight", () => {
+    const raw = { strokePaints: [solid(0, 0, 0)], strokeWeight: 0, borderStrokeWeightsIndependent: true, borderBottomWeight: 2 };
+    expect(decorationStyle(raw, "FRAME", false).boxShadow).toEqual([{ inset: true, x: 0, y: -2, blur: 0, spread: 0, color: black }]);
+  });
+
+  it("draws outside independent side strokes beyond the box", () => {
+    const raw = { strokePaints: [solid(0, 0, 0)], strokeAlign: "OUTSIDE", borderStrokeWeightsIndependent: true, borderBottomWeight: 2, borderLeftWeight: 1 };
+    expect(decorationStyle(raw, "FRAME", false).boxShadow).toEqual([
+      { inset: false, x: 0, y: 2, blur: 0, spread: 0, color: black },
+      { inset: false, x: -1, y: 0, blur: 0, spread: 0, color: black },
+    ]);
+  });
+
   it("draws outside stroke as outline", () => {
     const style = decorationStyle({ strokePaints: [solid(0, 0, 0)], strokeWeight: 1, strokeAlign: "OUTSIDE" }, "ROUNDED_RECTANGLE", false);
     expect(style).toEqual({ outline: { width: 1, color: black } });

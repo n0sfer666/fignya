@@ -31,6 +31,37 @@ describe("textStyle", () => {
     });
   });
 
+  it("ignores stale truncation on auto-width text", () => {
+    expect(textStyle({ textAutoResize: "WIDTH_AND_HEIGHT", textTruncation: "ENDING", maxLines: 2 })).toMatchObject({ whiteSpace: "pre" });
+    expect(textStyle({ textAutoResize: "WIDTH_AND_HEIGHT", textTruncation: "ENDING" }).textOverflow).toBeUndefined();
+  });
+
+  it("derives max lines of truncated fixed box from its height", () => {
+    const raw = { textTruncation: "ENDING", lineHeight: { value: 20, units: "PIXELS" } };
+    expect(textStyle({ ...raw, size: { x: 100, y: 45 } })).toMatchObject({ display: "-webkit-box", lineClamp: 2, textOverflow: "ellipsis" });
+    expect(textStyle({ ...raw, size: { x: 100, y: 20 } })).toMatchObject({ whiteSpace: "pre", textOverflow: "ellipsis" });
+  });
+
+  it("keeps auto-width text on one line", () => {
+    const style = textStyle({ textAutoResize: "WIDTH_AND_HEIGHT" });
+    expect(style.whiteSpace).toBe("pre");
+    expect(style.overflowWrap).toBeUndefined();
+  });
+
+  it("wraps fixed-width text", () => {
+    expect(textStyle({ textAutoResize: "HEIGHT" })).toMatchObject({ whiteSpace: "pre-wrap", overflowWrap: "break-word" });
+  });
+
+  it("ellipsizes truncated single line", () => {
+    const style = textStyle({ textAutoResize: "HEIGHT", textTruncation: "ENDING", maxLines: 1 });
+    expect(style).toMatchObject({ whiteSpace: "pre", overflow: "hidden", textOverflow: "ellipsis" });
+    expect(style.lineClamp).toBeUndefined();
+  });
+
+  it("clamps truncated text to max lines", () => {
+    expect(textStyle({ textAutoResize: "HEIGHT", textTruncation: "ENDING", maxLines: 2 })).toMatchObject({ whiteSpace: "pre-wrap", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", lineClamp: 2 });
+  });
+
   it("keeps pixel line height", () => {
     expect(textStyle({ lineHeight: { value: 18, units: "PIXELS" } }).lineHeight).toBe(18);
   });

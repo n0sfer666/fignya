@@ -37,7 +37,7 @@ const specs: FigSpec[] = [
     componentPropAssignments: [assignment(7, { boolValue: false }), assignment(9, { guidValue: guid(60) })],
     derivedSymbolData: [{ ...path(38), size: { x: 80, y: 10 }, transform: { m00: 1, m01: 0, m02: 4, m10: 0, m11: 1, m12: 6 } }, { ...path(36), size: { x: 30, y: 30 } }],
   },
-  { id: 21, parent: 10, position: "b", type: "INSTANCE", name: "J", symbolData: { symbolID: guid(30), symbolOverrides: [{ ...path(33), componentPropAssignments: [assignment(8, { textValue: { characters: "Last level" } })] }] }, ...box(0, 0, 100, 100) },
+  { id: 21, parent: 10, position: "b", type: "INSTANCE", name: "J", symbolData: { symbolID: guid(30), symbolOverrides: [{ ...path(33), componentPropAssignments: [assignment(8, { textValue: { characters: "Last level" } })] }, { ...path(131), textAutoResize: "WIDTH_AND_HEIGHT" }] }, ...box(0, 0, 100, 100) },
   { id: 30, parent: 3, position: "a", type: "SYMBOL", name: "C", overrideKey: guid(130), ...box(0, 0, 100, 100) },
   { id: 31, parent: 30, position: "a", type: "TEXT", name: "L", overrideKey: guid(131), textData: { characters: "Base" }, fontName: { family: "Roboto", style: "Bold" }, fontSize: 14, ...box(0, 0, 50, 20) },
   { id: 32, parent: 30, position: "b", type: "FRAME", name: "Hidden", visible: false, ...box(0, 0, 5, 5) },
@@ -107,6 +107,10 @@ describe("instance overrides", () => {
     const index = buildIndex(specs.map(figNode), []);
     const instance = index.byKey.get("1:20");
     expect(instance && instanceResolver(index.byKey)(instance).unresolved).toBe(1);
+  });
+
+  it("drops wrap keys when an override switches text to auto-width", () => {
+    expect(at(instanceOverridesOf("1:21"), "1:31")?.style).toEqual({ whiteSpace: "pre", overflowWrap: undefined });
   });
 
   it("keeps the nested instance's own swap as its own override", () => {

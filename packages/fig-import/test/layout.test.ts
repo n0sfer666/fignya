@@ -65,6 +65,18 @@ describe("boxStyle", () => {
 
   it("grows and stretches flow child", () => {
     const raw = { ...box(0, 0, 100, 50), stackChildPrimaryGrow: 1, stackChildAlignSelf: "STRETCH" };
-    expect(boxStyle(raw, column)).toEqual({ position: "relative", flexShrink: 0, flexGrow: 1, minHeight: 0, alignSelf: "stretch" });
+    expect(boxStyle(raw, column)).toEqual({ position: "relative", flexShrink: 1, flexGrow: 1, flexBasis: 0, minHeight: 0, alignSelf: "stretch" });
+  });
+
+  it("fills only the free space of a row, not its content width", () => {
+    const raw = { ...box(0, 0, 900, 50), stackChildPrimaryGrow: 1 };
+    expect(boxStyle(raw, row)).toMatchObject({ flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 });
+  });
+
+  it("lets fill children of a wrapping row wrap at their own width", () => {
+    const raw = { ...box(0, 0, 240, 50), stackChildPrimaryGrow: 1 };
+    const style = boxStyle(raw, { ...row, stackWrap: "WRAP" });
+    expect(style).toMatchObject({ flexGrow: 1, flexShrink: 1, flexBasis: 240 });
+    expect(style.minWidth).toBeUndefined();
   });
 });
