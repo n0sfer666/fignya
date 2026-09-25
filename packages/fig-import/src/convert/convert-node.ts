@@ -6,7 +6,7 @@ import { decorationStyle } from "./decoration";
 import { boxStyle, containerStyle } from "./layout";
 import { paintsOf } from "./paint";
 import { textOf, textStyle } from "./text";
-import { VECTOR_TYPES, vectorPaths, type BlobPaths } from "./vector";
+import { isVectorNode, vectorPaths, type BlobPaths } from "./vector";
 
 export type NodePlace = { parent: Rec; parentId?: NodeId; children: NodeId[] };
 
@@ -19,7 +19,7 @@ const containerOf = (raw: Rec): Style => {
 
 export const convertNode = (node: FigNode, place: NodePlace, ctx: ConvertContext): DesignNode => {
   const raw = node.raw;
-  const isVector = VECTOR_TYPES.has(node.type);
+  const isVector = isVectorNode(node.type, raw);
   const style = { ...boxStyle(raw, place.parent), ...decorationStyle(raw, node.type, isVector) };
   const base = {
     id: node.key,

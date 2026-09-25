@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blobPaths, pathFromBlob, vectorPaths } from "../src/convert/vector";
+import { blobPaths, isVectorNode, pathFromBlob, vectorPaths } from "../src/convert/vector";
 import { solid } from "./fixtures";
 
 const blobOf = (commands: [number, ...number[]][]): Uint8Array => {
@@ -49,6 +49,18 @@ describe("vectorPaths", () => {
 
   it("skips geometry without solid paint", () => {
     expect(vectorPaths({ fillGeometry: [{ commandsBlob: 0 }] }, blobPaths([blobOf([[0]])]))).toEqual([]);
+  });
+});
+
+describe("isVectorNode", () => {
+  it("draws arcs and rings as vectors but keeps plain ellipses and frames", () => {
+    const arc = (startingAngle: number, endingAngle: number, innerRadius: number) => ({ arcData: { startingAngle, endingAngle, innerRadius } });
+    expect(isVectorNode("STAR", {})).toBe(true);
+    expect(isVectorNode("ELLIPSE", arc(0, Math.PI, 0))).toBe(true);
+    expect(isVectorNode("ELLIPSE", arc(0, 2 * Math.PI, 0.8))).toBe(true);
+    expect(isVectorNode("ELLIPSE", arc(0, 2 * Math.PI, 0))).toBe(false);
+    expect(isVectorNode("ELLIPSE", {})).toBe(false);
+    expect(isVectorNode("FRAME", arc(0, 1, 0))).toBe(false);
   });
 });
 

@@ -7,6 +7,14 @@ describe("textStyle", () => {
     expect(textStyle({})).toEqual({ fontFamily: "Inter", fontSize: 12, fontWeight: 400, lineHeight: "normal", letterSpacing: { value: 0, unit: "px" }, textAlign: "left", whiteSpace: "pre-wrap", overflowWrap: "break-word" });
   });
 
+  it("maps text case and decoration", () => {
+    expect(textStyle({ textCase: "UPPER", textDecoration: "UNDERLINE" })).toMatchObject({ textTransform: "uppercase", textDecoration: "underline" });
+    expect(textStyle({ textCase: "TITLE", textDecoration: "STRIKETHROUGH" })).toMatchObject({ textTransform: "capitalize", textDecoration: "line-through" });
+    expect(textStyle({ textCase: "ORIGINAL", textDecoration: "NONE" })).not.toHaveProperty("textTransform");
+    expect(textStyle({ textCase: "SMALL_CAPS" })).toMatchObject({ fontVariantCaps: "small-caps" });
+    expect(textStyle({ textCase: "SMALL_CAPS_FORCED" })).toMatchObject({ fontVariantCaps: "all-small-caps" });
+  });
+
   it("maps font, spacing, alignment and color", () => {
     expect(
       textStyle({

@@ -9,6 +9,16 @@ const WEIGHTS: [string, number][] = [
 
 const ALIGN: Record<string, TextAlign> = { LEFT: "left", CENTER: "center", RIGHT: "right", JUSTIFIED: "justify" };
 
+const CASE: Readonly<Record<string, Style>> = {
+  UPPER: { textTransform: "uppercase" },
+  LOWER: { textTransform: "lowercase" },
+  TITLE: { textTransform: "capitalize" },
+  SMALL_CAPS: { fontVariantCaps: "small-caps" },
+  SMALL_CAPS_FORCED: { fontVariantCaps: "all-small-caps" },
+};
+
+const DECORATION: Readonly<Record<string, Style>> = { UNDERLINE: { textDecoration: "underline" }, STRIKETHROUGH: { textDecoration: "line-through" } };
+
 const weightOf = (style: string): number => {
   const s = style.toLowerCase().replaceAll(" ", "");
   return WEIGHTS.find(([name]) => s.includes(name))?.[1] ?? 400;
@@ -61,6 +71,8 @@ export const textStyle = (raw: Rec): Style => {
     letterSpacing: letterSpacing(raw),
     textAlign: ALIGN[str(raw, "textAlignHorizontal") ?? "LEFT"] ?? "left",
     ...(color ? { color } : {}),
+    ...CASE[str(raw, "textCase") ?? ""],
+    ...DECORATION[str(raw, "textDecoration") ?? ""],
     ...wrapStyle(raw, lh),
   };
 };

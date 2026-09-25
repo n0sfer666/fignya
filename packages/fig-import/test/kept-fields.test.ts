@@ -5,14 +5,14 @@ import { slimNode } from "../src/fig/kept-fields";
 import { importDocument } from "../src/import-document";
 import { box, figMessage, guid, solid, type FigSpec } from "./fixtures";
 
-const noise = { derivedSymbolData: [{ guidPath: { guids: [guid(31)] }, size: { x: 1, y: 1 }, fillGeometry: [{}] }], exportSettings: [{}], variableConsumptionMap: {} };
+const noise = { derivedSymbolData: [{ guidPath: { guids: [guid(31)] }, size: { x: 1, y: 1 }, fillGeometry: [{ commandsBlob: 9, styleID: 2 }] }], exportSettings: [{}], variableConsumptionMap: {} };
 
 const lines = [{ lineType: "PLAIN" }];
 
 const assignment = (def: number, value: Rec): Rec => ({ defID: guid(def), value, varValue: { value } });
 
 const symbolOverrides = [
-  { guidPath: { guids: [guid(131)] }, styleIdForFill: {}, fillPaints: [solid(0, 1, 0)], fontSize: 30, textData: { characters: "Over", lines } },
+  { guidPath: { guids: [guid(131)] }, styleIdForFill: { assetRef: { key: "k", version: "v" } }, fillPaints: [solid(0, 1, 0)], fontSize: 30, textData: { characters: "Over", lines } },
   { guidPath: { guids: [guid(33)] }, componentPropAssignments: [assignment(8, { textValue: { characters: "Prop", lines } })] },
 ];
 
@@ -51,6 +51,9 @@ const specs: FigSpec[] = [
     symbolData: { symbolID: guid(30), symbolOverrides }, componentPropAssignments: [assignment(7, { boolValue: false })],
   },
   { id: 13, parent: 10, position: "c", type: "VECTOR", name: "Icon", ...box(0, 0, 5, 5), ...noise, visible: false, fillPaints: [solid(0, 0, 0)], fillGeometry: [{ commandsBlob: 0, windingRule: "ODD" }], strokePaints: [solid(0, 0, 0)], strokeGeometry: [{ commandsBlob: 0 }] },
+  { id: 14, parent: 10, position: "d", type: "FRAME", name: "Styled", ...box(0, 0, 5, 5), styleIdForFill: { assetRef: { key: "k", version: "v" } }, styleIdForEffect: { guid: guid(5) } },
+  { id: 5, parent: 3, position: "z", type: "RECTANGLE", name: "Effect style", styleType: "EFFECT", effects, exportSettings: [{}] },
+  { id: 6, parent: 3, position: "y", type: "RECTANGLE", name: "Fill style", styleType: "FILL", key: "k", fillPaints: [solid(0, 0, 1)] },
   { id: 30, parent: 3, position: "a", type: "SYMBOL", name: "C", ...box(0, 0, 10, 10), ...noise },
   { id: 31, parent: 30, position: "a", type: "TEXT", name: "L", overrideKey: guid(131), textData: { characters: "Base" }, fontSize: 12, ...box(0, 0, 5, 5) },
   { id: 32, parent: 30, position: "b", type: "FRAME", name: "Opt", componentPropRefs: [{ defID: guid(7), componentPropNodeField: "VISIBLE" }], ...box(0, 0, 5, 5) },
@@ -67,6 +70,12 @@ describe("slimNode", () => {
     expect(importDocument(slimmed)).toEqual(importDocument(message));
   });
 
+  it("keeps style references so shared styles resolve after slimming", () => {
+    const styled = importDocument(slimmed).nodes.get("1:14");
+    expect(styled?.style.background).toHaveLength(1);
+    expect(styled?.style.boxShadow).toHaveLength(1);
+  });
+
   it("applies overrides, props and derived sizes after slimming", () => {
     const [instance] = [...importDocument(slimmed).nodes.values()].filter((n) => n.id === "1:12");
     expect(instance?.kind === "instance" ? instance.overrides.map((o) => o.path) : []).toEqual([["1:32"], ["1:31"], ["1:33", "1:41"]]);
@@ -74,13 +83,13 @@ describe("slimNode", () => {
 
   it("slims override, prop and derived data", () => {
     const [, , , screen, text, instance] = recs(slimmed, "nodeChanges");
-    expect(screen?.derivedSymbolData).toEqual([{ guidPath: { guids: [guid(31)] }, size: { x: 1, y: 1 } }]);
+    expect(screen?.derivedSymbolData).toEqual([{ guidPath: { guids: [guid(31)] }, size: { x: 1, y: 1 }, fillGeometry: [{ commandsBlob: 9 }] }]);
     expect(screen).not.toHaveProperty("variableConsumptionMap");
     expect(text?.textData).toEqual({ characters: "Hi" });
     expect(instance?.symbolData).toEqual({
       symbolID: guid(30),
       symbolOverrides: [
-        { guidPath: { guids: [guid(131)] }, fillPaints: [solid(0, 1, 0)], fontSize: 30, textData: { characters: "Over" } },
+        { guidPath: { guids: [guid(131)] }, styleIdForFill: { assetRef: { key: "k" } }, fillPaints: [solid(0, 1, 0)], fontSize: 30, textData: { characters: "Over" } },
         { guidPath: { guids: [guid(33)] }, componentPropAssignments: [{ defID: guid(8), value: { textValue: { characters: "Prop" } }, varValue: { value: {} } }] },
       ],
     });

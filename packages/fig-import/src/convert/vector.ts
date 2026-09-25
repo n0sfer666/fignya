@@ -1,8 +1,19 @@
 import type { Color, VectorPath } from "@fignya/model";
-import { num, recs, str, type Rec } from "../fig/guards";
+import { num, rec, recs, str, type Rec } from "../fig/guards";
 import { firstSolid } from "./paint";
 
 export const VECTOR_TYPES: ReadonlySet<string> = new Set(["VECTOR", "BOOLEAN_OPERATION", "STAR", "LINE", "REGULAR_POLYGON"]);
+
+const FULL_TURN = 2 * Math.PI;
+
+const isArc = (raw: Rec): boolean => {
+  const arc = rec(raw, "arcData");
+  if (!arc) return false;
+  const sweep = Math.abs((num(arc, "endingAngle") ?? FULL_TURN) - (num(arc, "startingAngle") ?? 0));
+  return (num(arc, "innerRadius") ?? 0) > 0 || sweep < FULL_TURN - 1e-3;
+};
+
+export const isVectorNode = (type: string, raw: Rec): boolean => VECTOR_TYPES.has(type) || (type === "ELLIPSE" && isArc(raw));
 
 export type BlobPaths = (index: number) => string | undefined;
 

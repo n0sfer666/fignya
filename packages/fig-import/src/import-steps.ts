@@ -7,6 +7,7 @@ import { convertSteps } from "./import-document";
 import { PROGRESS_EVERY, type ImportProgress } from "./import-progress";
 import { takeOnce } from "./take-once";
 import { blobsOf, buildIndex } from "./tree/node-index";
+import { preparedNodes } from "./tree/prepared-nodes";
 
 export type FigImport = { document: DesignDocument; images: ReadonlyMap<string, Uint8Array> };
 
@@ -27,7 +28,7 @@ function* decodeSteps(canvas: () => Uint8Array): Generator<ImportProgress, Decod
 
 function* finishSteps(decoding: Generator<ImportProgress, Decoded>, images: FigImport["images"]): Generator<ImportProgress, FigImport> {
   const { nodes, blobs } = yield* decoding;
-  const document = yield* convertSteps(buildIndex(nodes, blobs));
+  const document = yield* convertSteps(buildIndex(preparedNodes(nodes), blobs));
   return { document, images };
 }
 

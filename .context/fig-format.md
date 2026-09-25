@@ -7,13 +7,17 @@
 - Декодирование потоковое (`fig/read-message.ts`): верхний `Message` разбирается вручную по id полей,
   `nodeChanges` — по одному узлу скомпилированным `decodeNodeChange`, из узла сразу остаётся только
   allowlist `fig/kept-fields.ts` (у `symbolData` — `symbolID` и `symbolOverrides`, у `textData` —
-  `characters`, у `derivedSymbolData` — `guidPath`, `size`, `transform`). Прочие derived-поля
-  (`derivedTextData`, derived-геометрия) — основная масса сырья, в память не попадают.
+  `characters`, у `derivedSymbolData` — `guidPath`, `size`, `transform`, `fillGeometry`/`strokeGeometry`
+  (`commandsBlob`, `windingRule`) — геометрия векторов в масштабированных инстансах). Прочие
+  derived-поля (`derivedTextData`) — основная масса сырья, в память не попадают.
 - Узел: `guid {sessionID, localID}`, `parentIndex {guid, position}` — порядок детей = сортировка
   строк `position`. `transform` m00..m12 (m02/m12 — смещение от родителя), `size {x,y}`.
 - Auto layout: `stackMode` HORIZONTAL/VERTICAL, `stackSpacing`, `stackHorizontalPadding`,
   `stackVerticalPadding`, `stackPaddingRight/Bottom`, `stackPrimary/CounterAlignItems`,
-  `stackChildPrimaryGrow`, `stackChildAlignSelf`, `stackPositioning: ABSOLUTE`.
+  `stackChildPrimaryGrow`, `stackChildAlignSelf`, `stackPositioning: ABSOLUTE`. При `stackPrimaryAlignItems`
+  SPACE_BETWEEN/SPACE_EVENLY Figma игнорирует `stackSpacing` (gap 0). `stackWrap: WRAP` (только у
+  HORIZONTAL; у VERTICAL — устаревший, игнорируем) — межстрочный
+  отступ `stackCounterSpacing` (бывает null → `stackSpacing`).
 - Clip: `frameMaskDisabled !== true`.
 - INSTANCE: детей нет, дерево — у SYMBOL из `symbolData.symbolID`; оверрайды в
   `symbolData.symbolOverrides`, производные размеры и позиции в `derivedSymbolData[] {guidPath, size, transform}`.
@@ -27,7 +31,8 @@
 - Геометрия: `fillGeometry/strokeGeometry[].commandsBlob` → blob: байт-команда
   (0 Z, 1 M, 2 L, 3 Q, 4 C) + float32 LE координаты в локальной системе узла.
 - Текст: `textData.characters`, `fontName {family, style}`, `fontSize`, `lineHeight {value, units}`,
-  `letterSpacing {value, units}`. Перенос: `textAutoResize: WIDTH_AND_HEIGHT` — одна строка (`pre`),
+  `letterSpacing {value, units}`, `textCase` (UPPER/LOWER/TITLE → `text-transform`, SMALL_CAPS[_FORCED]
+  → `font-variant-caps`), `textDecoration`. Перенос: `textAutoResize: WIDTH_AND_HEIGHT` — одна строка (`pre`),
   `HEIGHT`/фикс — перенос; `textTruncation: ENDING` + `maxLines` (нет — `floor(size.y / lineHeight)`)
   → `…` (1 строка) или line-clamp. У auto-width `ENDING` бывает устаревшим (135 шт.) — игнорируем.
 - Fill-потомок (`stackChildPrimaryGrow`) = `flex: 1 1 0; min-width|height: 0`, иначе ширина по контенту
@@ -47,8 +52,30 @@
   унаследованным и при свопе берётся у нового корня; собственные поля (размер, `transform`, `visible`,
   размещение `stack*` в родителе, данные символа) остаются. На ROI Navigator 9.5k из 20k свопов меняют
   стиль контейнера. Своп на компонент, которого нет в файле (внешняя библиотека), игнорируется.
+- Общие стили: узлы с `styleType` (FILL, TEXT, EFFECT) и `key`; ссылка `styleIdFor{Fill,StrokeFill,
+  Effect,Text} {assetRef{key} | guid}` на узле и в оверрайде. Значения стиля побеждают инлайн (инлайн
+  бывает устаревшим). guid `4294967295:4294967295` — отвязанный стиль, игнорируем. Краски FILL-стиля
+  лежат только в `fillPaints` — и для `styleIdForStrokeFill` (21k узлов + 16k оверрайдов) берём их в
+  `strokePaints` (`fig/style-refs.ts`).
+- Переменные: узлы `VARIABLE` (`key`, `variableSetID {assetRef{key} | guid}`,
+  `variableDataValues.entries[{modeID, variableData.value {colorValue | alias}}]`) и `VARIABLE_SET`
+  (`variableSetModes[{id, name, sortPosition}]`, режим по умолчанию — минимальный `sortPosition`).
+  Явный режим — `variableModeBySetMap.entries[{variableSetID, variableModeID}]` на предке (~100 на ROI
+  Navigator, в основном Dark), наследуется вниз по `parentIndex`. Набор в ссылках — то `assetRef.key`,
+  то guid: ключ канонизируется в guid узла `VARIABLE_SET`. Ограничение: дети компонента в инстансе
+  берут режим по дереву компонента, а не по месту инстанса (нужен резолв в `instance-resolver`). Заливка ссылается через `paint.colorVar.value.alias`;
+  инлайн `color` бывает устаревшим. Альфа переменной лежит в `paint.opacity` при `color.a = 1` —
+  при резолве `color` = rgba переменной, `opacity: 1` (на ROI Navigator 132.9k из 133.3k связанных
+  красок — `opacity` = альфа переменной, остальные ~400 с устаревшим инлайн-цветом). Резолв —
+  `tree/variables.ts`, индекс — `variable-index.ts`, цвет с алиасами — `variable-colors.ts`.
+- Эллипс с `arcData {startingAngle, endingAngle, innerRadius}` — дуга или кольцо (диаграммы), рисуем
+  вектором по `fillGeometry` (на ROI Navigator 2.4k из 4.4k эллипсов).
 - Векторы: дети `BOOLEAN_OPERATION` — операнды, в модель не попадают (рисуется
   результат `fillGeometry`).
+- Тени: `DROP_SHADOW` у вектора, текста и узла без видимой заливки Figma рисует по содержимому →
+  `filter: drop-shadow` (без spread; при размытии слоя — откат на `box-shadow`), иначе `box-shadow`.
+  Несколько ключей Style с CSS `filter` сериализуются одной декларацией.
+  Отражение ребёнка auto layout — `transform` с диагональю ±1 → CSS `scale` (повороты не поддержаны).
 - Без zip-обёртки файл может быть «голым» `fig-kiwi` — `readArchive` принимает оба варианта.
 
 Реализация — `packages/fig-import/src/fig`, `src/tree`, `src/convert` (перенесено из спайка S1).

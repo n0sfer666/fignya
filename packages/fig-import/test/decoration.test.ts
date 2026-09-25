@@ -25,7 +25,7 @@ describe("decorationStyle", () => {
       { type: "BACKGROUND_BLUR", radius: 4 },
       { type: "DROP_SHADOW", radius: 99, visible: false },
     ];
-    expect(decorationStyle({ effects, frameMaskDisabled: true }, "FRAME", false)).toEqual({
+    expect(decorationStyle({ effects, frameMaskDisabled: true, fillPaints: [solid(1, 1, 1)] }, "FRAME", false)).toEqual({
       boxShadow: [
         { inset: false, x: 0, y: 4, blur: 8, spread: 1, color: { r: 0, g: 0, b: 0, a: 0.5 } },
         { inset: true, x: 1, y: 1, blur: 2, spread: 0, color: black },
@@ -33,6 +33,18 @@ describe("decorationStyle", () => {
       filterBlur: 5,
       backdropBlur: 2,
     });
+  });
+
+  it("casts drop shadows from content when the node has no visible fill", () => {
+    const effects = [
+      { type: "DROP_SHADOW", radius: 6, offset: { x: 0, y: 5 }, color: { r: 0, g: 0, b: 0, a: 1 } },
+      { type: "INNER_SHADOW", radius: 2, offset: { x: 1, y: 1 }, color: { r: 0, g: 0, b: 0, a: 1 } },
+    ];
+    const drop = { inset: false, x: 0, y: 5, blur: 6, spread: 0, color: black };
+    const inner = { inset: true, x: 1, y: 1, blur: 2, spread: 0, color: black };
+    expect(decorationStyle({ effects, fillPaints: [solid(1, 1, 1, { visible: false })] }, "RECTANGLE", false)).toEqual({ boxShadow: [inner], dropShadow: [drop] });
+    expect(decorationStyle({ effects: effects.slice(0, 1) }, "TEXT", false)).toEqual({ dropShadow: [drop] });
+    expect(decorationStyle({ effects, fillPaints: [solid(1, 1, 1)] }, "RECTANGLE", false)).toEqual({ boxShadow: [drop, inner] });
   });
 
   it("draws inside stroke as first inset shadow", () => {

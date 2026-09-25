@@ -1,22 +1,31 @@
 import { isRec, type Rec } from "./guards";
+import { STYLE_REFS } from "./style-refs";
 
 type Shape = { keep: ReadonlySet<string>; nested?: Readonly<Record<string, Shape>> };
 
 const STYLE_FIELDS = [
   "visible", "transform", "size", "opacity",
-  "stackMode", "stackWrap", "stackSpacing", "stackHorizontalPadding", "stackVerticalPadding",
+  "stackMode", "stackWrap", "stackSpacing", "stackCounterSpacing", "stackHorizontalPadding", "stackVerticalPadding",
   "stackPaddingRight", "stackPaddingBottom", "stackPrimaryAlignItems", "stackCounterAlignItems",
   "stackPositioning", "stackChildPrimaryGrow", "stackChildAlignSelf",
   "cornerRadius", "rectangleTopLeftCornerRadius", "rectangleTopRightCornerRadius",
   "rectangleBottomRightCornerRadius", "rectangleBottomLeftCornerRadius", "frameMaskDisabled",
   "fillPaints", "strokePaints", "strokeWeight", "strokeAlign", "effects",
   "borderStrokeWeightsIndependent", "borderTopWeight", "borderRightWeight", "borderBottomWeight", "borderLeftWeight",
-  "fillGeometry", "strokeGeometry",
+  "fillGeometry", "strokeGeometry", "arcData",
   "textData", "fontName", "fontSize", "lineHeight", "letterSpacing", "textAlignHorizontal",
-  "textAutoResize", "textTruncation", "maxLines",
+  "textAutoResize", "textTruncation", "maxLines", "textCase", "textDecoration",
 ];
 
 const TEXT: Shape = { keep: new Set(["characters"]) };
+
+const GEOMETRY: Shape = { keep: new Set(["windingRule", "commandsBlob"]) };
+
+const STYLE_REF: Shape = { keep: new Set(["assetRef", "guid"]), nested: { assetRef: { keep: new Set(["key"]) } } };
+
+const REF_KEYS = Object.keys(STYLE_REFS);
+
+const REF_SHAPES: Readonly<Record<string, Shape>> = Object.fromEntries(REF_KEYS.map((key) => [key, STYLE_REF]));
 
 const ASSIGNMENT: Shape = {
   keep: new Set(["defID", "value", "varValue"]),
@@ -27,16 +36,18 @@ const ASSIGNMENT: Shape = {
 };
 
 const OVERRIDE: Shape = {
-  keep: new Set([...STYLE_FIELDS, "guidPath", "overriddenSymbolID", "componentPropAssignments"]),
-  nested: { textData: TEXT, componentPropAssignments: ASSIGNMENT },
+  keep: new Set([...STYLE_FIELDS, ...REF_KEYS, "guidPath", "overriddenSymbolID", "componentPropAssignments"]),
+  nested: { textData: TEXT, componentPropAssignments: ASSIGNMENT, ...REF_SHAPES },
 };
 
 const NODE: Shape = {
-  keep: new Set([...STYLE_FIELDS, "guid", "parentIndex", "type", "name", "symbolData", "overrideKey", "derivedSymbolData", "componentPropAssignments", "componentPropRefs"]),
+  keep: new Set([...STYLE_FIELDS, ...REF_KEYS, "guid", "parentIndex", "type", "name", "symbolData", "overrideKey", "derivedSymbolData", "componentPropAssignments", "componentPropRefs", "key", "styleType",
+    "variableDataValues", "variableSetID", "variableSetModes", "variableModeBySetMap"]),
   nested: {
+    ...REF_SHAPES,
     textData: TEXT,
     symbolData: { keep: new Set(["symbolID", "symbolOverrides"]), nested: { symbolOverrides: OVERRIDE } },
-    derivedSymbolData: { keep: new Set(["guidPath", "size", "transform"]) },
+    derivedSymbolData: { keep: new Set(["guidPath", "size", "transform", "fillGeometry", "strokeGeometry"]), nested: { fillGeometry: GEOMETRY, strokeGeometry: GEOMETRY } },
     componentPropAssignments: ASSIGNMENT,
     componentPropRefs: { keep: new Set(["defID", "componentPropNodeField"]) },
   },

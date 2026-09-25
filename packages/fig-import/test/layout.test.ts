@@ -25,12 +25,31 @@ describe("containerStyle", () => {
     ).toEqual({
       display: "flex",
       flexDirection: "column",
-      flexWrap: "wrap",
-      gap: 8,
+      gap: 0,
       padding: [4, 12, 4, 16],
       justifyContent: "space-between",
       alignItems: "center",
     });
+  });
+
+  it("wraps only horizontal auto layout", () => {
+    expect(containerStyle({ ...row, stackWrap: "WRAP" })).toMatchObject({ flexWrap: "wrap" });
+    expect(containerStyle({ ...column, stackWrap: "WRAP", stackCounterSpacing: 8 })).not.toHaveProperty("flexWrap");
+    expect(containerStyle({ ...column, stackWrap: "WRAP", stackCounterSpacing: 8 })).not.toHaveProperty("rowGap");
+  });
+
+  it("spaces wrapped lines by counter spacing and falls back to the main gap", () => {
+    const wrap = { ...row, stackSpacing: 16, stackWrap: "WRAP" };
+    expect(containerStyle({ ...wrap, stackCounterSpacing: 8 })).toMatchObject({ gap: 16, rowGap: 8 });
+    expect(containerStyle({ ...wrap, stackCounterSpacing: null })).not.toHaveProperty("rowGap");
+  });
+
+  it("ignores item spacing when space between distributes items like Figma auto spacing", () => {
+    expect(containerStyle({ ...row, stackSpacing: 53, stackPrimaryAlignItems: "SPACE_BETWEEN" }).gap).toBe(0);
+  });
+
+  it("maps space evenly to space between like Figma", () => {
+    expect(containerStyle({ ...row, stackPrimaryAlignItems: "SPACE_EVENLY" }).justifyContent).toBe("space-between");
   });
 
   it("clamps negative spacing and defaults alignment", () => {
@@ -57,6 +76,12 @@ describe("boxStyle", () => {
   it("keeps rotation as matrix", () => {
     const raw = { transform: { m00: 0, m01: -1, m02: 5, m10: 1, m11: 0, m12: 6 }, size: { x: 10, y: 20 } };
     expect(boxStyle(raw, undefined).transform).toEqual([0, 1, -1, 0]);
+  });
+
+  it("keeps a flip of a flow child as scale and ignores its rotation", () => {
+    const size = { x: 10, y: 20 };
+    expect(boxStyle({ transform: { m00: -1, m01: 0, m02: 10, m10: 0, m11: 1, m12: 0 }, size }, row).scale).toEqual([-1, 1]);
+    expect(boxStyle({ transform: { m00: 0, m01: -1, m02: 5, m10: 1, m11: 0, m12: 6 }, size }, row)).not.toHaveProperty("scale");
   });
 
   it("sizes fixed flow child along both axes", () => {

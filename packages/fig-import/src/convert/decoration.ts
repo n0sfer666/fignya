@@ -1,7 +1,7 @@
 import type { Color, Shadow, Sides, Style } from "@fignya/model";
 import { bool, num, rec, recs, str, type Rec } from "../fig/guards";
 import { colorOf } from "./color";
-import { firstSolid } from "./paint";
+import { firstSolid, visiblePaints } from "./paint";
 
 const CLIPPING = new Set(["FRAME", "INSTANCE", "SYMBOL"]);
 
@@ -26,8 +26,8 @@ const shadowOf = (effect: Rec, inset: boolean): Shadow => {
   };
 };
 
-const effectsStyle = (raw: Rec, strokeShadows: Shadow[]): Style => {
-  const shadows: Shadow[] = [...strokeShadows];
+const effectsStyle = (raw: Rec, strokeShadows: Shadow[], byContent: boolean): Style => {
+  const shadows: Shadow[] = [];
   const style: Style = {};
   for (const e of recs(raw, "effects")) {
     if (bool(e, "visible") === false) continue;
@@ -37,7 +37,10 @@ const effectsStyle = (raw: Rec, strokeShadows: Shadow[]): Style => {
     if (type === "FOREGROUND_BLUR" || type === "LAYER_BLUR") style.filterBlur = blur;
     if (type === "BACKGROUND_BLUR") style.backdropBlur = blur;
   }
-  return shadows.length > 0 ? { boxShadow: shadows, ...style } : style;
+  const drops = shadows.filter((s) => !s.inset);
+  const filtered = byContent && drops.length > 0 && style.filterBlur === undefined;
+  const boxShadow = [...strokeShadows, ...(filtered ? shadows.filter((s) => s.inset) : shadows)];
+  return { ...(boxShadow.length > 0 ? { boxShadow } : {}), ...(filtered ? { dropShadow: drops } : {}), ...style };
 };
 
 const SIDES: [string, number, number][] = [
@@ -70,10 +73,11 @@ export const decorationStyle = (raw: Rec, type: string, isVector: boolean): Styl
   const stroke = isVector ? { shadows: [], style: {} } : strokeStyle(raw);
   const opacity = num(raw, "opacity") ?? 1;
   const clips = CLIPPING.has(type) && bool(raw, "frameMaskDisabled") !== true;
+  const byContent = isVector || type === "TEXT" || visiblePaints(raw, "fillPaints").length === 0;
   return {
     ...radius(raw, type),
     ...stroke.style,
-    ...effectsStyle(raw, stroke.shadows),
+    ...effectsStyle(raw, stroke.shadows, byContent),
     ...(opacity < 1 ? { opacity: Number(opacity.toFixed(3)) } : {}),
     ...(clips ? { overflow: "hidden" } : {}),
   };

@@ -7,6 +7,7 @@ import { drain } from "./drain";
 import { PROGRESS_EVERY, type ImportProgress } from "./import-progress";
 import { blobsOf, buildIndex, type NodeIndex } from "./tree/node-index";
 import { pagesOf } from "./tree/pages";
+import { preparedNodes } from "./tree/prepared-nodes";
 import { childIdsOf, placementsOf } from "./tree/placements";
 
 export const SERVICE_PAGES: ReadonlySet<string> = new Set(["Internal Only Canvas"]);
@@ -25,4 +26,4 @@ export function* convertSteps(index: NodeIndex): Generator<ImportProgress, Desig
 }
 
 export const importDocument = (message: Rec): DesignDocument =>
-  drain(convertSteps(buildIndex(recs(message, "nodeChanges"), blobsOf(message))));
+  drain(convertSteps(buildIndex(preparedNodes(recs(message, "nodeChanges")), blobsOf(message))));
