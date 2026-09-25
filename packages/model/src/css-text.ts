@@ -1,5 +1,5 @@
 import { backgroundDeclarations } from "./css-background";
-import { px, quoted, rgba, round, shadow, sides, type Declaration, type ImageUrl } from "./css-values";
+import { dropShadow, px, quoted, rgba, round, shadow, sides, type Declaration, type ImageUrl } from "./css-values";
 import type { Style, StyleValues } from "./style";
 
 type Serializers = { [K in keyof StyleValues]: (value: StyleValues[K], url: ImageUrl) => Declaration[] };
@@ -18,10 +18,12 @@ const SERIALIZERS: Serializers = {
     ["transform", `matrix(${m.map((n) => round(n, 4)).join(",")},0,0)`],
     ["transform-origin", "0 0"],
   ],
+  scale: ([x, y]) => one("scale", `${x} ${y}`),
   display: (v) => one("display", v),
   flexDirection: (v) => one("flex-direction", v),
   flexWrap: (v) => one("flex-wrap", v),
   gap: (v) => one("gap", px(v)),
+  rowGap: (v) => one("row-gap", px(v)),
   padding: (v) => one("padding", sides(v)),
   justifyContent: (v) => one("justify-content", v),
   alignItems: (v) => one("align-items", v),
@@ -32,6 +34,7 @@ const SERIALIZERS: Serializers = {
   borderRadius: (v) => one("border-radius", v === "50%" ? v : sides(v)),
   outline: (v) => one("outline", `${px(v.width)} solid ${rgba(v.color)}`),
   boxShadow: (v) => one("box-shadow", v.map(shadow).join(",")),
+  dropShadow: (v) => one("filter", v.map(dropShadow).join(" ")),
   filterBlur: (v) => one("filter", `blur(${px(v)})`),
   backdropBlur: (v) => one("backdrop-filter", `blur(${px(v)})`),
   opacity: (v) => one("opacity", String(round(v, 3))),
@@ -45,6 +48,9 @@ const SERIALIZERS: Serializers = {
   lineHeight: (v) => one("line-height", v === "normal" ? v : px(v)),
   letterSpacing: (v) => one("letter-spacing", `${round(v.value, 4)}${v.unit}`),
   textAlign: (v) => one("text-align", v),
+  textTransform: (v) => one("text-transform", v),
+  textDecoration: (v) => one("text-decoration", v),
+  fontVariantCaps: (v) => one("font-variant-caps", v),
   whiteSpace: (v) => one("white-space", v),
   overflowWrap: (v) => one("overflow-wrap", v),
   textOverflow: (v) => one("text-overflow", v),
@@ -63,7 +69,14 @@ const declarationsOf = <K extends keyof StyleValues>(style: Style, key: K, url: 
   return value === undefined ? [] : SERIALIZERS[key](value, url);
 };
 
-export const cssDeclarations = (style: Style, url: ImageUrl): Declaration[] => KEYS.flatMap((key) => declarationsOf(style, key, url));
+const withJoinedFilters = (declarations: Declaration[]): Declaration[] => {
+  const filters = declarations.filter(([name]) => name === "filter");
+  if (filters.length < 2) return declarations;
+  return [...declarations.filter(([name]) => name !== "filter"), ["filter", filters.map(([, value]) => value).join(" ")]];
+};
+
+export const cssDeclarations = (style: Style, url: ImageUrl): Declaration[] =>
+  withJoinedFilters(KEYS.flatMap((key) => declarationsOf(style, key, url)));
 
 export const cssText = (style: Style, url: ImageUrl): string =>
   cssDeclarations(style, url)

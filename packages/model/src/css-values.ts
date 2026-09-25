@@ -16,5 +16,7 @@ export const rgba = (c: Color): string => `rgba(${c.r},${c.g},${c.b},${round(c.a
 export const shadow = (s: Shadow): string =>
   `${s.inset ? "inset " : ""}${px(s.x)} ${px(s.y)} ${px(s.blur)} ${px(s.spread)} ${rgba(s.color)}`;
 
+export const dropShadow = (s: Shadow): string => `drop-shadow(${px(s.x)} ${px(s.y)} ${px(s.blur / 2)} ${rgba(s.color)})`;
+
 export const quoted = (value: string): string =>
   `'${value.replaceAll("\\", "\\\\").replaceAll("'", "\\'").replaceAll(/[\n\r\f]/g, " ")}'`;

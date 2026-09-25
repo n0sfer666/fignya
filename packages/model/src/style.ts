@@ -33,10 +33,12 @@ export type StyleValues = {
   minWidth: Px;
   minHeight: Px;
   transform: Matrix2;
+  scale: [number, number];
   display: "flex" | "-webkit-box";
   flexDirection: "row" | "column";
   flexWrap: "wrap";
   gap: Px;
+  rowGap: Px;
   padding: Sides;
   justifyContent: FlexAlign | "space-between";
   alignItems: FlexAlign | "baseline";
@@ -47,6 +49,7 @@ export type StyleValues = {
   borderRadius: Sides | "50%";
   outline: { width: Px; color: Color };
   boxShadow: Shadow[];
+  dropShadow: Shadow[];
   filterBlur: Px;
   backdropBlur: Px;
   opacity: number;
@@ -60,6 +63,9 @@ export type StyleValues = {
   lineHeight: Px | "normal";
   letterSpacing: LetterSpacing;
   textAlign: TextAlign;
+  textTransform: "uppercase" | "lowercase" | "capitalize";
+  textDecoration: "underline" | "line-through";
+  fontVariantCaps: "small-caps" | "all-small-caps";
   whiteSpace: "pre-wrap" | "pre";
   overflowWrap: "break-word";
   textOverflow: "ellipsis";

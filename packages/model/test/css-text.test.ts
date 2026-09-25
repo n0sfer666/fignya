@@ -17,10 +17,10 @@ describe("cssText", () => {
 
   it("serializes flex container", () => {
     const css = cssText(
-      { display: "flex", flexDirection: "column", gap: 8, padding: [1, 2, 3, 4], justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" },
+      { display: "flex", flexDirection: "column", gap: 8, padding: [1, 2, 3, 4], justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", rowGap: 4 },
       url,
     );
-    expect(css).toBe("display:flex;flex-direction:column;flex-wrap:wrap;gap:8px;padding:1px 2px 3px 4px;justify-content:space-between;align-items:center");
+    expect(css).toBe("display:flex;flex-direction:column;flex-wrap:wrap;gap:8px;row-gap:4px;padding:1px 2px 3px 4px;justify-content:space-between;align-items:center");
   });
 
   it("serializes flex child", () => {
@@ -130,6 +130,28 @@ describe("cssText", () => {
   it("serializes truncation and line clamp", () => {
     expect(cssText({ whiteSpace: "pre", overflow: "hidden", textOverflow: "ellipsis" }, url)).toBe("overflow:hidden;white-space:pre;text-overflow:ellipsis");
     expect(cssText({ display: "-webkit-box", lineClamp: 2 }, url)).toBe("display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2");
+  });
+
+  it("serializes flips as scale around the center", () => {
+    expect(cssText({ scale: [-1, 1] }, url)).toBe("scale:-1 1");
+  });
+
+  it("serializes content drop shadows as a filter", () => {
+    expect(cssText({ dropShadow: [{ inset: false, x: 0, y: 5, blur: 6, spread: 1, color: red }] }, url)).toBe("filter:drop-shadow(0px 5px 3px rgba(255,0,0,1))");
+  });
+
+  it("joins content drop shadows and layer blur into one filter", () => {
+    expect(cssText({ dropShadow: [{ inset: false, x: 0, y: 5, blur: 6, spread: 0, color: red }], filterBlur: 2 }, url)).toBe(
+      "filter:drop-shadow(0px 5px 3px rgba(255,0,0,1)) blur(2px)",
+    );
+  });
+
+  it("serializes small caps", () => {
+    expect(cssText({ fontVariantCaps: "all-small-caps" }, url)).toBe("font-variant-caps:all-small-caps");
+  });
+
+  it("serializes text case and decoration", () => {
+    expect(cssText({ textTransform: "uppercase", textDecoration: "underline" }, url)).toBe("text-transform:uppercase;text-decoration:underline");
   });
 
   it("serializes normal line height", () => {
