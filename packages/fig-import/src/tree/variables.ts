@@ -1,9 +1,19 @@
 import { rec, recs, type Rec } from "../fig/guards";
+import { guidKey } from "./node-index";
 import { colorResolver, type Resolve } from "./variable-colors";
 import { setKey, variablesOf } from "./variable-index";
-import { modeContext, type Modes } from "./variable-modes";
+import { modeContext, NO_MODES, ownModes, type Lookup, type ModeEntry, type Modes, type SetOf } from "./variable-modes";
 
-const PAINT_FIELDS = ["fillPaints", "strokePaints"];
+export type VariableSource = { resolve: Resolve; setOf: SetOf };
+
+export type VariablePaints = {
+  modesOf: (node: Rec) => Modes;
+  ownModes: (node: Rec) => ModeEntry[];
+  bound: (fields: Rec) => boolean;
+  repaint: (fields: Rec, modes: Modes) => Rec;
+};
+
+export const PAINT_FIELDS: readonly string[] = ["fillPaints", "strokePaints"];
 
 const resolvedPaint = (resolve: Resolve, modes: Modes, paint: Rec): Rec => {
   const alias = rec(rec(rec(paint, "colorVar") ?? {}, "value") ?? {}, "alias");
@@ -22,21 +32,37 @@ const withPaints = (resolve: Resolve, modes: Modes, fields: Rec): Rec => {
 
 const hasColorVars = (fields: Rec): boolean => PAINT_FIELDS.some((key) => recs(fields, key).some((p) => rec(p, "colorVar") !== undefined));
 
-const withNodeVariables = (resolve: Resolve, modesOf: (node: Rec) => Modes, raw: Rec): Rec => {
+export const NO_PAINTS: VariablePaints = { modesOf: () => NO_MODES, ownModes: () => [], bound: () => false, repaint: (fields) => fields };
+
+export const variableSource = (nodes: Rec[]): VariableSource | undefined => {
+  const vars = variablesOf(nodes);
+  return vars.values.size === 0 ? undefined : { resolve: colorResolver(vars), setOf: (ref) => setKey(vars, ref) };
+};
+
+export const variablePaints = (source: VariableSource | undefined, lookup: Lookup): VariablePaints =>
+  source
+    ? {
+        modesOf: modeContext(lookup, source.setOf),
+        ownModes: (node) => ownModes(node, source.setOf),
+        bound: hasColorVars,
+        repaint: (fields, modes) => withPaints(source.resolve, modes, fields),
+      }
+    : NO_PAINTS;
+
+const withNodeVariables = (paints: VariablePaints, raw: Rec): Rec => {
   const symbolData = rec(raw, "symbolData");
   const overrides = recs(symbolData, "symbolOverrides");
-  if (!hasColorVars(raw) && !overrides.some(hasColorVars)) return raw;
-  const modes = modesOf(raw);
-  const node = withPaints(resolve, modes, raw);
-  const next = overrides.map((o) => withPaints(resolve, modes, o));
+  if (!paints.bound(raw) && !overrides.some(paints.bound)) return raw;
+  const modes = paints.modesOf(raw);
+  const node = paints.repaint(raw, modes);
+  const next = overrides.map((o) => paints.repaint(o, modes));
   if (!symbolData || next.every((o, i) => o === overrides[i])) return node;
   return { ...node, symbolData: { ...symbolData, symbolOverrides: next } };
 };
 
-export const withVariables = (nodes: Rec[]): Rec[] => {
-  const vars = variablesOf(nodes);
-  if (vars.values.size === 0) return nodes;
-  const resolve = colorResolver(vars);
-  const modesOf = modeContext(nodes, (ref) => setKey(vars, ref));
-  return nodes.map((node) => withNodeVariables(resolve, modesOf, node));
+export const withVariables = (nodes: Rec[], source: VariableSource | undefined = variableSource(nodes)): Rec[] => {
+  if (!source) return nodes;
+  const byKey = new Map(nodes.map((node) => [guidKey(rec(node, "guid")), node]));
+  const paints = variablePaints(source, (key) => byKey.get(key));
+  return nodes.map((node) => withNodeVariables(paints, node));
 };

@@ -3,24 +3,29 @@ import { guidKey, parentKey } from "./node-index";
 
 export type Modes = ReadonlyMap<string, string>;
 
-type SetOf = (ref: Rec | undefined) => string | undefined;
+export type ModeEntry = [string, string];
 
-const NO_MODES: Modes = new Map();
+export type SetOf = (ref: Rec | undefined) => string | undefined;
 
-const ownModes = (node: Rec, setOf: SetOf): [string, string][] =>
-  recs(rec(node, "variableModeBySetMap"), "entries").flatMap((e): [string, string][] => {
+export type Lookup = (key: string) => Rec | undefined;
+
+export const NO_MODES: Modes = new Map();
+
+export const ownModes = (node: Rec, setOf: SetOf): ModeEntry[] =>
+  recs(rec(node, "variableModeBySetMap"), "entries").flatMap((e): ModeEntry[] => {
     const set = setOf(rec(e, "variableSetID"));
     const mode = guidKey(rec(e, "variableModeID"));
     return set === undefined || mode === "" ? [] : [[set, mode]];
   });
 
-export const modeContext = (nodes: Rec[], setOf: SetOf): ((node: Rec) => Modes) => {
-  const byKey = new Map(nodes.map((node) => [guidKey(rec(node, "guid")), node]));
+export const sameModes = (a: Modes, b: Modes): boolean => a.size === b.size && [...a].every(([set, mode]) => b.get(set) === mode);
+
+export const modeContext = (lookup: Lookup, setOf: SetOf): ((node: Rec) => Modes) => {
   const memo = new Map<string, Modes>();
   const modesOf = (key: string): Modes => {
     const known = memo.get(key);
     if (known) return known;
-    const node = byKey.get(key);
+    const node = lookup(key);
     if (!node) return NO_MODES;
     const inherited = modesOf(parentKey(node));
     const own = ownModes(node, setOf);
