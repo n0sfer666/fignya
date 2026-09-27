@@ -15,12 +15,12 @@ const ref = (def: number, field: string): Rec => ({ componentPropRefs: [{ defID:
 const overrides: Rec[] = [
   { ...path(131), textData: { characters: "Over" }, fontSize: 20 },
   { ...path(32), visible: true },
-  { ...path(35), fillPaints: [solid(0, 0, 1)] },
+  { ...path(35), size: { x: 9, y: 9 }, fillPaints: [solid(0, 0, 1)] },
   { ...path(36), fontSize: 12 },
-  { ...path(33), overriddenSymbolID: guid(50) },
+  { ...path(33), overriddenSymbolID: guid(50), size: { x: 9, y: 9 } },
   { ...path(33, 51), textData: { characters: "Swapped" } },
   { ...path(34, 42, 61), textData: { characters: "Deep" } },
-  { ...path(37), componentPropAssignments: [assignment(8, { textValue: { characters: "Nested prop" } })] },
+  { ...path(37), size: { x: 9, y: 9 }, componentPropAssignments: [assignment(8, { textValue: { characters: "Nested prop" } })] },
   { ...path(38), visible: true, size: { x: 70, y: 10 } },
   { ...path(999), visible: false },
   { ...path(130), size: { x: 1, y: 1 }, fillPaints: [solid(0, 1, 0)] },
@@ -35,7 +35,7 @@ const specs: FigSpec[] = [
     id: 20, parent: 10, position: "a", type: "INSTANCE", name: "I", ...box(0, 0, 100, 100),
     symbolData: { symbolID: guid(30), symbolOverrides: overrides },
     componentPropAssignments: [assignment(7, { boolValue: false }), assignment(9, { guidValue: guid(60) })],
-    derivedSymbolData: [{ ...path(38), size: { x: 80, y: 10 }, transform: { m00: 1, m01: 0, m02: 4, m10: 0, m11: 1, m12: 6 } }, { ...path(36), size: { x: 30, y: 30 } }],
+    derivedSymbolData: [{ ...path(38), size: { x: 80, y: 10 }, transform: { m00: 1, m01: 0, m02: 4, m10: 0, m11: 1, m12: 6 } }, { ...path(36), size: { x: 30, y: 30 } }, { ...path(33) }, { ...path(35) }],
   },
   { id: 21, parent: 10, position: "b", type: "INSTANCE", name: "J", symbolData: { symbolID: guid(30), symbolOverrides: [{ ...path(33), componentPropAssignments: [assignment(8, { textValue: { characters: "Last level" } })] }, { ...path(131), textAutoResize: "WIDTH_AND_HEIGHT" }] }, ...box(0, 0, 100, 100) },
   { id: 30, parent: 3, position: "a", type: "SYMBOL", name: "C", overrideKey: guid(130), ...box(0, 0, 100, 100) },
@@ -87,6 +87,12 @@ describe("instance overrides", () => {
 
   it("applies derived size and position", () => {
     expect(at(list, "1:38")?.style).toEqual({ width: 80, height: 10, left: 4, top: 6 });
+  });
+
+  it("keeps the component size when derived layout omits an overridden size", () => {
+    expect(at(list, "1:33")?.style).toBeUndefined();
+    expect(at(list, "1:35")?.style).toBeUndefined();
+    expect(at(list, "1:37")?.style).toMatchObject({ width: 9, height: 9 });
   });
 
   it("recolors vector paths", () => {

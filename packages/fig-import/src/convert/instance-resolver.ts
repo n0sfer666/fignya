@@ -57,6 +57,7 @@ export const resolveInstance = (ctx: ResolveContext, instance: FigNode): Resolve
   const add = (ids: NodeId[], fields: Rec, layer: Layer): void => {
     const key = pathKey(ids);
     const target = targets.get(key) ?? { ids, layers: [{}, {}, {}] };
+    if (layer === DERIVED && !("size" in fields)) delete target.layers[OVERRIDE].size;
     Object.assign(target.layers[layer], fields);
     targets.set(key, target);
   };

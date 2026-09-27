@@ -3,6 +3,7 @@ import { str, type Rec } from "../fig/guards";
 import { componentOf } from "../tree/component-keys";
 import type { FigNode } from "../tree/node-index";
 import { decorationStyle } from "./decoration";
+import { constraintsOf } from "./constraints";
 import { boxStyle, containerStyle } from "./layout";
 import { paintsOf } from "./paint";
 import { textOf, textStyle } from "./text";
@@ -27,6 +28,7 @@ export const convertNode = (node: FigNode, place: NodePlace, ctx: ConvertContext
     ...(place.parentId === undefined ? {} : { parentId: place.parentId }),
     children: place.children,
     ...(raw.visible === false ? { hidden: true } : {}),
+    ...constraintsOf(raw),
   };
   if (node.type === "TEXT") return { ...base, kind: "text", style: { ...style, ...textStyle(raw) }, text: textOf(raw) };
   if (isVector) return { ...base, kind: "vector", style, paths: vectorPaths(raw, ctx.pathOf) };

@@ -5,6 +5,10 @@ export type NodeId = string;
 
 export type VectorPath = { d: string; fill: Color; rule: "nonzero" | "evenodd" };
 
+export type Constraint = "min" | "center" | "max" | "stretch" | "scale";
+
+export type Constraints = readonly [Constraint, Constraint];
+
 export type Override = { path: NodeId[]; style?: Style; text?: string; hidden?: boolean; paths?: VectorPath[]; componentId?: NodeId };
 
 type NodeBase = {
@@ -14,6 +18,7 @@ type NodeBase = {
   children: NodeId[];
   style: Style;
   hidden?: boolean;
+  constraints?: Constraints;
 };
 
 export type FrameNode = NodeBase & { kind: "frame" };

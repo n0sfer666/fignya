@@ -77,5 +77,5 @@ pointer compression, в Electron меньше), `heapAfterGcMb` ~440. Рост �
 переменные ~1 с, derived-геометрия векторов инстансов.
 
 Счётчики модели — `bun run --cwd packages/fig-import inspect` (тот же `FIG_FILE`): для ROI Navigator
-`overrides.total` 333170 (`style` 179554, `hidden` 48342, `text` 40377, `componentId` 20810, `paths` 134267;
+`overrides.total` 333170 (`style` 176924, `hidden` 48342, `text` 40377, `componentId` 20810, `paths` 134267;
 пути — в основном масштабированные иконки инстансов и перекраски, шум округления ≤ 0.02 не считается).

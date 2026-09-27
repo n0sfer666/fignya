@@ -41,7 +41,7 @@ const OVERRIDE: Shape = {
 };
 
 const NODE: Shape = {
-  keep: new Set([...STYLE_FIELDS, ...REF_KEYS, "guid", "parentIndex", "type", "name", "symbolData", "overrideKey", "derivedSymbolData", "componentPropAssignments", "componentPropRefs", "key", "styleType",
+  keep: new Set([...STYLE_FIELDS, ...REF_KEYS, "guid", "parentIndex", "type", "name", "horizontalConstraint", "verticalConstraint", "symbolData", "overrideKey", "derivedSymbolData", "componentPropAssignments", "componentPropRefs", "key", "styleType",
     "variableDataValues", "variableSetID", "variableSetModes", "variableModeBySetMap"]),
   nested: {
     ...REF_SHAPES,
