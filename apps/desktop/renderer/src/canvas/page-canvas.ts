@@ -1,6 +1,7 @@
 import type { Page, Screen } from "@fignya/model";
 import { thumbUrl } from "../../../shared/urls";
 import { bindGestures } from "./gestures";
+import { createSharpener } from "./sharpen";
 import { boundsOf, fitView, panBy, zoomAround, type View } from "./viewport";
 
 const FIT_PADDING = 48;
@@ -35,6 +36,7 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen): PageC
   const world = document.createElement("div");
   world.className = "world";
   el.append(world);
+  const sharpener = createSharpener(el, world);
   let view: View = { x: 0, y: 0, zoom: 1 };
   let screens = new Map<string, Screen>();
   let live: { id: string; host: HTMLElement } | undefined;
@@ -43,6 +45,7 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen): PageC
   const apply = (next: View): void => {
     view = next;
     world.style.transform = `translate(${view.x}px,${view.y}px) scale(${view.zoom})`;
+    sharpener.schedule(view.zoom);
   };
   const frameEl = (id: string): HTMLElement | undefined =>
     [...world.children].find((c): c is HTMLElement => c instanceof HTMLElement && c.dataset.screenId === id);
@@ -55,6 +58,7 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen): PageC
   const close = (): void => {
     pending = undefined;
     unmount();
+    sharpener.refresh();
   };
   const open = async (id: string): Promise<void> => {
     const screen = screens.get(id);
@@ -103,6 +107,7 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen): PageC
     close,
     dispose: () => {
       unbind();
+      sharpener.dispose();
       window.removeEventListener("keydown", keydown);
       world.remove();
     },

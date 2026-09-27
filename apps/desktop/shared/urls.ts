@@ -1,10 +1,20 @@
+import { BASE_TIER, isTier } from "./thumb-tiers";
+
 export const SCHEME = "fignya";
 
-export type AssetRequest = { kind: "image" | "thumb"; id: string };
+export type AssetRequest = { kind: "image"; id: string } | { kind: "thumb"; id: string; tier: number };
 
 export const imageUrl = (hash: string): string => `${SCHEME}://image/${encodeURIComponent(hash)}`;
 
-export const thumbUrl = (screenId: string): string => `${SCHEME}://thumb/${encodeURIComponent(screenId)}`;
+export const thumbUrl = (screenId: string, tier: number = BASE_TIER): string => {
+  const url = `${SCHEME}://thumb/${encodeURIComponent(screenId)}`;
+  return tier === BASE_TIER ? url : `${url}?tier=${tier}`;
+};
+
+const tierOf = (url: URL): number => {
+  const tier = Number(url.searchParams.get("tier") ?? BASE_TIER);
+  return isTier(tier) ? tier : BASE_TIER;
+};
 
 const decode = (value: string): string | undefined => {
   try {
@@ -19,6 +29,7 @@ export const parseAssetUrl = (raw: string): AssetRequest | undefined => {
   if (!url || url.protocol !== `${SCHEME}:`) return undefined;
   const kind = url.hostname;
   const id = decode(url.pathname.slice(1));
-  if (!id || (kind !== "image" && kind !== "thumb")) return undefined;
-  return { kind, id };
+  if (!id) return undefined;
+  if (kind === "image") return { kind, id };
+  return kind === "thumb" ? { kind, id, tier: tierOf(url) } : undefined;
 };

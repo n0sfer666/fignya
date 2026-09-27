@@ -33,6 +33,6 @@ app.whenReady().then(() => {
   loaded.catch((error: unknown) => console.error(`fignya: ${String(error)}`));
   registerDocumentIpc(loaded);
   const thumbnails = createThumbnails(loaded, join(app.getPath("userData"), "thumbs"));
-  serveAssets(async (asset) => (asset.kind === "image" ? (await loaded).image(asset.id) : thumbnails(asset.id)));
+  serveAssets(async (asset) => (asset.kind === "image" ? (await loaded).image(asset.id) : thumbnails(asset.id, asset.tier)));
   loadPage(window, "index").catch((error: unknown) => console.error(`fignya: main window failed to load: ${String(error)}`));
 });

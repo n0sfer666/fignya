@@ -5,20 +5,20 @@ import { thumbPath } from "./thumb-cache";
 const CACHE_DIR = /^[0-9a-f]{16}$/;
 
 export type ThumbStore = {
-  read: (screenId: string) => Promise<Uint8Array | undefined>;
-  write: (screenId: string, png: Uint8Array) => Promise<void>;
+  read: (screenId: string, tier: number) => Promise<Uint8Array | undefined>;
+  write: (screenId: string, tier: number, png: Uint8Array) => Promise<void>;
   prune: () => Promise<void>;
 };
 
 export const createThumbStore = (root: string, key: string): ThumbStore => {
   const dir = join(root, key);
   return {
-    read: async (screenId) => {
-      const path = thumbPath(dir, screenId);
+    read: async (screenId, tier) => {
+      const path = thumbPath(dir, screenId, tier);
       return path ? readFile(path).catch(() => undefined) : undefined;
     },
-    write: async (screenId, png) => {
-      const path = thumbPath(dir, screenId);
+    write: async (screenId, tier, png) => {
+      const path = thumbPath(dir, screenId, tier);
       if (!path) return;
       await mkdir(dir, { recursive: true });
       const temp = `${path}.${process.pid}.tmp`;
