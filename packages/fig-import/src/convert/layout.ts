@@ -22,7 +22,7 @@ export const containerStyle = (raw: Rec): Style => {
     display: "flex",
     flexDirection: str(raw, "stackMode") === "HORIZONTAL" ? "row" : "column",
     gap,
-    padding: [v, num(raw, "stackPaddingRight") ?? h, num(raw, "stackPaddingBottom") ?? v, h],
+    padding: [v, num(raw, "stackPaddingRight") ?? 0, num(raw, "stackPaddingBottom") ?? 0, h],
     justifyContent,
     alignItems: ALIGN[str(raw, "stackCounterAlignItems") ?? "MIN"] ?? "flex-start",
   };

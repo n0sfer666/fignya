@@ -12,8 +12,9 @@
   derived-поля (`derivedTextData`) — основная масса сырья, в память не попадают.
 - Узел: `guid {sessionID, localID}`, `parentIndex {guid, position}` — порядок детей = сортировка
   строк `position`. `transform` m00..m12 (m02/m12 — смещение от родителя), `size {x,y}`.
-- Auto layout: `stackMode` HORIZONTAL/VERTICAL, `stackSpacing`, `stackHorizontalPadding`,
-  `stackVerticalPadding`, `stackPaddingRight/Bottom`, `stackPrimary/CounterAlignItems`,
+- Auto layout: `stackMode` HORIZONTAL/VERTICAL, `stackSpacing`, `stackHorizontalPadding`/`stackVerticalPadding` —
+  левый/верхний отступ, `stackPaddingRight/Bottom` — правый/нижний (нет поля = 0, а не копия левого/верхнего:
+  на ROI Navigator 148 из 148 hug-фреймов), `stackPrimary/CounterAlignItems`,
   `stackChildPrimaryGrow`, `stackChildAlignSelf`, `stackPositioning: ABSOLUTE`. При `stackPrimaryAlignItems`
   SPACE_BETWEEN/SPACE_EVENLY Figma игнорирует `stackSpacing` (gap 0). `stackWrap: WRAP` (только у
   HORIZONTAL; у VERTICAL — устаревший, игнорируем) — межстрочный

@@ -26,7 +26,7 @@ describe("containerStyle", () => {
       display: "flex",
       flexDirection: "column",
       gap: 0,
-      padding: [4, 12, 4, 16],
+      padding: [4, 12, 0, 16],
       justifyContent: "space-between",
       alignItems: "center",
     });
@@ -50,6 +50,11 @@ describe("containerStyle", () => {
 
   it("maps space evenly to space between like Figma", () => {
     expect(containerStyle({ ...row, stackPrimaryAlignItems: "SPACE_EVENLY" }).justifyContent).toBe("space-between");
+  });
+
+  it("reads absent bottom and right padding as zero like Figma", () => {
+    expect(containerStyle({ ...row, stackHorizontalPadding: 12, stackVerticalPadding: 12 }).padding).toEqual([12, 0, 0, 12]);
+    expect(containerStyle({ ...row, stackHorizontalPadding: 12, stackVerticalPadding: 12, stackPaddingRight: 12, stackPaddingBottom: 12 }).padding).toEqual([12, 12, 12, 12]);
   });
 
   it("clamps negative spacing and defaults alignment", () => {
