@@ -31,6 +31,7 @@ const effectsStyle = (raw: Rec, strokeShadows: Shadow[], byContent: boolean): St
   const style: Style = {};
   for (const e of recs(raw, "effects")) {
     if (bool(e, "visible") === false) continue;
+    if (str(e, "blurOpType") === "PROGRESSIVE") continue;
     const type = str(e, "type");
     const blur = (num(e, "radius") ?? 0) / 2;
     if (type === "DROP_SHADOW" || type === "INNER_SHADOW") shadows.push(shadowOf(e, type === "INNER_SHADOW"));

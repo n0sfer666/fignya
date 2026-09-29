@@ -35,6 +35,11 @@ describe("decorationStyle", () => {
     });
   });
 
+  it("skips progressive blurs that plain CSS filters would spread over the whole node", () => {
+    const effects = [{ type: "FOREGROUND_BLUR", radius: 1, blurOpType: "PROGRESSIVE", startRadius: 0, startOffset: { x: 0.85, y: 0.5 }, endOffset: { x: 1, y: 0.5 } }];
+    expect(decorationStyle({ effects }, "RECTANGLE", false)).toEqual({});
+  });
+
   it("casts drop shadows from content when the node has no visible fill", () => {
     const effects = [
       { type: "DROP_SHADOW", radius: 6, offset: { x: 0, y: 5 }, color: { r: 0, g: 0, b: 0, a: 1 } },
