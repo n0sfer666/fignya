@@ -44,7 +44,7 @@ const specs: FigSpec[] = [
     textData: { characters: "Hi", lines: [{ lineType: "PLAIN" }], glyphs: [{}] }, derivedTextData: { layoutSize: { x: 1, y: 1 } },
     fontName: { family: "Roboto", style: "Semi Bold Italic" }, fontSize: 20, lineHeight: { value: 150, units: "PERCENT" },
     letterSpacing: { value: -2, units: "PERCENT" }, textAlignHorizontal: "CENTER", fillPaints: [solid(1, 0, 0)],
-    stackChildPrimaryGrow: 1, stackChildAlignSelf: "STRETCH",
+    stackChildPrimaryGrow: 1, stackChildAlignSelf: "STRETCH", textAutoResize: "HEIGHT", textTruncation: "ENDING", maxLines: 1, textExplicitLayoutVersion: 1,
   },
   {
     id: 12, parent: 10, position: "b", type: "INSTANCE", name: "Button", ...box(3, 4, 10, 10), ...noise, cornerRadius: 6, stackPositioning: "ABSOLUTE",

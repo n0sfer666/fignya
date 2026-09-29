@@ -14,7 +14,7 @@ const STYLE_FIELDS = [
   "borderStrokeWeightsIndependent", "borderTopWeight", "borderRightWeight", "borderBottomWeight", "borderLeftWeight",
   "fillGeometry", "strokeGeometry", "arcData",
   "textData", "fontName", "fontSize", "lineHeight", "letterSpacing", "textAlignHorizontal",
-  "textAutoResize", "textTruncation", "maxLines", "textCase", "textDecoration",
+  "textAutoResize", "textTruncation", "maxLines", "textExplicitLayoutVersion", "textCase", "textDecoration",
 ];
 
 const TEXT: Shape = { keep: new Set(["characters"]) };

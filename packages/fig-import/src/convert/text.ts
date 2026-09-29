@@ -52,8 +52,8 @@ const wrapStyle = (raw: Rec, lh: Px | "normal"): Style => {
   const lines = str(raw, "textTruncation") === "ENDING" ? maxLines(raw, lh) : undefined;
   if (lines === undefined) return { whiteSpace: "pre-wrap", overflowWrap: "break-word" };
   const clip: Style = { overflow: "hidden", textOverflow: "ellipsis" };
-  if (lines === 1) return { ...clip, whiteSpace: "pre" };
-  return { ...clip, whiteSpace: "pre-wrap", overflowWrap: "break-word", display: "-webkit-box", lineClamp: lines };
+  if (lines === 1 && num(raw, "textExplicitLayoutVersion") !== undefined) return { ...clip, whiteSpace: "pre" };
+  return { ...clip, whiteSpace: "pre-line", overflowWrap: "break-word", display: "-webkit-box", lineClamp: lines };
 };
 
 export const textStyle = (raw: Rec): Style => {

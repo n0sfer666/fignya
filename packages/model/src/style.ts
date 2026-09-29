@@ -66,7 +66,7 @@ export type StyleValues = {
   textTransform: "uppercase" | "lowercase" | "capitalize";
   textDecoration: "underline" | "line-through";
   fontVariantCaps: "small-caps" | "all-small-caps";
-  whiteSpace: "pre-wrap" | "pre";
+  whiteSpace: "pre-wrap" | "pre-line" | "pre";
   overflowWrap: "break-word";
   textOverflow: "ellipsis";
   lineClamp: number;

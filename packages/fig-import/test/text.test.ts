@@ -47,7 +47,7 @@ describe("textStyle", () => {
   it("derives max lines of truncated fixed box from its height", () => {
     const raw = { textTruncation: "ENDING", lineHeight: { value: 20, units: "PIXELS" } };
     expect(textStyle({ ...raw, size: { x: 100, y: 45 } })).toMatchObject({ display: "-webkit-box", lineClamp: 2, textOverflow: "ellipsis" });
-    expect(textStyle({ ...raw, size: { x: 100, y: 20 } })).toMatchObject({ whiteSpace: "pre", textOverflow: "ellipsis" });
+    expect(textStyle({ ...raw, size: { x: 100, y: 20 } })).toMatchObject({ display: "-webkit-box", lineClamp: 1, textOverflow: "ellipsis" });
   });
 
   it("keeps auto-width text on one line", () => {
@@ -60,14 +60,19 @@ describe("textStyle", () => {
     expect(textStyle({ textAutoResize: "HEIGHT" })).toMatchObject({ whiteSpace: "pre-wrap", overflowWrap: "break-word" });
   });
 
-  it("ellipsizes truncated single line", () => {
-    const style = textStyle({ textAutoResize: "HEIGHT", textTruncation: "ENDING", maxLines: 1 });
+  it("ellipsizes truncated single line mid-word under the explicit text layout", () => {
+    const style = textStyle({ textAutoResize: "HEIGHT", textTruncation: "ENDING", maxLines: 1, textExplicitLayoutVersion: 1 });
     expect(style).toMatchObject({ whiteSpace: "pre", overflow: "hidden", textOverflow: "ellipsis" });
     expect(style.lineClamp).toBeUndefined();
   });
 
+  it("breaks truncated single line at words under the legacy text layout", () => {
+    const style = textStyle({ textAutoResize: "HEIGHT", textTruncation: "ENDING", maxLines: 1 });
+    expect(style).toMatchObject({ whiteSpace: "pre-line", overflowWrap: "break-word", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", lineClamp: 1 });
+  });
+
   it("clamps truncated text to max lines", () => {
-    expect(textStyle({ textAutoResize: "HEIGHT", textTruncation: "ENDING", maxLines: 2 })).toMatchObject({ whiteSpace: "pre-wrap", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", lineClamp: 2 });
+    expect(textStyle({ textAutoResize: "HEIGHT", textTruncation: "ENDING", maxLines: 2 })).toMatchObject({ whiteSpace: "pre-line", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", lineClamp: 2 });
   });
 
   it("keeps pixel line height", () => {
