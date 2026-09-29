@@ -19,12 +19,22 @@ type Copied = { patch: [string, unknown][]; covered: string[]; bound: Rec[] };
 
 const FLOATS: ReadonlySet<string> = new Set(BOUND_FLOAT_FIELDS);
 
+const DETACHED = "4294967295:4294967295";
+
+const floatTargets = (fieldMap: FieldMap, style: Rec): string[] =>
+  fieldMap.flatMap(([target, source]) => (target === source && FLOATS.has(target) && style[source] !== undefined ? [target] : []));
+
+const detachedFields = (fields: Rec, key: string | undefined, fieldMap: FieldMap): Copied => {
+  const loose = key === DETACHED && rec(fields, "variableConsumptionMap") === undefined;
+  return { patch: [], covered: loose ? floatTargets(fieldMap, fields) : [], bound: [] };
+};
+
 const styleFields = (styles: Styles, fields: Rec, refName: string, fieldMap: FieldMap): Copied => {
   const key = refKey(rec(fields, refName));
   const style = key === undefined ? undefined : styles.get(key);
-  if (!style) return { patch: [], covered: [], bound: [] };
+  if (!style) return detachedFields(fields, key, fieldMap);
   const patch = fieldMap.flatMap(([target, source]): [string, unknown][] => (style[source] === undefined ? [] : [[target, style[source]]]));
-  const covered = fieldMap.flatMap(([target, source]) => (target === source && FLOATS.has(target) && style[source] !== undefined ? [target] : []));
+  const covered = floatTargets(fieldMap, style);
   return { patch, covered, bound: bindings(style).filter((entry) => covered.includes(boundField(entry) ?? "")) };
 };
 
@@ -37,8 +47,9 @@ const withBindings = (fields: Rec, covered: ReadonlySet<string>, bound: Rec[]): 
 const styled = (styles: Styles, fields: Rec): Rec => {
   const copied = Object.entries(STYLE_REFS).map(([refName, fieldMap]) => styleFields(styles, fields, refName, fieldMap));
   const patch = copied.flatMap((c) => c.patch);
-  if (patch.length === 0) return fields;
-  return withBindings({ ...fields, ...Object.fromEntries(patch) }, new Set(copied.flatMap((c) => c.covered)), copied.flatMap((c) => c.bound));
+  const covered = new Set(copied.flatMap((c) => c.covered));
+  if (patch.length === 0 && covered.size === 0) return fields;
+  return withBindings({ ...fields, ...Object.fromEntries(patch) }, covered, copied.flatMap((c) => c.bound));
 };
 
 const withStyles = (styles: Styles, raw: Rec): Rec => {

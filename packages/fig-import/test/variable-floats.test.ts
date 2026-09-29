@@ -71,6 +71,7 @@ const specs: FigSpec[] = [
   { ...instanceOf(29, 20, "j"), symbolData: { symbolID: guid(32), symbolOverrides: [{ guidPath: { guids: [guid(33)] }, ...plain }] } },
   { id: 32, parent: 3, position: "n", type: "SYMBOL", name: "D", ...box(0, 0, 10, 10) },
   text(33, 32, "a"),
+  { ...instanceOf(43, 40, "c"), symbolData: { symbolID: guid(32), symbolOverrides: [{ guidPath: { guids: [guid(33)] }, styleIdForText: { guid: { sessionID: 4294967295, localID: 4294967295 } }, fontSize: 10 }] } },
 ];
 
 const document = importDocument(figMessage(specs));
@@ -114,6 +115,10 @@ describe("bound float variables", () => {
     expect(node(28)?.style.fontSize).toBe(20);
     expect(node(33)?.style.fontSize).toBe(12);
     expect(at(29, 33)?.style?.fontSize).toBe(20);
+  });
+
+  it("keeps the literal font size of an override that detaches the text style", () => {
+    expect(at(43, 33)?.style?.fontSize).toBe(10);
   });
 
   it("drops a stale literal the override leaves bound", () => {
