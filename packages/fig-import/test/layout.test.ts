@@ -42,6 +42,7 @@ describe("containerStyle", () => {
     const wrap = { ...row, stackSpacing: 16, stackWrap: "WRAP" };
     expect(containerStyle({ ...wrap, stackCounterSpacing: 8 })).toMatchObject({ gap: 16, rowGap: 8 });
     expect(containerStyle({ ...wrap, stackCounterSpacing: null })).not.toHaveProperty("rowGap");
+    expect(containerStyle({ ...wrap, stackCounterSpacing: Number.NaN })).not.toHaveProperty("rowGap");
   });
 
   it("ignores item spacing when space between distributes items like Figma auto spacing", () => {

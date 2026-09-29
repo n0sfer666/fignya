@@ -9,7 +9,7 @@ export const rec = (o: Rec, k: string): Rec | undefined => {
 
 export const num = (o: Rec | undefined, k: string): number | undefined => {
   const v = o?.[k];
-  return typeof v === "number" ? v : undefined;
+  return typeof v === "number" && Number.isFinite(v) ? v : undefined;
 };
 
 export const str = (o: Rec | undefined, k: string): string | undefined => {
