@@ -16,7 +16,13 @@
   левый/верхний отступ, `stackPaddingRight/Bottom` — правый/нижний (нет поля = 0, а не копия левого/верхнего:
   на ROI Navigator 148 из 148 hug-фреймов), `stackPrimary/CounterAlignItems`,
   `stackChildPrimaryGrow`, `stackChildAlignSelf`, `stackPositioning: ABSOLUTE`. При `stackPrimaryAlignItems`
-  SPACE_BETWEEN/SPACE_EVENLY Figma игнорирует `stackSpacing` (gap 0). `stackWrap: WRAP` (только у
+  SPACE_BETWEEN/SPACE_EVENLY Figma игнорирует `stackSpacing` (gap 0). Отрицательный `stackSpacing`
+  (865 узлов: сегмент-контролы −1, стопки аватаров −4…−8) — дети внахлёст: CSS `gap` < 0 не бывает,
+  поэтому модель хранит gap как есть, `cssText` его не выводит, render-dom даёт flow-детям после
+  первого отрицательный margin по главной оси (в `cssText` — ни gap, ни margin: только render-dom).
+  В `stackWrap: WRAP` отрицательный gap клампится к 0. `stackReverseZIndex: true` (11 из 865 контейнеров
+  с отрицательным gap) — первый ребёнок сверху: стиль `stackOrder: "first-on-top"`, render-dom даёт
+  детям `z-index` n−i. `stackWrap: WRAP` (только у
   HORIZONTAL; у VERTICAL — устаревший, игнорируем) — межстрочный
   отступ `stackCounterSpacing` (бывает null → `stackSpacing`).
 - Clip: `frameMaskDisabled !== true`.
@@ -35,7 +41,12 @@
   `letterSpacing {value, units}`, `textCase` (UPPER/LOWER/TITLE → `text-transform`, SMALL_CAPS[_FORCED]
   → `font-variant-caps`), `textDecoration`. Перенос: `textAutoResize: WIDTH_AND_HEIGHT` — одна строка (`pre`),
   `HEIGHT`/фикс — перенос; `textTruncation: ENDING` + `maxLines` (нет — `floor(size.y / lineHeight)`)
-  → `…` (1 строка) или line-clamp. У auto-width `ENDING` бывает устаревшим (135 шт.) — игнорируем.
+  → `…`. Одна строка и есть `textExplicitLayoutVersion` — обрезка посимвольно (`pre`), иначе Figma
+  режет по словам (`-webkit-box` + line-clamp, `pre-line`: в Chrome `pre-wrap` оставляет висящий
+  пробел перед «…», цена — схлопываются повторные пробелы). У auto-width `ENDING` бывает устаревшим
+  (135 шт.) — игнорируем. Ширина «…» у Manrope в Chrome 9.48px, в Figma ≤ 8.65px — на границе
+  влезает на символ меньше, это не чинится.
+- Числа kiwi бывают NaN (не null): `num` отбрасывает не-конечные значения.
 - Fill-потомок (`stackChildPrimaryGrow`) = `flex: 1 1 0; min-width|height: 0`, иначе ширина по контенту
   выталкивает соседей; в `stackWrap: WRAP` basis = свой размер, чтобы переносился.
 - Обводка по сторонам: `borderStrokeWeightsIndependent` + `border{Top,Right,Bottom,Left}Weight` →
@@ -95,14 +106,22 @@
   инлайн `color` бывает устаревшим. Альфа переменной лежит в `paint.opacity` при `color.a = 1` —
   при резолве `color` = rgba переменной, `opacity: 1` (на ROI Navigator 132.9k из 133.3k связанных
   красок — `opacity` = альфа переменной, остальные ~400 с устаревшим инлайн-цветом). Резолв —
-  `tree/variables.ts`, индекс — `variable-index.ts`, цвет с алиасами — `variable-colors.ts`.
+  `tree/variables.ts`, индекс — `variable-index.ts`, значения с алиасами — `variable-values.ts`.
+  Числа привязаны через `variableConsumptionMap.entries[] {variableField, variableData.value.alias}`:
+  радиусы, `CORNER_RADIUS`, `STACK_SPACING`/`COUNTER_SPACING`, `STACK_PADDING_*`, `FONT_SIZE`
+  (`variable-floats.ts`); `CORNER_RADIUS` пишет и четыре угла без своей привязки. Пересчёт по режимам
+  идёт и внутри инстансов, привязки текстового стиля переходят к потребителю вместе с его полями.
+  Оверрайд с пустой картой `{entries: []}` — явная отвязка, литерал побеждает (4151 на ROI Navigator);
+  литерал без карты при унаследованной привязке устаревший — побеждает переменная (5166).
+  `LINE_HEIGHT`, `LETTER_SPACING`, `WIDTH/HEIGHT` не читаем.
 - Эллипс с `arcData {startingAngle, endingAngle, innerRadius}` — дуга или кольцо (диаграммы), рисуем
   вектором по `fillGeometry` (на ROI Navigator 2.4k из 4.4k эллипсов).
 - Векторы: дети `BOOLEAN_OPERATION` — операнды, в модель не попадают (рисуется
   результат `fillGeometry`).
 - Тени: `DROP_SHADOW` у вектора, текста и узла без видимой заливки Figma рисует по содержимому →
   `filter: drop-shadow` (без spread; при размытии слоя — откат на `box-shadow`), иначе `box-shadow`.
-  Несколько ключей Style с CSS `filter` сериализуются одной декларацией.
+  Несколько ключей Style с CSS `filter` сериализуются одной декларацией. Размытие с
+  `blurOpType: PROGRESSIVE` (градиентное) CSS-фильтр размазал бы по всему узлу — пропускаем.
   Отражение ребёнка auto layout — `transform` с диагональю ±1 → CSS `scale` (повороты не поддержаны).
 - Без zip-обёртки файл может быть «голым» `fig-kiwi` — `readArchive` принимает оба варианта.
 
