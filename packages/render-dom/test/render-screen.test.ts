@@ -88,4 +88,32 @@ describe("renderScreen", () => {
     const model = modelOf("s", [frame("s", [], { background: [{ kind: "image", hash: "ab", fit: "cover" }] })]);
     expect(rootOf(renderScreen(model, { imageUrl })).getAttribute("style")).toContain("fignya://image/ab");
   });
+
+  it("overlaps flow children by a negative gap along the main axis", () => {
+    const overlapped = (flexDirection: "row" | "column"): string[][] => {
+      const nodes = [frame("s", ["abs", "a", "b", "c"], { display: "flex", flexDirection, gap: -2 }), frame("abs", [], { position: "absolute" }), frame("a"), frame("b"), frame("c")];
+      const root = rootOf(renderScreen(modelOf("s", nodes), { imageUrl }));
+      return [...root.children].map((c) => c instanceof HTMLElement ? [c.style.marginLeft, c.style.marginTop] : []);
+    };
+    expect(overlapped("row")).toEqual([["", ""], ["", ""], ["-2px", ""], ["-2px", ""]]);
+    expect(overlapped("column")).toEqual([["", ""], ["", ""], ["", "-2px"], ["", "-2px"]]);
+  });
+
+  it("starts the overlap from the first visible child", () => {
+    const nodes = [frame("s", ["gone", "a", "b"], { display: "flex", gap: -3 }), { ...frame("gone"), hidden: true }, frame("a"), frame("b")];
+    const root = rootOf(renderScreen(modelOf("s", nodes), { imageUrl }));
+    expect([...root.children].map((c) => c instanceof HTMLElement && c.style.marginLeft)).toEqual(["", "-3px"]);
+  });
+
+  it("stacks the first child on top when the container reverses the order", () => {
+    const nodes = [frame("s", ["a", "b", "abs"], { display: "flex", stackOrder: "first-on-top" }), frame("a"), frame("b"), frame("abs", [], { position: "absolute" })];
+    const root = rootOf(renderScreen(modelOf("s", nodes), { imageUrl }));
+    expect([...root.children].map((c) => c instanceof HTMLElement && c.style.zIndex)).toEqual(["3", "2", "1"]);
+  });
+
+  it("leaves children unshifted under a positive gap", () => {
+    const root = rootOf(renderScreen(modelOf("s", [frame("s", ["a", "b"], { display: "flex", gap: 4 }), frame("a"), frame("b")]), { imageUrl }));
+    expect(root.style.gap).toBe("4px");
+    expect([...root.children].map((c) => c instanceof HTMLElement && c.style.marginLeft)).toEqual(["", ""]);
+  });
 });

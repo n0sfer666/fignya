@@ -1,5 +1,5 @@
 import type { FlexAlign, Matrix2, Style } from "@fignya/model";
-import { num, rec, str, type Rec } from "../fig/guards";
+import { bool, num, rec, str, type Rec } from "../fig/guards";
 
 const JUSTIFY: Record<string, FlexAlign | "space-between"> = { MIN: "flex-start", CENTER: "center", MAX: "flex-end", SPACE_BETWEEN: "space-between", SPACE_EVENLY: "space-between" };
 const ALIGN: Record<string, FlexAlign | "baseline"> = { MIN: "flex-start", CENTER: "center", MAX: "flex-end", BASELINE: "baseline" };
@@ -15,7 +15,7 @@ export const containerStyle = (raw: Rec): Style => {
   if (!isFlex(raw)) return {};
   const h = num(raw, "stackHorizontalPadding") ?? 0;
   const v = num(raw, "stackVerticalPadding") ?? 0;
-  const spacing = Math.max(0, num(raw, "stackSpacing") ?? 0);
+  const spacing = num(raw, "stackSpacing") ?? 0;
   const justifyContent = JUSTIFY[str(raw, "stackPrimaryAlignItems") ?? "MIN"] ?? "flex-start";
   const gap = justifyContent === "space-between" ? 0 : spacing;
   const style: Style = {
@@ -25,10 +25,12 @@ export const containerStyle = (raw: Rec): Style => {
     padding: [v, num(raw, "stackPaddingRight") ?? 0, num(raw, "stackPaddingBottom") ?? 0, h],
     justifyContent,
     alignItems: ALIGN[str(raw, "stackCounterAlignItems") ?? "MIN"] ?? "flex-start",
+    ...(bool(raw, "stackReverseZIndex") ? { stackOrder: "first-on-top" } : {}),
   };
   if (!isWrapped(raw)) return style;
   const rowGap = Math.max(0, num(raw, "stackCounterSpacing") ?? spacing);
-  return { ...style, flexWrap: "wrap", ...(rowGap === gap ? {} : { rowGap }) };
+  const wrapGap = Math.max(0, gap);
+  return { ...style, gap: wrapGap, flexWrap: "wrap", ...(rowGap === wrapGap ? {} : { rowGap }) };
 };
 
 const rotation = (t: Rec | undefined): Matrix2 | undefined => {

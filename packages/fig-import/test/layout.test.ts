@@ -45,6 +45,16 @@ describe("containerStyle", () => {
     expect(containerStyle({ ...wrap, stackCounterSpacing: Number.NaN })).not.toHaveProperty("rowGap");
   });
 
+  it("keeps wrapped items apart since overlap would shift the first item of every line", () => {
+    expect(containerStyle({ ...row, stackSpacing: -4, stackWrap: "WRAP" })).toMatchObject({ gap: 0, flexWrap: "wrap" });
+    expect(containerStyle({ ...row, stackSpacing: -4, stackWrap: "WRAP" })).not.toHaveProperty("rowGap");
+  });
+
+  it("stacks the first item on top when auto layout reverses the canvas order", () => {
+    expect(containerStyle({ ...row, stackReverseZIndex: true }).stackOrder).toBe("first-on-top");
+    expect(containerStyle({ ...row, stackReverseZIndex: false })).not.toHaveProperty("stackOrder");
+  });
+
   it("ignores item spacing when space between distributes items like Figma auto spacing", () => {
     expect(containerStyle({ ...row, stackSpacing: 53, stackPrimaryAlignItems: "SPACE_BETWEEN" }).gap).toBe(0);
   });
@@ -58,11 +68,11 @@ describe("containerStyle", () => {
     expect(containerStyle({ ...row, stackHorizontalPadding: 12, stackVerticalPadding: 12, stackPaddingRight: 12, stackPaddingBottom: 12 }).padding).toEqual([12, 12, 12, 12]);
   });
 
-  it("clamps negative spacing and defaults alignment", () => {
+  it("keeps negative spacing for overlapping items and defaults alignment", () => {
     expect(containerStyle({ ...row, stackSpacing: -4 })).toEqual({
       display: "flex",
       flexDirection: "row",
-      gap: 0,
+      gap: -4,
       padding: [0, 0, 0, 0],
       justifyContent: "flex-start",
       alignItems: "flex-start",

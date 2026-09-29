@@ -23,6 +23,11 @@ describe("cssText", () => {
     expect(css).toBe("display:flex;flex-direction:column;flex-wrap:wrap;gap:8px;row-gap:4px;padding:1px 2px 3px 4px;justify-content:space-between;align-items:center");
   });
 
+  it("leaves a negative gap to the renderer since CSS gap cannot overlap items", () => {
+    expect(cssText({ display: "flex", gap: -1 }, url)).toBe("display:flex");
+    expect(cssText({ display: "flex", stackOrder: "first-on-top" }, url)).toBe("display:flex");
+  });
+
   it("serializes flex child", () => {
     expect(cssText({ flexGrow: 1, flexShrink: 1, flexBasis: 0, alignSelf: "stretch", minWidth: 0 }, url)).toBe(
       "min-width:0px;align-self:stretch;flex-grow:1;flex-shrink:1;flex-basis:0px",

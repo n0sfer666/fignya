@@ -7,7 +7,7 @@ const STYLE_FIELDS = [
   "visible", "transform", "size", "opacity",
   "stackMode", "stackWrap", "stackSpacing", "stackCounterSpacing", "stackHorizontalPadding", "stackVerticalPadding",
   "stackPaddingRight", "stackPaddingBottom", "stackPrimaryAlignItems", "stackCounterAlignItems",
-  "stackPositioning", "stackChildPrimaryGrow", "stackChildAlignSelf",
+  "stackPositioning", "stackChildPrimaryGrow", "stackChildAlignSelf", "stackReverseZIndex",
   "cornerRadius", "rectangleTopLeftCornerRadius", "rectangleTopRightCornerRadius",
   "rectangleBottomRightCornerRadius", "rectangleBottomLeftCornerRadius", "frameMaskDisabled",
   "fillPaints", "strokePaints", "strokeWeight", "strokeAlign", "effects",

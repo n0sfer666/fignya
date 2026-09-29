@@ -47,6 +47,7 @@ const specs: FigSpec[] = [
   { id: 3, parent: 1, position: "b", type: "CANVAS", name: "Internal Only Canvas" },
   { id: 4, parent: 3, position: "a", type: "VARIABLE_SET", variableSetModes: [{ id: mode(COMPACT), sortPosition: "!" }, { id: mode(ROOMY), sortPosition: "\"" }] },
   float(5, "radius", 4, 8),
+  float(6, "overlap", -1),
   float(7, "loopA", "loopB"),
   float(8, "loopB", "loopA"),
   float(9, "size", 12, 16),
@@ -58,7 +59,7 @@ const specs: FigSpec[] = [
   { id: 20, parent: 2, position: "a", type: "FRAME", name: "Screen", ...box(0, 0, 400, 400) },
   rect(21, 20, "a", { ...corners(1), ...bindings([["CORNER_RADIUS", "radius"], ["RECTANGLE_TOP_LEFT_CORNER_RADIUS", "tight"]]) }),
   rect(22, 20, "b", { ...corners(3), ...bindings([["CORNER_RADIUS", "loopA"]]) }),
-  { id: 23, parent: 20, position: "c", type: "FRAME", name: "Row", ...box(0, 0, 100, 20), stackMode: "HORIZONTAL", stackSpacing: 0, ...bindings([["STACK_SPACING", "tight"]]) },
+  { id: 23, parent: 20, position: "c", type: "FRAME", name: "Row", ...box(0, 0, 100, 20), stackMode: "HORIZONTAL", stackSpacing: 0, ...bindings([["STACK_SPACING", "overlap"]]) },
   text(24, 20, "d"),
   instanceOf(25, 20, "e"),
   instanceOf(26, 20, "f", { ...corners(2), variableConsumptionMap: { entries: [] } }),
@@ -90,8 +91,8 @@ describe("bound float variables", () => {
     expect(node(22)?.style.borderRadius).toEqual([3, 3, 3, 3]);
   });
 
-  it("takes a bound spacing as the gap", () => {
-    expect(node(23)?.style.gap).toBe(2);
+  it("takes a negative bound spacing as an overlapping gap", () => {
+    expect(node(23)?.style.gap).toBe(-1);
   });
 
   it("takes font sizes bound in a text style", () => {

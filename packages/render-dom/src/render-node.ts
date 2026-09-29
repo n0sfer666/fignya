@@ -1,5 +1,6 @@
 import { applyOverride, cssText, expandedComponentId, type DesignNode, type ImageUrl, type NodeId, type NodeMap, type Style } from "@fignya/model";
 import { carriesResize, constrainedStyle, hasOwnBox, resizeOf, type Resize } from "./constrain";
+import { stackChildren } from "./flow-stacking";
 import { EMPTY_SCOPE, nestedScope, type OverrideScope } from "./override-scope";
 import { renderSvg } from "./svg";
 import { viewBoxOf } from "./view-box";
@@ -42,10 +43,9 @@ const renderTree = (ctx: RenderContext, id: NodeId, branch: Branch, style: (node
   if (node.kind === "text") el.textContent = node.text;
   if (node.kind === "vector") el.append(renderSvg(node.paths, viewBoxOf(stored, node.style, override?.paths)));
   const children = childrenOf(ctx, node, stored, branch, carriesResize(node.style, override?.style) ? branch.resize : undefined);
-  for (const childId of children.ids) {
-    const child = renderTree(ctx, childId, children.branch, (n) => n.style);
-    if (child) el.append(child);
-  }
+  const rendered = children.ids.flatMap((childId) => renderTree(ctx, childId, children.branch, (n) => n.style) ?? []);
+  stackChildren(node.style, rendered);
+  el.append(...rendered);
   return el;
 };
 

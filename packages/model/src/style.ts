@@ -38,6 +38,7 @@ export type StyleValues = {
   flexDirection: "row" | "column";
   flexWrap: "wrap";
   gap: Px;
+  stackOrder: "first-on-top";
   rowGap: Px;
   padding: Sides;
   justifyContent: FlexAlign | "space-between";
