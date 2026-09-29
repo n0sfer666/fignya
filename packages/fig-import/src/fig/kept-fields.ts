@@ -15,6 +15,7 @@ const STYLE_FIELDS = [
   "fillGeometry", "strokeGeometry", "arcData",
   "textData", "fontName", "fontSize", "lineHeight", "letterSpacing", "textAlignHorizontal",
   "textAutoResize", "textTruncation", "maxLines", "textExplicitLayoutVersion", "textCase", "textDecoration",
+  "variableConsumptionMap",
 ];
 
 const TEXT: Shape = { keep: new Set(["characters"]) };
@@ -22,6 +23,11 @@ const TEXT: Shape = { keep: new Set(["characters"]) };
 const GEOMETRY: Shape = { keep: new Set(["windingRule", "commandsBlob"]) };
 
 const STYLE_REF: Shape = { keep: new Set(["assetRef", "guid"]), nested: { assetRef: { keep: new Set(["key"]) } } };
+
+const CONSUMPTION: Shape = {
+  keep: new Set(["entries"]),
+  nested: { entries: { keep: new Set(["variableField", "variableData"]), nested: { variableData: { keep: new Set(["value"]), nested: { value: { keep: new Set(["alias"]), nested: { alias: STYLE_REF } } } } } } },
+};
 
 const REF_KEYS = Object.keys(STYLE_REFS);
 
@@ -37,7 +43,7 @@ const ASSIGNMENT: Shape = {
 
 const OVERRIDE: Shape = {
   keep: new Set([...STYLE_FIELDS, ...REF_KEYS, "guidPath", "overriddenSymbolID", "componentPropAssignments"]),
-  nested: { textData: TEXT, componentPropAssignments: ASSIGNMENT, ...REF_SHAPES },
+  nested: { textData: TEXT, componentPropAssignments: ASSIGNMENT, variableConsumptionMap: CONSUMPTION, ...REF_SHAPES },
 };
 
 const NODE: Shape = {
@@ -46,6 +52,7 @@ const NODE: Shape = {
   nested: {
     ...REF_SHAPES,
     textData: TEXT,
+    variableConsumptionMap: CONSUMPTION,
     symbolData: { keep: new Set(["symbolID", "symbolOverrides"]), nested: { symbolOverrides: OVERRIDE } },
     derivedSymbolData: { keep: new Set(["guidPath", "size", "transform", "fillGeometry", "strokeGeometry"]), nested: { fillGeometry: GEOMETRY, strokeGeometry: GEOMETRY } },
     componentPropAssignments: ASSIGNMENT,

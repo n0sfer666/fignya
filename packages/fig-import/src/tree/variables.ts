@@ -1,10 +1,11 @@
 import { rec, recs, type Rec } from "../fig/guards";
 import { guidKey } from "./node-index";
-import { colorResolver, type Resolve } from "./variable-colors";
+import { bindsFloats, BOUND_FLOAT_FIELDS, withFloats } from "./variable-floats";
+import { colorResolver, floatResolver, type Resolve } from "./variable-values";
 import { setKey, variablesOf } from "./variable-index";
 import { modeContext, NO_MODES, ownModes, type Lookup, type ModeEntry, type Modes, type SetOf } from "./variable-modes";
 
-export type VariableSource = { resolve: Resolve; setOf: SetOf };
+export type VariableSource = { resolveColor: Resolve<Rec>; resolveFloat: Resolve<number>; setOf: SetOf };
 
 export type VariablePaints = {
   modesOf: (node: Rec) => Modes;
@@ -13,15 +14,17 @@ export type VariablePaints = {
   repaint: (fields: Rec, modes: Modes) => Rec;
 };
 
-export const PAINT_FIELDS: readonly string[] = ["fillPaints", "strokePaints"];
+const PAINT_FIELDS: readonly string[] = ["fillPaints", "strokePaints"];
 
-const resolvedPaint = (resolve: Resolve, modes: Modes, paint: Rec): Rec => {
+export const VARIABLE_FIELDS: readonly string[] = [...PAINT_FIELDS, ...BOUND_FLOAT_FIELDS];
+
+const resolvedPaint = (resolve: Resolve<Rec>, modes: Modes, paint: Rec): Rec => {
   const alias = rec(rec(rec(paint, "colorVar") ?? {}, "value") ?? {}, "alias");
   const color = alias && resolve(modes, alias);
   return color ? { ...paint, color, opacity: 1 } : paint;
 };
 
-const withPaints = (resolve: Resolve, modes: Modes, fields: Rec): Rec => {
+const withPaints = (resolve: Resolve<Rec>, modes: Modes, fields: Rec): Rec => {
   const patch = PAINT_FIELDS.flatMap((key): [string, Rec[]][] => {
     const paints = recs(fields, key);
     const next = paints.map((p) => resolvedPaint(resolve, modes, p));
@@ -36,7 +39,7 @@ export const NO_PAINTS: VariablePaints = { modesOf: () => NO_MODES, ownModes: ()
 
 export const variableSource = (nodes: Rec[]): VariableSource | undefined => {
   const vars = variablesOf(nodes);
-  return vars.values.size === 0 ? undefined : { resolve: colorResolver(vars), setOf: (ref) => setKey(vars, ref) };
+  return vars.values.size === 0 ? undefined : { resolveColor: colorResolver(vars), resolveFloat: floatResolver(vars), setOf: (ref) => setKey(vars, ref) };
 };
 
 export const variablePaints = (source: VariableSource | undefined, lookup: Lookup): VariablePaints =>
@@ -44,8 +47,8 @@ export const variablePaints = (source: VariableSource | undefined, lookup: Looku
     ? {
         modesOf: modeContext(lookup, source.setOf),
         ownModes: (node) => ownModes(node, source.setOf),
-        bound: hasColorVars,
-        repaint: (fields, modes) => withPaints(source.resolve, modes, fields),
+        bound: (fields) => hasColorVars(fields) || bindsFloats(fields),
+        repaint: (fields, modes) => withFloats(source.resolveFloat, modes, withPaints(source.resolveColor, modes, fields)),
       }
     : NO_PAINTS;
 

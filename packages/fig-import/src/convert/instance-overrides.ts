@@ -1,7 +1,7 @@
 import { pathKey, sameValue, type DesignNode, type NodeId, type Override } from "@fignya/model";
 import type { Rec } from "../fig/guards";
 import { parentKey, type FigNode } from "../tree/node-index";
-import { PAINT_FIELDS, type VariablePaints } from "../tree/variables";
+import { VARIABLE_FIELDS, type VariablePaints } from "../tree/variables";
 import { convertNode, type ConvertContext } from "./convert-node";
 import { instanceResolver } from "./instance-resolver-cache";
 import { mergedFields, type Resolved, type Target } from "./instance-resolver";
@@ -15,12 +15,14 @@ import type { BlobPaths } from "./vector";
 
 type Base = { fields: Rec; raw: Rec; node: DesignNode };
 
+const BINDINGS = "variableConsumptionMap";
+
 const changes = (raw: Rec, fields: Rec): boolean => {
-  for (const key in fields) if (!sameValue(raw[key], fields[key])) return true;
+  for (const key in fields) if (key !== BINDINGS && !sameValue(raw[key], fields[key])) return true;
   return false;
 };
 
-const repainted = (base: Rec, next: Rec): boolean => PAINT_FIELDS.some((key) => !sameValue(base[key], next[key]));
+const repainted = (base: Rec, next: Rec): boolean => VARIABLE_FIELDS.some((key) => !sameValue(base[key], next[key]));
 
 export const instanceOverrides = (byKey: ReadonlyMap<string, FigNode>, pathOf: BlobPaths, paints: VariablePaints): ((instance: FigNode) => Override[]) => {
   const resolve = instanceResolver(byKey);

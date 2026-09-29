@@ -12,6 +12,12 @@ const aliasTo = (key: string): Rec => ({ variableData: { value: { alias: { asset
 
 const darkBy = (variableSetID: Rec): Rec => ({ variableModeBySetMap: { entries: [{ variableSetID, variableModeID: mode(2) }] } });
 
+const floatValue = (value: number): Rec => ({ variableData: { value: { floatValue: value } } });
+
+const bindTo = (key: string, ...fields: string[]): Rec => ({
+  variableConsumptionMap: { entries: fields.map((variableField) => ({ variableField, variableData: { value: { alias: { assetRef: { key } } } } })) },
+});
+
 const bound = (key: string): Rec => solid(0, 0, 0, { opacity: 0.5, colorVar: { value: { alias: { assetRef: { key } } } } });
 
 const specs: FigSpec[] = [
@@ -31,6 +37,17 @@ const specs: FigSpec[] = [
   },
   { id: 9, parent: 3, position: "f", type: "VARIABLE", key: "loopA", variableSetID: { guid: guid(5) }, variableDataValues: { entries: [{ modeID: mode(7), ...aliasTo("loopB") }] } },
   { id: 14, parent: 3, position: "g", type: "VARIABLE", key: "loopB", variableSetID: { guid: guid(5) }, variableDataValues: { entries: [{ modeID: mode(7), ...aliasTo("loopA") }] } },
+  { id: 17, parent: 3, position: "h", type: "VARIABLE", key: "radius", variableSetID: { guid: guid(5) }, variableDataValues: { entries: [{ modeID: mode(7), ...floatValue(6) }] } },
+  { id: 18, parent: 3, position: "i", type: "VARIABLE", key: "space", variableSetID: { guid: guid(5) }, variableDataValues: { entries: [{ modeID: mode(7), ...aliasTo("radius") }] } },
+  {
+    id: 19, parent: 2, position: "c", type: "FRAME", name: "Rounded", ...box(0, 0, 10, 10),
+    rectangleTopLeftCornerRadius: 0, stackHorizontalPadding: 2, ...bindTo("space", "RECTANGLE_TOP_LEFT_CORNER_RADIUS", "STACK_PADDING_LEFT", "LINE_HEIGHT"),
+  },
+  {
+    id: 23, parent: 2, position: "d", type: "INSTANCE", name: "Segment", ...box(0, 0, 10, 10),
+    symbolData: { symbolID: guid(30), symbolOverrides: [{ guidPath: { guids: [guid(31)] }, rectangleTopRightCornerRadius: 0, ...bindTo("radius", "RECTANGLE_TOP_RIGHT_CORNER_RADIUS", "RECTANGLE_BOTTOM_RIGHT_CORNER_RADIUS") }] },
+  },
+  { id: 24, parent: 2, position: "e", type: "FRAME", name: "Unbound", ...box(0, 0, 10, 10), cornerRadius: 3, ...bindTo("missing", "CORNER_RADIUS") },
   { id: 10, parent: 2, position: "a", type: "FRAME", name: "Light", ...box(0, 0, 100, 100) },
   { id: 15, parent: 10, position: "d", type: "VECTOR", name: "Own", ...darkBy({ guid: guid(4) }), fillPaints: [bound("icon")], ...box(0, 0, 5, 5) },
   { id: 16, parent: 10, position: "e", type: "VECTOR", name: "Loop", fillPaints: [bound("loopA")], ...box(0, 0, 5, 5) },
@@ -81,6 +98,20 @@ describe("withVariables", () => {
     const instance = named("I");
     const override = recs(instance && rec(instance, "symbolData"), "symbolOverrides")[0];
     expect(colorOf(override, "strokePaints")).toEqual({ r: 0.5, g: 0.5, b: 0.5, a: 0.5 });
+  });
+
+  it("takes bound numbers over the node's literals", () => {
+    expect(named("Rounded")).toMatchObject({ rectangleTopLeftCornerRadius: 6, stackHorizontalPadding: 6 });
+  });
+
+  it("takes bound radii over stale or absent literals in instance overrides", () => {
+    const instance = named("Segment");
+    const override = recs(instance && rec(instance, "symbolData"), "symbolOverrides")[0];
+    expect(override).toMatchObject({ rectangleTopRightCornerRadius: 6, rectangleBottomRightCornerRadius: 6 });
+  });
+
+  it("keeps the literal number when the variable is not in the file", () => {
+    expect(named("Unbound")).toBe(nodes.find((n) => n.name === "Unbound"));
   });
 
   it("keeps the inline color when the variable is not in the file", () => {

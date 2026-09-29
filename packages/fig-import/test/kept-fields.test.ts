@@ -11,8 +11,15 @@ const lines = [{ lineType: "PLAIN" }];
 
 const assignment = (def: number, value: Rec): Rec => ({ defID: guid(def), value, varValue: { value } });
 
+const binding = (variableField: string): Rec => ({ variableField, variableData: { value: { alias: { assetRef: { key: "r", version: "v" } } }, dataType: "ALIAS" } });
+
+const slimBinding = (variableField: string): Rec => ({ variableField, variableData: { value: { alias: { assetRef: { key: "r" } } } } });
+
 const symbolOverrides = [
-  { guidPath: { guids: [guid(131)] }, styleIdForFill: { assetRef: { key: "k", version: "v" } }, fillPaints: [solid(0, 1, 0)], fontSize: 30, textData: { characters: "Over", lines } },
+  {
+    guidPath: { guids: [guid(131)] }, styleIdForFill: { assetRef: { key: "k", version: "v" } }, fillPaints: [solid(0, 1, 0)], fontSize: 30,
+    textData: { characters: "Over", lines }, variableConsumptionMap: { entries: [binding("FONT_SIZE")] },
+  },
   { guidPath: { guids: [guid(33)] }, componentPropAssignments: [assignment(8, { textValue: { characters: "Prop", lines } })] },
 ];
 
@@ -38,6 +45,7 @@ const specs: FigSpec[] = [
     rectangleBottomLeftCornerRadius: 4, frameMaskDisabled: true, effects,
     fillPaints: [{ type: "GRADIENT_LINEAR", stops, transform: { m00: 1, m01: 0, m02: 0, m10: 0, m11: 1, m12: 0 } }, { type: "IMAGE", image: { hash: new Uint8Array([10, 255]) }, imageScaleMode: "FIT" }],
     strokePaints: [solid(0, 0, 0)], strokeWeight: 2, strokeAlign: "OUTSIDE",
+    variableConsumptionMap: { entries: [binding("RECTANGLE_TOP_LEFT_CORNER_RADIUS")] },
   },
   {
     id: 11, parent: 10, position: "a", type: "TEXT", name: "Label", ...box(5, 7, 100, 20), ...noise,
@@ -52,6 +60,7 @@ const specs: FigSpec[] = [
   },
   { id: 13, parent: 10, position: "c", type: "VECTOR", name: "Icon", ...box(0, 0, 5, 5), ...noise, visible: false, fillPaints: [solid(0, 0, 0)], fillGeometry: [{ commandsBlob: 0, windingRule: "ODD" }], strokePaints: [solid(0, 0, 0)], strokeGeometry: [{ commandsBlob: 0 }] },
   { id: 14, parent: 10, position: "d", type: "FRAME", name: "Styled", ...box(0, 0, 5, 5), styleIdForFill: { assetRef: { key: "k", version: "v" } }, styleIdForEffect: { guid: guid(5) } },
+  { id: 7, parent: 3, position: "x", type: "VARIABLE", key: "r", variableDataValues: { entries: [{ modeID: guid(9), variableData: { value: { floatValue: 5 } } }] } },
   { id: 5, parent: 3, position: "z", type: "RECTANGLE", name: "Effect style", styleType: "EFFECT", effects, exportSettings: [{}] },
   { id: 6, parent: 3, position: "y", type: "RECTANGLE", name: "Fill style", styleType: "FILL", key: "k", fillPaints: [solid(0, 0, 1)] },
   { id: 30, parent: 3, position: "a", type: "SYMBOL", name: "C", ...box(0, 0, 10, 10), ...noise },
@@ -84,12 +93,15 @@ describe("slimNode", () => {
   it("slims override, prop and derived data", () => {
     const [, , , screen, text, instance] = recs(slimmed, "nodeChanges");
     expect(screen?.derivedSymbolData).toEqual([{ guidPath: { guids: [guid(31)] }, size: { x: 1, y: 1 }, fillGeometry: [{ commandsBlob: 9 }] }]);
-    expect(screen).not.toHaveProperty("variableConsumptionMap");
+    expect(screen?.variableConsumptionMap).toEqual({ entries: [slimBinding("RECTANGLE_TOP_LEFT_CORNER_RADIUS")] });
     expect(text?.textData).toEqual({ characters: "Hi" });
     expect(instance?.symbolData).toEqual({
       symbolID: guid(30),
       symbolOverrides: [
-        { guidPath: { guids: [guid(131)] }, styleIdForFill: { assetRef: { key: "k" } }, fillPaints: [solid(0, 1, 0)], fontSize: 30, textData: { characters: "Over" } },
+        {
+          guidPath: { guids: [guid(131)] }, styleIdForFill: { assetRef: { key: "k" } }, fillPaints: [solid(0, 1, 0)], fontSize: 30, textData: { characters: "Over" },
+          variableConsumptionMap: { entries: [slimBinding("FONT_SIZE")] },
+        },
         { guidPath: { guids: [guid(33)] }, componentPropAssignments: [{ defID: guid(8), value: { textValue: { characters: "Prop" } }, varValue: { value: {} } }] },
       ],
     });
