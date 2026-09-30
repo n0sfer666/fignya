@@ -8,16 +8,18 @@ import { PROGRESS_EVERY, type ImportProgress } from "./import-progress";
 import { blobsOf, buildIndex } from "./tree/node-index";
 import { pagesOf } from "./tree/pages";
 import { preparedNodes, type Prepared } from "./tree/prepared-nodes";
+import { symbolNodes } from "./tree/symbol-nodes";
 import { variablePaints } from "./tree/variables";
+import { withFrozenModes } from "./tree/with-frozen-modes";
 import { childIdsOf, placementsOf } from "./tree/placements";
 
 export const SERVICE_PAGES: ReadonlySet<string> = new Set(["Internal Only Canvas"]);
 
 export function* convertSteps({ nodes: prepared, variables }: Prepared, blobs: Uint8Array[]): Generator<ImportProgress, DesignDocument> {
   const index = buildIndex(prepared, blobs);
-  const paints = variablePaints(variables, (key) => index.byKey.get(key)?.raw);
+  const paints = withFrozenModes(index.byKey.values(), variablePaints(variables, (key) => index.byKey.get(key)?.raw));
   const pathOf = blobPaths(index.blobs);
-  const ctx: ConvertContext = { pathOf, overridesOf: instanceOverrides(index.byKey, pathOf, paints) };
+  const ctx: ConvertContext = { pathOf, overridesOf: instanceOverrides(symbolNodes(index.byKey.values()), pathOf, paints) };
   const canvases = index.root.children.filter((c) => c.type === "CANVAS");
   const placements = placementsOf(canvases);
   const nodes = new Map<NodeId, DesignNode>();

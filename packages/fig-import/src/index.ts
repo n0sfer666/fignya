@@ -4,3 +4,4 @@ export { readArchive, type FigArchive } from "./fig/read-archive";
 export { IMPORT_PHASES, type ImportProgress } from "./import-progress";
 export { SERVICE_PAGES } from "./import-document";
 export { imageMime } from "./image-mime";
+export { settleOverrides, type Settled } from "./settle-overrides";

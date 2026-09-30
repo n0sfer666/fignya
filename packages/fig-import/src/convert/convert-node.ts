@@ -1,5 +1,6 @@
-import type { DesignNode, NodeId, Override, Style } from "@fignya/model";
+import type { DesignNode, InstanceNode, NodeId, Override, Style } from "@fignya/model";
 import { str, type Rec } from "../fig/guards";
+import { lazy } from "../lazy";
 import { componentOf } from "../tree/component-keys";
 import type { FigNode } from "../tree/node-index";
 import { decorationStyle } from "./decoration";
@@ -18,6 +19,15 @@ const containerOf = (raw: Rec): Style => {
   return background.length > 0 ? { ...containerStyle(raw), background } : containerStyle(raw);
 };
 
+const instanceNode = (container: Omit<InstanceNode, "kind" | "componentId" | "overrides">, componentId: NodeId, overrides: () => Override[]): InstanceNode => ({
+  ...container,
+  kind: "instance",
+  componentId,
+  get overrides() {
+    return overrides();
+  },
+});
+
 export const convertNode = (node: FigNode, place: NodePlace, ctx: ConvertContext): DesignNode => {
   const raw = node.raw;
   const isVector = isVectorNode(node.type, raw);
@@ -34,7 +44,7 @@ export const convertNode = (node: FigNode, place: NodePlace, ctx: ConvertContext
   if (isVector) return { ...base, kind: "vector", style, paths: vectorPaths(raw, ctx.pathOf) };
   const container = { ...base, style: { ...style, ...containerOf(raw) } };
   const componentId = node.type === "INSTANCE" ? componentOf(raw) : undefined;
-  if (componentId !== undefined) return { ...container, kind: "instance", componentId, overrides: ctx.overridesOf(node) };
+  if (componentId !== undefined) return instanceNode(container, componentId, lazy(() => ctx.overridesOf(node)));
   if (node.type === "SYMBOL") return { ...container, kind: "component" };
   return { ...container, kind: "frame" };
 };

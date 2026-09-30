@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { Override } from "@fignya/model";
+import type { InstanceNode, Override } from "@fignya/model";
 import type { Rec } from "../src/fig/guards";
+import { convertNode, type ConvertContext } from "../src/convert/convert-node";
 import { instanceResolver } from "../src/convert/instance-resolver-cache";
+import { blobPaths } from "../src/convert/vector";
+import { drain } from "../src/drain";
 import { importDocument } from "../src/import-document";
+import { settleOverrides } from "../src/settle-overrides";
 import { buildIndex } from "../src/tree/node-index";
 import { box, figMessage, figNode, guid, solid, type FigSpec } from "./fixtures";
 
@@ -117,6 +121,38 @@ describe("instance overrides", () => {
 
   it("drops wrap keys when an override switches text to auto-width", () => {
     expect(at(instanceOverridesOf("1:21"), "1:31")?.style).toEqual({ whiteSpace: "pre", overflowWrap: undefined });
+  });
+
+  it("resolves overrides on the first read and reuses them", () => {
+    const index = buildIndex(specs.map(figNode), []);
+    const [instance, frame] = [index.byKey.get("1:20"), index.byKey.get("1:10")];
+    let calls = 0;
+    const ctx: ConvertContext = { pathOf: blobPaths([]), overridesOf: () => (calls += 1, []) };
+    const node = instance && frame && convertNode(instance, { parent: frame.raw, children: [] }, ctx);
+    expect(calls).toBe(0);
+    expect(node?.kind === "instance" && node.overrides === node.overrides).toBe(true);
+    expect(calls).toBe(1);
+  });
+
+  it("settles every instance and counts its overrides", () => {
+    const document = importDocument(message);
+    const total = [...document.nodes.values()].reduce((sum, n) => sum + (n.kind === "instance" ? n.overrides.length : 0), 0);
+    const steps = [...settleOverrides(importDocument(message))];
+    expect(steps).toHaveLength([...document.nodes.values()].filter((n) => n.kind === "instance").length);
+    expect(drain(settleOverrides(importDocument(message)))).toEqual({ overrides: total, failed: 0 });
+  });
+
+  it("keeps settling past an instance that fails to resolve", () => {
+    const document = importDocument(message);
+    const broken = (node: InstanceNode): InstanceNode => ({
+      ...node,
+      get overrides(): Override[] {
+        throw new Error("broken");
+      },
+    });
+    const nodes = new Map([...document.nodes].map(([id, n]) => [id, n.kind === "instance" && id === "1:20" ? broken(n) : n]));
+    const rest = [...nodes.values()].reduce((sum, n) => sum + (n.kind === "instance" && n.id !== "1:20" ? n.overrides.length : 0), 0);
+    expect(drain(settleOverrides({ ...document, nodes }))).toEqual({ overrides: rest, failed: 1 });
   });
 
   it("keeps the nested instance's own swap as its own override", () => {

@@ -5,7 +5,13 @@ import type { AssetQuery, ImporterEvent, ImporterRequest } from "./protocol";
 
 export type ImporterHandler = (request: ImporterRequest) => Promise<void>;
 
-export const createImporterHandler = (send: (event: ImporterEvent) => void, load: (path: string) => Promise<FigImport>): ImporterHandler => {
+export type ImporterDeps = {
+  send: (event: ImporterEvent) => void;
+  load: (path: string) => Promise<FigImport>;
+  settle: (doc: FigImport) => void;
+};
+
+export const createImporterHandler = ({ send, load, settle }: ImporterDeps): ImporterHandler => {
   let loading: Promise<FigImport> | undefined;
 
   const answer = async (query: AssetQuery): Promise<void> => {
@@ -23,9 +29,17 @@ export const createImporterHandler = (send: (event: ImporterEvent) => void, load
     if (request.type !== "load") return answer(request);
     if (loading) return;
     loading = load(request.path);
-    loading.then(
-      (doc) => send({ type: "ready", pages: doc.document.pages }),
-      (error: unknown) => send({ type: "failed", message: errorMessage(error) }),
-    );
+    loading
+      .then(
+        (doc) => {
+          try {
+            send({ type: "ready", pages: doc.document.pages });
+          } finally {
+            settle(doc);
+          }
+        },
+        (error: unknown) => send({ type: "failed", message: errorMessage(error) }),
+      )
+      .catch((error: unknown) => console.error(`fignya: importer: load: ${errorMessage(error)}`));
   };
 };

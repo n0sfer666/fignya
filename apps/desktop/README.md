@@ -24,8 +24,10 @@ bun run dev
 1. Запуск с `FIG_FILE`. Окно ~13 с показывает «Importing FIG_FILE… N%» и прогресс-бар: он
    растёт до 50% за декодирование и до 100% за конвертацию (первые ~0.5 с — 0%, идёт распаковка).
    Колёсика macOS нет: окно двигается и ресайзится, курсор обычный. В Activity Monitor процесс
-   `fignya importer` держит до ~1.5–1.7 ГБ, основной процесс Electron — ~150 МБ. В терминале:
-   `fignya: imported 9 pages, 406 screens in ~13000–14000 ms` (для ROI Navigator).
+   `fignya importer` держит до ~1.9 ГБ, основной процесс Electron — ~150 МБ. В терминале:
+   `fignya: imported 9 pages, 406 screens in ~11000–14500 ms` (для ROI Navigator; верх — Low Power Mode),
+   затем через ~11 с фонового дорезолва оверрайдов (экраны открываются и во время него)
+   `fignya: settled 333207 overrides (0 instances failed) in ~11000 ms`; после него `fignya importer` падает до ~1.2 ГБ.
 2. После импорта: тёмный UI, слева **Pages** (без `Internal Only Canvas`, справа от имени — число
    экранов) и **Screens** текущей страницы; холст вписывает первую страницу.
 3. Миниатюры подгружаются лениво за секунды (сначала белые плашки). Повторный запуск берёт их из
@@ -76,10 +78,11 @@ bun run --cwd packages/fig-import bench
 ```
 
 Вывод — одна JSON-строка: `importMs`, `nodes`, `maxRssMb`, `heapAfterGcMb`. Для ROI Navigator:
-`importMs` ~14000–19000 (верх — в Low Power Mode), `nodes` 360637, `maxRssMb` 2600–3500 (плавает от давления памяти; Node без
-pointer compression, в Electron меньше), `heapAfterGcMb` ~440. Рост с 10–11 с: общие стили ~0.8 с,
-переменные ~1 с, derived-геометрия векторов инстансов.
+`importMs` ~11000 (Low Power Mode), `nodes` 360637, `maxRssMb` 2600–3500 (плавает от давления памяти; Node без
+pointer compression, в Electron меньше), `heapAfterGcMb` ~1090. Оверрайды инстансов в bench не
+резолвятся (ленивые), поэтому куча держит поддеревья компонентов; после резолва всех инстансов — ~490.
 
-Счётчики модели — `bun run --cwd packages/fig-import inspect` (тот же `FIG_FILE`): для ROI Navigator
+Счётчики модели — `bun run --cwd packages/fig-import inspect` (тот же `FIG_FILE`): время сборки
+`ScreenModel` первого открытия экрана `screenModelMs` p50 ~10, p99 ~110, max ~160 мс; для ROI Navigator
 `overrides.total` 333207 (`style` 177039, `hidden` 48342, `text` 40377, `componentId` 20810, `paths` 134267;
 пути — в основном масштабированные иконки инстансов и перекраски, шум округления ≤ 0.02 не считается).
