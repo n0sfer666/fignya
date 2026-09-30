@@ -14,6 +14,8 @@ export type Thumbnails = {
 type Located = { page: Page; screen: Screen };
 
 const RENDER_ATTEMPTS = 2;
+const FIRST_RENDER_TIMEOUT_MS = 3000;
+const RETRY_RENDER_TIMEOUT_MS = 15000;
 
 const logError = (what: string) => (error: unknown): void => console.error(`fignya: ${what}: ${String(error)}`);
 
@@ -46,12 +48,12 @@ export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string):
     return created;
   };
 
-  const render = async (doc: LoadedDocument, screen: Screen, tier: number): Promise<Uint8Array | undefined> => {
+  const render = async (doc: LoadedDocument, screen: Screen, tier: number, timeoutMs: number): Promise<Uint8Array | undefined> => {
     const model = await doc.screen(screen.id);
     if (!model) return undefined;
     const scale = thumbScale(screen.width, screen.height, tier);
     const draw = await rendererOf();
-    const image = await draw(model, scale, Math.max(1, Math.ceil(screen.width * scale)), Math.max(1, Math.ceil(screen.height * scale)));
+    const image = await draw(model, scale, Math.max(1, Math.ceil(screen.width * scale)), Math.max(1, Math.ceil(screen.height * scale)), timeoutMs);
     return image.toPNG();
   };
 
@@ -59,10 +61,12 @@ export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string):
     const cache = await store;
     const cached = await cache.read(screen.id, tier);
     if (cached) return cached;
-    const attempt = (): Promise<Uint8Array | undefined> => render(doc, screen, tier);
+    let timeoutMs = FIRST_RENDER_TIMEOUT_MS;
+    const attempt = (): Promise<Uint8Array | undefined> => render(doc, screen, tier, timeoutMs);
     const beforeRetry = (error: unknown): void => {
       if (!queue.wants(page.id)) throw error;
       logError(`thumbnail ${screen.id} failed, retrying`)(error);
+      timeoutMs = RETRY_RENDER_TIMEOUT_MS;
     };
     const png = await queue.run(tier, page.id, () => retrying(RENDER_ATTEMPTS, attempt, beforeRetry));
     if (!png) return undefined;

@@ -4,11 +4,11 @@ import { THUMB_DONE_CHANNEL, THUMB_JOB_CHANNEL } from "../shared/api";
 import { retrying } from "./retrying";
 import { createWindow, loadPage } from "./windows";
 
-const RENDER_TIMEOUT_MS = 15000;
+const CAPTURE_TIMEOUT_MS = 15000;
 const CAPTURE_ATTEMPTS = 3;
 const CAPTURE_RETRY_MS = 100;
 
-export type ThumbRenderer = (model: ScreenModel, scale: number, width: number, height: number) => Promise<NativeImage>;
+export type ThumbRenderer = (model: ScreenModel, scale: number, width: number, height: number, renderTimeoutMs: number) => Promise<NativeImage>;
 
 type Waiting = { id: number; resolve: () => void; reject: (error: Error) => void };
 
@@ -36,9 +36,9 @@ export const createThumbRenderer = async (onGone: () => void): Promise<ThumbRend
     if (!window.isDestroyed()) window.destroy();
     onGone();
   };
-  const guarded = async <T>(step: Promise<T>, what: string): Promise<T> => {
+  const guarded = async <T>(step: Promise<T>, ms: number, what: string): Promise<T> => {
     try {
-      return await withTimeout(step, RENDER_TIMEOUT_MS, what);
+      return await withTimeout(step, ms, what);
     } catch (error) {
       dispose();
       throw error;
@@ -56,7 +56,7 @@ export const createThumbRenderer = async (onGone: () => void): Promise<ThumbRend
     dispose();
     throw error;
   });
-  return async (model, scale, width, height) => {
+  return async (model, scale, width, height, renderTimeoutMs) => {
     if (disposed) throw new Error("thumbnail renderer is gone");
     lastId += 1;
     const id = lastId;
@@ -66,10 +66,11 @@ export const createThumbRenderer = async (onGone: () => void): Promise<ThumbRend
     });
     window.webContents.send(THUMB_JOB_CHANNEL, { id, model, scale });
     try {
-      await guarded(rendered, "render");
+      await guarded(rendered, renderTimeoutMs, "render");
     } finally {
       waiting = undefined;
     }
-    return guarded(retrying(CAPTURE_ATTEMPTS, () => captureOnce(width, height), () => delay(CAPTURE_RETRY_MS)), "capture");
+    const captured = retrying(CAPTURE_ATTEMPTS, () => captureOnce(width, height), () => delay(CAPTURE_RETRY_MS));
+    return guarded(captured, CAPTURE_TIMEOUT_MS, "capture");
   };
 };
