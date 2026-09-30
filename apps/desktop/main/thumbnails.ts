@@ -6,18 +6,26 @@ import { createThumbRenderer, type ThumbRenderer } from "./thumb-renderer";
 import { effectiveTier, thumbScale } from "./thumb-scale";
 import { createThumbStore, type ThumbStore } from "./thumb-store";
 
-export type Thumbnails = (screenId: string, tier: number) => Promise<Uint8Array | undefined>;
+export type Thumbnails = {
+  image: (screenId: string, tier: number) => Promise<Uint8Array | undefined>;
+  activate: (pageId: string) => void;
+};
+
+type Located = { page: Page; screen: Screen };
 
 const RENDER_ATTEMPTS = 2;
 
 const logError = (what: string) => (error: unknown): void => console.error(`fignya: ${what}: ${String(error)}`);
 
-const findScreen = (pages: Page[], id: string): Screen | undefined =>
-  pages.flatMap((p) => p.screens).find((s) => s.id === id);
+const locate = (pages: Page[], id: string): Located | undefined => {
+  const page = pages.find((p) => p.screens.some((s) => s.id === id));
+  const screen = page?.screens.find((s) => s.id === id);
+  return page && screen ? { page, screen } : undefined;
+};
 
 export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string): Thumbnails => {
   const inflight = new Map<string, Promise<Uint8Array | undefined>>();
-  const queue = priorityQueue();
+  const queue = priorityQueue<string>();
   const store: Promise<ThumbStore> = loaded.then((doc) => {
     const created = createThumbStore(root, doc.cacheKey);
     created.prune().catch(logError("thumbnail cache prune failed"));
@@ -47,27 +55,33 @@ export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string):
     return image.toPNG();
   };
 
-  const generate = async (doc: LoadedDocument, screen: Screen, tier: number): Promise<Uint8Array | undefined> => {
+  const generate = async (doc: LoadedDocument, { page, screen }: Located, tier: number): Promise<Uint8Array | undefined> => {
     const cache = await store;
     const cached = await cache.read(screen.id, tier);
     if (cached) return cached;
     const attempt = (): Promise<Uint8Array | undefined> => render(doc, screen, tier);
-    const png = await queue(tier, () => retrying(RENDER_ATTEMPTS, attempt, logError(`thumbnail ${screen.id} failed, retrying`)));
+    const beforeRetry = (error: unknown): void => {
+      if (!queue.wants(page.id)) throw error;
+      logError(`thumbnail ${screen.id} failed, retrying`)(error);
+    };
+    const png = await queue.run(tier, page.id, () => retrying(RENDER_ATTEMPTS, attempt, beforeRetry));
     if (!png) return undefined;
     await cache.write(screen.id, tier, png).catch(logError("thumbnail cache write failed"));
     return png;
   };
 
-  return async (id, requested) => {
+  const image = async (id: string, requested: number): Promise<Uint8Array | undefined> => {
     const doc = await loaded;
-    const screen = findScreen(doc.pages, id);
-    if (!screen) return undefined;
-    const tier = effectiveTier(screen.width, screen.height, requested);
+    const located = locate(doc.pages, id);
+    if (!located) return undefined;
+    const tier = effectiveTier(located.screen.width, located.screen.height, requested);
     const key = `${id}@${tier}`;
     const known = inflight.get(key);
     if (known) return known;
-    const pending = generate(doc, screen, tier).finally(() => inflight.delete(key));
+    const pending = generate(doc, located, tier).finally(() => inflight.delete(key));
     inflight.set(key, pending);
     return pending;
   };
+
+  return { image, activate: (pageId) => queue.keepOnly((tag) => tag === pageId) };
 };

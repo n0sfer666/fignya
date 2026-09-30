@@ -2,6 +2,7 @@ import { app } from "electron";
 import { join } from "node:path";
 import { LOST_CHANNEL, PROGRESS_CHANNEL } from "../shared/api";
 import { registerDocumentIpc } from "./ipc";
+import { registerPageIpc } from "./page-ipc";
 import { loadDocument, type LoadedDocument } from "./load-document";
 import { registerScheme, serveAssets } from "./protocol";
 import { createThumbnails } from "./thumbnails";
@@ -33,6 +34,7 @@ app.whenReady().then(() => {
   loaded.catch((error: unknown) => console.error(`fignya: ${String(error)}`));
   registerDocumentIpc(loaded);
   const thumbnails = createThumbnails(loaded, join(app.getPath("userData"), "thumbs"));
-  serveAssets(async (asset) => (asset.kind === "image" ? (await loaded).image(asset.id) : thumbnails(asset.id, asset.tier)));
+  registerPageIpc(thumbnails.activate);
+  serveAssets(async (asset) => (asset.kind === "image" ? (await loaded).image(asset.id) : thumbnails.image(asset.id, asset.tier)));
   loadPage(window, "index").catch((error: unknown) => console.error(`fignya: main window failed to load: ${String(error)}`));
 });

@@ -19,7 +19,9 @@ export const Workspace = (props: WorkspaceProps) => {
   });
   onCleanup(() => canvas?.dispose());
   createEffect(() => {
-    if (props.page) canvas?.show(props.page);
+    if (!props.page) return;
+    window.fignya.showPage(props.page.id);
+    canvas?.show(props.page);
   });
   createEffect(() => {
     const id = props.focusId;
