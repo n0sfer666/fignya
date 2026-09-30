@@ -24,7 +24,9 @@ Core (Rust)
 - Документ живёт в процессе импорта (`utilityProcess`, `apps/desktop/importer/`): он читает `.fig`
   потоково по квантам (20 мс работы / 20 мс паузы) и шлёт прогресс. Main держит только `Page[]` и
   `cacheKey`, `ScreenModel` и картинки запрашивает у импортера (`main/import-client.ts`, протокол —
-  `importer/protocol.ts`). Renderer получает `Page[]` по IPC, `ScreenModel` экрана — по клику,
+  `importer/protocol.ts`). Оверрайды инстансов резолвятся лениво (геттер `overrides`, structured
+  clone его вызывает); после `ready` импортер дорезолвит их квантами в фоне и отпускает поддеревья
+  компонентов. Renderer получает `Page[]` по IPC, `ScreenModel` экрана — по клику,
   прогресс импорта — событием `document:progress`.
   Картинки и миниатюры — протокол `fignya://image/<hash>`, `fignya://thumb/<screenId>`.
   Миниатюры: одно offscreen-окно (thumb.html + render-dom) + `capturePage`, последовательная
