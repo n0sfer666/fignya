@@ -121,6 +121,8 @@
   результат `fillGeometry`).
 - Тени: `DROP_SHADOW` у вектора, текста и узла без видимой заливки Figma рисует по содержимому →
   `filter: drop-shadow` (без spread; при размытии слоя — откат на `box-shadow`), иначе `box-shadow`.
+  Spread на ветке `filter` на ROI Navigator (модель экранов) — кольцо 1px alpha 0.02 у кнопок (9517 узлов) и один
+  Tooltip `32:17975` (экран `32:17265`) с видимым spread и blur; рисуются без spread, решение пользователя — не чинить.
   Несколько ключей Style с CSS `filter` сериализуются одной декларацией. Размытие с
   `blurOpType: PROGRESSIVE` (градиентное) CSS-фильтр размазал бы по всему узлу — пропускаем.
   Отражение ребёнка auto layout — `transform` с диагональю ±1 → CSS `scale`. Поворот ребёнка auto layout
