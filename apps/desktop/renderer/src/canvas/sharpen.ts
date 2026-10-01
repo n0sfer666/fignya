@@ -1,8 +1,11 @@
 import { BASE_TIER, tierFor } from "../../../shared/thumb-tiers";
 import { thumbUrl } from "../../../shared/urls";
+import { decodedWithin } from "./decoded-within";
 import { watchDensity } from "./watch-density";
 
 const SETTLE_MS = 200;
+
+const DECODE_MS = 1000;
 
 export type Sharpener = { schedule: (zoom: number) => void; refresh: () => void; dispose: () => void };
 
@@ -12,21 +15,30 @@ const tierIn = (value: string | undefined): number | undefined => (value === und
 
 const isShown = (img: HTMLImageElement): boolean => img.complete && img.naturalWidth > 0;
 
+const swaps = new WeakMap<HTMLElement, HTMLImageElement>();
+
 const swap = (frame: HTMLElement, img: HTMLImageElement, id: string, tier: number): void => {
   const wanted = String(tier);
-  frame.dataset.wanted = wanted;
   const next = new Image();
+  frame.dataset.wanted = wanted;
+  swaps.set(frame, next);
+  const current = (): boolean => swaps.get(frame) === next;
+  const release = (): void => {
+    if (!current()) return;
+    swaps.delete(frame);
+    delete frame.dataset.wanted;
+  };
+  const show = (): void => {
+    if (!current()) return;
+    swaps.delete(frame);
+    img.src = next.src;
+    frame.dataset.tier = wanted;
+  };
+  next.onload = () => {
+    if (current()) void decodedWithin(() => next.decode(), DECODE_MS).then(show, release);
+  };
+  next.onerror = release;
   next.src = thumbUrl(id, tier);
-  next.decode().then(
-    () => {
-      if (frame.dataset.wanted !== wanted) return;
-      img.src = next.src;
-      frame.dataset.tier = wanted;
-    },
-    () => {
-      if (frame.dataset.wanted === wanted) delete frame.dataset.wanted;
-    },
-  );
 };
 
 const retier = (frame: HTMLElement, tier: number): void => {
