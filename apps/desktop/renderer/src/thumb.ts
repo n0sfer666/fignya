@@ -2,6 +2,9 @@ import type { ScreenModel } from "@fignya/model";
 import { renderScreen } from "@fignya/render-dom";
 import type { ThumbJob } from "../../shared/api";
 import { imageUrl } from "../../shared/urls";
+import { redecoding } from "./redecoding";
+
+const REDECODE_MS = 500;
 
 const nextFrame = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve()));
 
@@ -12,7 +15,7 @@ const imageHashes = (model: ScreenModel): string[] => [
 const decodeImage = (hash: string): Promise<void> => {
   const img = new Image();
   img.src = imageUrl(hash);
-  return img.decode().catch(() => undefined);
+  return redecoding(() => img.decode(), REDECODE_MS).catch(() => undefined);
 };
 
 const render = async (job: ThumbJob): Promise<void> => {
