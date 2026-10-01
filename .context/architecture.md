@@ -22,8 +22,8 @@ Core (Rust)
   `packages/render-dom` (model → DOM экрана в Shadow DOM), `apps/desktop` (Electron + Solid).
 - Пакеты экспортируют TS-исходники (`exports: ./src/index.ts`), desktop бандлит их electron-vite.
 - Документ живёт в процессе импорта (`utilityProcess`, `apps/desktop/importer/`): он читает `.fig`
-  потоково по квантам (20 мс работы / 20 мс паузы) и шлёт прогресс. Main держит только `Page[]` и
-  `cacheKey`, `ScreenModel` и картинки запрашивает у импортера (`main/import-client.ts`, протокол —
+  потоково по квантам (20 мс работы / 20 мс паузы) и шлёт прогресс. Main держит только `Page[]`,
+  `cacheKey` и шрифты документа, `ScreenModel` и картинки запрашивает у импортера (`main/import-client.ts`, протокол —
   `importer/protocol.ts`). Оверрайды инстансов резолвятся лениво (геттер `overrides`, structured
   clone его вызывает); после `ready` импортер дорезолвит их квантами в фоне и отпускает поддеревья
   компонентов. Renderer получает `Page[]` по IPC, `ScreenModel` экрана — по клику,
@@ -33,6 +33,11 @@ Core (Rust)
   очередь (приоритет — уровень резкости, тег — страница), кэш в userData. Renderer при смене
   страницы шлёт `thumb:page`: main снимает не начатые задания других страниц (запрос → 404 без лога),
   поздние задания чужих страниц идут после заданий активной и без ретрая.
+  Шрифты: importer после `settled` шлёт `fonts` (семейства/начертания текстов и оверрайдов) в main
+  (`LoadedDocument.fonts`), renderer берёт их через `fonts:usage`, отсеивает установленные (замер
+  canvas) и закэшированные, показывает недостающие; загрузка — IPC `fonts:download` → main
+  (`font-library`) → `fignya://font/<file>`. `@font-face` вставляется в document главного и
+  thumb-окна при старте из кэша (`fonts:faces`) и по событию `fonts:changed`.
 
 - `spikes/<id>-<name>/` — выбрасываемый код без TDD, каждый спайк самодостаточен (свой
   `package.json`/`Cargo.toml`, свой README с runbook и ожидаемым выводом).
