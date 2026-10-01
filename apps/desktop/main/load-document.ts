@@ -8,6 +8,6 @@ export type LoadedDocument = Omit<ImportClient, "pages"> & { pages: Page[]; cach
 export const loadDocument = async (path: string | undefined, events: ImportEvents): Promise<LoadedDocument> => {
   if (!path) throw new Error("FIG_FILE is not set");
   const info = await stat(path);
-  const { pages, screen, image } = startImport(path, events);
-  return { pages: await pages, screen, image, cacheKey: cacheKey(path, info.size, info.mtimeMs, RENDER_HASH) };
+  const { pages, fonts, screen, image } = startImport(path, events);
+  return { pages: await pages, fonts, screen, image, cacheKey: cacheKey(path, info.size, info.mtimeMs, RENDER_HASH) };
 };

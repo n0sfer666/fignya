@@ -1,6 +1,8 @@
-import { app } from "electron";
+import { app, net } from "electron";
 import { join } from "node:path";
 import { LOST_CHANNEL, PROGRESS_CHANNEL } from "../shared/api";
+import { registerFontIpc } from "./font-ipc";
+import { createFontLibrary } from "./font-library";
 import { registerDocumentIpc } from "./ipc";
 import { registerPageIpc } from "./page-ipc";
 import { loadDocument, type LoadedDocument } from "./load-document";
@@ -9,6 +11,8 @@ import { createThumbnails } from "./thumbnails";
 import { createWindow, loadPage } from "./windows";
 
 const FIRST_PAINT_DELAY_MS = 100;
+
+const FONT_FETCH_TIMEOUT_MS = 30_000;
 
 registerScheme();
 
@@ -33,8 +37,14 @@ app.whenReady().then(() => {
   );
   loaded.catch((error: unknown) => console.error(`fignya: ${String(error)}`));
   registerDocumentIpc(loaded);
-  const thumbnails = createThumbnails(loaded, join(app.getPath("userData"), "thumbs"));
+  const fonts = createFontLibrary(join(app.getPath("userData"), "fonts"), (url) => net.fetch(url, { signal: AbortSignal.timeout(FONT_FETCH_TIMEOUT_MS) }));
+  registerFontIpc(loaded, fonts);
+  const thumbnails = createThumbnails(loaded, join(app.getPath("userData"), "thumbs"), async () => (await fonts.faces()).version);
   registerPageIpc(thumbnails.activate);
-  serveAssets(async (asset) => (asset.kind === "image" ? (await loaded).image(asset.id) : thumbnails.image(asset.id, asset.tier)));
+  serveAssets(async (asset) => {
+    if (asset.kind === "image") return (await loaded).image(asset.id);
+    if (asset.kind === "font") return fonts.read(asset.id);
+    return thumbnails.image(asset.id, asset.tier);
+  });
   loadPage(window, "index").catch((error: unknown) => console.error(`fignya: main window failed to load: ${String(error)}`));
 });

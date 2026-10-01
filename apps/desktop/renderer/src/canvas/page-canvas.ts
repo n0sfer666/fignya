@@ -1,4 +1,5 @@
 import type { Page, Screen } from "@fignya/model";
+import { BASE_TIER } from "../../../shared/thumb-tiers";
 import { thumbUrl } from "../../../shared/urls";
 import { bindGestures } from "./gestures";
 import { createSharpener } from "./sharpen";
@@ -14,10 +15,11 @@ export type PageCanvas = {
   focus: (screenId: string) => void;
   open: (screenId: string) => Promise<void>;
   close: () => void;
+  reload: (fontsVersion: string) => void;
   dispose: () => void;
 };
 
-const frameOf = (screen: Screen): HTMLElement => {
+const frameOf = (screen: Screen, version: string): HTMLElement => {
   const frame = document.createElement("div");
   frame.className = "screen";
   frame.dataset.screenId = screen.id;
@@ -27,7 +29,7 @@ const frameOf = (screen: Screen): HTMLElement => {
   img.loading = "lazy";
   img.decoding = "async";
   img.draggable = false;
-  img.src = thumbUrl(screen.id);
+  img.src = thumbUrl(screen.id, BASE_TIER, version);
   frame.append(img);
   return frame;
 };
@@ -36,7 +38,8 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen): PageC
   const world = document.createElement("div");
   world.className = "world";
   el.append(world);
-  const sharpener = createSharpener(el, world);
+  let version = "";
+  const sharpener = createSharpener(el, world, () => version);
   let view: View = { x: 0, y: 0, zoom: 1 };
   let screens = new Map<string, Screen>();
   let live: { id: string; host: HTMLElement } | undefined;
@@ -84,7 +87,7 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen): PageC
   const show = (page: Page): void => {
     close();
     screens = new Map(page.screens.map((s) => [s.id, s]));
-    world.replaceChildren(...page.screens.map(frameOf));
+    world.replaceChildren(...page.screens.map((s) => frameOf(s, version)));
     const bounds = boundsOf(page.screens);
     apply(bounds ? fitView(bounds, el.clientWidth, el.clientHeight, FIT_PADDING) : { x: 0, y: 0, zoom: 1 });
   };
@@ -105,6 +108,11 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen): PageC
     focus,
     open,
     close,
+    reload: (next) => {
+      if (next === version) return;
+      version = next;
+      sharpener.restart();
+    },
     dispose: () => {
       unbind();
       sharpener.dispose();

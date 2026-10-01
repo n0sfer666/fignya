@@ -122,3 +122,30 @@ body,
 .status.error {
   color: #ff6b6b;
 }
+
+.font-status {
+  color: var(--muted);
+}
+
+.font-status.missing,
+.font-status.failed {
+  color: #f5a623;
+}
+
+.font-status.downloaded {
+  color: #3ecf8e;
+}
+
+.fonts-download {
+  margin: 4px 12px 8px;
+  padding: 4px 8px;
+  font: inherit;
+  color: var(--text);
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.fonts-download:hover:not(:disabled) {
+  border-color: var(--accent);
+}

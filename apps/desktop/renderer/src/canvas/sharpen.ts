@@ -7,7 +7,7 @@ const SETTLE_MS = 200;
 
 const DECODE_MS = 1000;
 
-export type Sharpener = { schedule: (zoom: number) => void; refresh: () => void; dispose: () => void };
+export type Sharpener = { schedule: (zoom: number) => void; refresh: () => void; restart: () => void; dispose: () => void };
 
 const overlaps = (a: DOMRect, b: DOMRect): boolean => a.right > b.left && a.left < b.right && a.bottom > b.top && a.top < b.bottom;
 
@@ -17,7 +17,7 @@ const isShown = (img: HTMLImageElement): boolean => img.complete && img.naturalW
 
 const swaps = new WeakMap<HTMLElement, HTMLImageElement>();
 
-const swap = (frame: HTMLElement, img: HTMLImageElement, id: string, tier: number): void => {
+const swap = (frame: HTMLElement, img: HTMLImageElement, url: string, tier: number): void => {
   const wanted = String(tier);
   const next = new Image();
   frame.dataset.wanted = wanted;
@@ -38,25 +38,34 @@ const swap = (frame: HTMLElement, img: HTMLImageElement, id: string, tier: numbe
     if (current()) void decodedWithin(() => next.decode(), DECODE_MS).then(show, release);
   };
   next.onerror = release;
-  next.src = thumbUrl(id, tier);
+  next.src = url;
 };
 
-const retier = (frame: HTMLElement, tier: number): void => {
+const retier = (frame: HTMLElement, tier: number, version: string): void => {
   const img = frame.querySelector("img");
   const id = frame.dataset.screenId;
   const current = tierIn(frame.dataset.wanted) ?? tierIn(frame.dataset.tier) ?? BASE_TIER;
   if (!img || !id || current === tier || frame.classList.contains("live") || !isShown(img)) return;
-  swap(frame, img, id, tier);
+  swap(frame, img, thumbUrl(id, tier, version), tier);
 };
 
-export const createSharpener = (viewport: HTMLElement, world: HTMLElement): Sharpener => {
+const rebase = (frame: HTMLElement, version: string): void => {
+  const img = frame.querySelector("img");
+  const id = frame.dataset.screenId;
+  swaps.delete(frame);
+  delete frame.dataset.wanted;
+  delete frame.dataset.tier;
+  if (img && id) img.src = thumbUrl(id, BASE_TIER, version);
+};
+
+export const createSharpener = (viewport: HTMLElement, world: HTMLElement, version: () => string): Sharpener => {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let zoom = 1;
   const sharpen = (): void => {
     const tier = tierFor(zoom * window.devicePixelRatio);
     const bounds = viewport.getBoundingClientRect();
     for (const frame of world.querySelectorAll<HTMLElement>(".screen")) {
-      retier(frame, overlaps(frame.getBoundingClientRect(), bounds) ? tier : BASE_TIER);
+      retier(frame, overlaps(frame.getBoundingClientRect(), bounds) ? tier : BASE_TIER, version());
     }
   };
   const refresh = (): void => {
@@ -71,6 +80,10 @@ export const createSharpener = (viewport: HTMLElement, world: HTMLElement): Shar
       refresh();
     },
     refresh,
+    restart: () => {
+      for (const frame of world.querySelectorAll<HTMLElement>(".screen")) rebase(frame, version());
+      refresh();
+    },
     dispose: () => {
       clearTimeout(timer);
       unwatch();

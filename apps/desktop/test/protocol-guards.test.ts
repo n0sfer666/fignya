@@ -20,6 +20,8 @@ describe("isImporterEvent", () => {
     expect(isImporterEvent({ type: "progress", progress: { phase: "decode", done: 0, total: 1 } })).toBe(true);
     expect(isImporterEvent({ type: "ready", pages: [] })).toBe(true);
     expect(isImporterEvent({ type: "failed", message: "x" })).toBe(true);
+    expect(isImporterEvent({ type: "fonts", fonts: [] })).toBe(true);
+    expect(isImporterEvent({ type: "fonts", fonts: [{ family: "Inter", nodes: 2, faces: [{ weight: 400, italic: false }] }] })).toBe(true);
     expect(isImporterEvent({ type: "screen", reqId: 1, model: undefined })).toBe(true);
     expect(isImporterEvent({ type: "image", reqId: 1, bytes: new Uint8Array() })).toBe(true);
     expect(isImporterEvent({ type: "refused", request: "screen", reqId: 1, message: "x" })).toBe(true);
@@ -28,6 +30,9 @@ describe("isImporterEvent", () => {
   it("rejects unknown and malformed events", () => {
     expect(isImporterEvent({ type: "other" })).toBe(false);
     expect(isImporterEvent({ type: "image", reqId: 1, bytes: [1] })).toBe(false);
+    expect(isImporterEvent({ type: "fonts", fonts: "Inter" })).toBe(false);
+    expect(isImporterEvent({ type: "fonts", fonts: [{ family: 1, nodes: 1, faces: [] }] })).toBe(false);
+    expect(isImporterEvent({ type: "fonts", fonts: [{ family: "Inter", nodes: 1, faces: [{ weight: "bold", italic: false }] }] })).toBe(false);
     expect(isImporterEvent({ type: "refused", request: "thumb", reqId: 1, message: "x" })).toBe(false);
   });
 });

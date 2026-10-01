@@ -5,7 +5,7 @@ import { DOCUMENT_CHANNEL, SCREEN_CHANNEL, type DocumentState } from "../shared/
 import type { LoadedDocument } from "./load-document";
 import { isAppUrl } from "./windows";
 
-const assertApp = (event: IpcMainInvokeEvent): void => {
+export const assertApp = (event: IpcMainInvokeEvent): void => {
   if (!isAppUrl(event.senderFrame?.url ?? "")) throw new Error("fignya: untrusted IPC sender");
 };
 

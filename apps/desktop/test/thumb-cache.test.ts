@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cacheKey, thumbPath } from "../main/thumb-cache";
+import { cacheKey, fontKey, thumbPath } from "../main/thumb-cache";
 import { effectiveTier, thumbScale } from "../main/thumb-scale";
 
 describe("thumb cache", () => {
@@ -10,6 +10,14 @@ describe("thumb cache", () => {
     expect(cacheKey("/a.fig", 11, 1, "r1")).not.toBe(key);
     expect(cacheKey("/a.fig", 10, 2, "r1")).not.toBe(key);
     expect(cacheKey("/a.fig", 10, 1, "r2")).not.toBe(key);
+  });
+
+  it("keeps the key without downloaded fonts and changes it with every font set", () => {
+    const key = cacheKey("/a.fig", 10, 1, "r1");
+    expect(fontKey(key, "")).toBe(key);
+    expect(fontKey(key, "v1")).toMatch(/^[0-9a-f]{16}$/);
+    expect(fontKey(key, "v1")).not.toBe(key);
+    expect(fontKey(key, "v2")).not.toBe(fontKey(key, "v1"));
   });
 
   it("stores screens under filesystem-safe names and rejects other ids", () => {

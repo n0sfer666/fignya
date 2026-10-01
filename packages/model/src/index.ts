@@ -2,7 +2,7 @@ export type { Color } from "./color";
 export type * from "./style";
 export type * from "./node";
 export type * from "./document";
-export { rgba, type Declaration, type ImageUrl } from "./css-values";
+export { quoted, rgba, type Declaration, type ImageUrl } from "./css-values";
 export { cssDeclarations, cssText } from "./css-text";
 export { expandedComponentId, swapTargets } from "./instance";
 export { applyOverride, mergeOverride, pathKey } from "./override";

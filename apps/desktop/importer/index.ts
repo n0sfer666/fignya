@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { importSteps, readArchive, settleOverrides, type FigImport } from "@fignya/fig-import";
+import { documentFonts, importSteps, readArchive, settleOverrides, type FigImport } from "@fignya/fig-import";
 import { errorMessage } from "../shared/error-message";
 import { createImporterHandler } from "./handler";
 import { IMPORT_PACE, paced } from "./paced";
@@ -25,11 +25,17 @@ const load = async (path: string): Promise<FigImport> => {
 
 const settle = ({ document }: FigImport): void => {
   const started = performance.now();
-  paced(settleOverrides(document), IMPORT_PACE, () => undefined).then(
-    ({ overrides, failed }) =>
-      console.log(`fignya: settled ${overrides} overrides (${failed} instances failed) in ${Math.round(performance.now() - started)} ms`),
-    (error: unknown) => console.error(`fignya: importer: settle: ${errorMessage(error)}`),
-  );
+  paced(settleOverrides(document), IMPORT_PACE, () => undefined)
+    .then(
+      ({ overrides, failed }) =>
+        console.log(`fignya: settled ${overrides} overrides (${failed} instances failed) in ${Math.round(performance.now() - started)} ms`),
+      (error: unknown) => console.error(`fignya: importer: settle: ${errorMessage(error)}`),
+    )
+    .then(() => send({ type: "fonts", fonts: documentFonts(document.nodes) }))
+    .catch((error: unknown) => {
+      console.error(`fignya: importer: fonts: ${errorMessage(error)}`);
+      send({ type: "fonts", fonts: [] });
+    });
 };
 
 const handle = createImporterHandler({ send, load, settle });

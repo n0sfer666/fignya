@@ -2,6 +2,7 @@ import type { Page, Screen } from "@fignya/model";
 import type { LoadedDocument } from "./load-document";
 import { retrying } from "./retrying";
 import { priorityQueue } from "./priority-queue";
+import { fontKey } from "./thumb-cache";
 import { createThumbRenderer, type ThumbRenderer } from "./thumb-renderer";
 import { effectiveTier, thumbScale } from "./thumb-scale";
 import { createThumbStore, type ThumbStore } from "./thumb-store";
@@ -25,15 +26,10 @@ const locate = (pages: Page[], id: string): Located | undefined => {
   return page && screen ? { page, screen } : undefined;
 };
 
-export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string): Thumbnails => {
+export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string, fontsVersion: () => Promise<string>): Thumbnails => {
   const inflight = new Map<string, Promise<Uint8Array | undefined>>();
   const queue = priorityQueue<string>();
-  const store: Promise<ThumbStore> = loaded.then((doc) => {
-    const created = createThumbStore(root, doc.cacheKey);
-    created.prune().catch(logError("thumbnail cache prune failed"));
-    return created;
-  });
-  store.catch(() => undefined);
+  const stores = new Map<string, Promise<ThumbStore>>();
   let renderer: Promise<ThumbRenderer> | undefined;
 
   const rendererOf = (): Promise<ThumbRenderer> => {
@@ -48,6 +44,19 @@ export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string):
     return created;
   };
 
+  const storeFor = (version: string): Promise<ThumbStore> => {
+    const known = stores.get(version);
+    if (known) return known;
+    const created = loaded.then((doc) => {
+      const store = createThumbStore(root, fontKey(doc.cacheKey, version));
+      store.prune().catch(logError("thumbnail cache prune failed"));
+      return store;
+    });
+    created.catch(() => undefined);
+    stores.set(version, created);
+    return created;
+  };
+
   const render = async (doc: LoadedDocument, screen: Screen, tier: number, timeoutMs: number): Promise<Uint8Array | undefined> => {
     const model = await doc.screen(screen.id);
     if (!model) return undefined;
@@ -57,8 +66,8 @@ export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string):
     return image.toPNG();
   };
 
-  const generate = async (doc: LoadedDocument, { page, screen }: Located, tier: number): Promise<Uint8Array | undefined> => {
-    const cache = await store;
+  const generate = async (doc: LoadedDocument, { page, screen }: Located, tier: number, version: string): Promise<Uint8Array | undefined> => {
+    const cache = await storeFor(version);
     const cached = await cache.read(screen.id, tier);
     if (cached) return cached;
     let timeoutMs = FIRST_RENDER_TIMEOUT_MS;
@@ -79,10 +88,11 @@ export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string):
     const located = locate(doc.pages, id);
     if (!located) return undefined;
     const tier = effectiveTier(located.screen.width, located.screen.height, requested);
-    const key = `${id}@${tier}`;
+    const version = await fontsVersion();
+    const key = `${id}@${tier}@${version}`;
     const known = inflight.get(key);
     if (known) return known;
-    const pending = generate(doc, located, tier).finally(() => inflight.delete(key));
+    const pending = generate(doc, located, tier, version).finally(() => inflight.delete(key));
     inflight.set(key, pending);
     return pending;
   };

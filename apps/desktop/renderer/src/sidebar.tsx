@@ -1,5 +1,6 @@
 import { For } from "solid-js";
 import type { Page } from "@fignya/model";
+import { FontsPanel } from "./fonts/fonts-panel";
 
 export type SidebarProps = {
   pages: Page[];
@@ -22,6 +23,7 @@ export const Sidebar = (props: SidebarProps) => {
           )}
         </For>
       </ul>
+      <FontsPanel />
       <h2>Screens</h2>
       <ul class="screens">
         <For each={current()?.screens ?? []}>{(screen) => <li onClick={() => props.onScreen(screen.id)}>{screen.name}</li>}</For>

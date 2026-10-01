@@ -1,8 +1,10 @@
 import { createEffect, onCleanup, onMount } from "solid-js";
 import type { Page, Screen } from "@fignya/model";
 import { renderScreen } from "@fignya/render-dom";
+import type { FontFaces } from "../../shared/fonts";
 import { imageUrl } from "../../shared/urls";
 import { createPageCanvas, type PageCanvas } from "./canvas/page-canvas";
+import { applyFaces } from "./fonts/apply-faces";
 
 export type WorkspaceProps = { page: Page | undefined; focusId: string | undefined };
 
@@ -16,6 +18,12 @@ export const Workspace = (props: WorkspaceProps) => {
   let canvas: PageCanvas | undefined;
   onMount(() => {
     if (el) canvas = createPageCanvas(el, openScreen);
+    const refonted = (faces: FontFaces): void => {
+      applyFaces(faces);
+      canvas?.reload(faces.version);
+    };
+    window.fignya.fontFaces().then(refonted, (error: unknown) => console.error(`fignya: font cache: ${String(error)}`));
+    onCleanup(window.fignya.onFontFaces(refonted));
   });
   onCleanup(() => canvas?.dispose());
   createEffect(() => {

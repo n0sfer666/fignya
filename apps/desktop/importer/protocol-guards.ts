@@ -8,6 +8,11 @@ const isQueryType = (value: unknown): value is "screen" | "image" => value === "
 
 const isOptional = <T>(value: unknown, check: (v: unknown) => v is T): boolean => value === undefined || check(value);
 
+const isFaceUse = (value: unknown): boolean => isFields(value) && typeof value.weight === "number" && typeof value.italic === "boolean";
+
+const isFontUsage = (value: unknown): boolean =>
+  isFields(value) && typeof value.family === "string" && typeof value.nodes === "number" && Array.isArray(value.faces) && value.faces.every(isFaceUse);
+
 const isBytes = (value: unknown): value is Uint8Array => value instanceof Uint8Array;
 
 export const isImporterRequest = (value: unknown): value is ImporterRequest => {
@@ -25,6 +30,8 @@ export const isImporterEvent = (value: unknown): value is ImporterEvent => {
       return Array.isArray(value.pages);
     case "failed":
       return typeof value.message === "string";
+    case "fonts":
+      return Array.isArray(value.fonts) && value.fonts.every(isFontUsage);
     case "screen":
       return typeof value.reqId === "number" && isOptional(value.model, isFields);
     case "image":
