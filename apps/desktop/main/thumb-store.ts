@@ -49,9 +49,9 @@ export const createThumbStore = (root: string, key: string): ThumbStore => {
     },
     prune: async () => {
       const now = Date.now();
-      const touched = mkdir(dir, { recursive: true }).then(() => utimes(dir, new Date(now), new Date(now)));
+      const touched = Promise.allSettled([mkdir(dir, { recursive: true }).then(() => utimes(dir, new Date(now), new Date(now)))]);
       const stale = staleCacheDirs(await cacheDirs(root, key), now);
-      const results = await Promise.allSettled([touched, ...stale.map((entry) => removeUnchanged(root, entry))]);
+      const results = [...(await touched), ...(await Promise.allSettled(stale.map((entry) => removeUnchanged(root, entry))))];
       const failed = results.find((result): result is PromiseRejectedResult => result.status === "rejected");
       if (failed) throw failed.reason;
     },
