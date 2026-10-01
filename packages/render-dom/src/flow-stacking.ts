@@ -6,7 +6,7 @@ const overlap = (style: Style, children: HTMLElement[]): void => {
   const gap = style.gap ?? 0;
   if (gap >= 0) return;
   const side = style.flexDirection === "column" ? "marginTop" : "marginLeft";
-  for (const child of children.filter(inFlow).slice(1)) child.style[side] = `${gap}px`;
+  for (const child of children.filter(inFlow).slice(1)) child.style[side] = `${(Number.parseFloat(child.style[side]) || 0) + gap}px`;
 };
 
 const reverseStacking = (children: HTMLElement[]): void => {

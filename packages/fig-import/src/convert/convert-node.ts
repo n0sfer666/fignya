@@ -31,7 +31,7 @@ const instanceNode = (container: Omit<InstanceNode, "kind" | "componentId" | "ov
 export const convertNode = (node: FigNode, place: NodePlace, ctx: ConvertContext): DesignNode => {
   const raw = node.raw;
   const isVector = isVectorNode(node.type, raw);
-  const style = { ...boxStyle(raw, place.parent), ...decorationStyle(raw, node.type, isVector) };
+  const style = { ...boxStyle(raw, place.parent, isVector), ...decorationStyle(raw, node.type, isVector) };
   const base = {
     id: node.key,
     name: str(raw, "name") ?? "",

@@ -1,4 +1,4 @@
-import type { FlexAlign, Matrix2, Style } from "@fignya/model";
+import type { FlexAlign, Matrix2, Sides, Style } from "@fignya/model";
 import { bool, num, rec, str, type Rec } from "../fig/guards";
 
 const JUSTIFY: Record<string, FlexAlign | "space-between"> = { MIN: "flex-start", CENTER: "center", MAX: "flex-end", SPACE_BETWEEN: "space-between", SPACE_EVENLY: "space-between" };
@@ -45,28 +45,43 @@ const absoluteStyle = (raw: Rec, w: number, h: number): Style => {
   return transform ? { ...style, transform } : style;
 };
 
-const flipStyle = (t: Rec | undefined): Style => {
+const isFlip = (m: Matrix2): boolean => m[1] === 0 && m[2] === 0 && Math.abs(m[0]) === 1 && Math.abs(m[3]) === 1;
+
+const turnStyle = (t: Rec | undefined, w: number, h: number): Style => {
   const m = rotation(t);
-  if (!m || m[1] !== 0 || m[2] !== 0 || Math.abs(m[0]) !== 1 || Math.abs(m[3]) !== 1) return {};
-  return { scale: [m[0], m[3]] };
+  if (!m) return {};
+  if (isFlip(m)) return { scale: [m[0], m[3]] };
+  const x = (Math.abs(m[0]) * w + Math.abs(m[2]) * h - w) / 2;
+  const y = (Math.abs(m[1]) * w + Math.abs(m[3]) * h - h) / 2;
+  return { centerTransform: m, margin: [y, x, y, x] };
 };
 
 const fillStyle = (row: boolean, wrap: boolean, size: number): Style =>
   wrap ? { flexGrow: 1, flexShrink: 1, flexBasis: size } : { flexGrow: 1, flexShrink: 1, flexBasis: 0, ...(row ? { minWidth: 0 } : { minHeight: 0 }) };
 
-const flowStyle = (raw: Rec, parent: Rec, w: number, h: number): Style => {
+const turnedFillStyle = (turn: Style, row: boolean, wrap: boolean, w: number, h: number): Style => {
+  const [y, x] = turn.margin ?? [0, 0];
+  const margin: Sides = row ? [y, 0, y, 0] : [0, x, 0, x];
+  const cross: Style = row ? { height: h } : { width: w };
+  return { ...fillStyle(row, wrap, row ? w + 2 * x : h + 2 * y), ...cross, ...turn, margin, contentSize: [w, h] };
+};
+
+const flowStyle = (raw: Rec, parent: Rec, w: number, h: number, vector: boolean): Style => {
+  const turn = turnStyle(rec(raw, "transform"), w, h);
   const row = str(parent, "stackMode") === "HORIZONTAL";
   const grow = (num(raw, "stackChildPrimaryGrow") ?? 0) > 0;
+  if (turn.centerTransform && grow && vector) return { position: "relative", ...turnedFillStyle(turn, row, isWrapped(parent), w, h) };
+  if (turn.centerTransform) return { position: "relative", flexShrink: 0, width: w, height: h, ...turn };
   const stretch = str(raw, "stackChildAlignSelf") === "STRETCH";
   const main: Style = grow ? fillStyle(row, isWrapped(parent), row ? w : h) : row ? { width: w } : { height: h };
   const cross: Style = stretch ? { alignSelf: "stretch" } : row ? { height: h } : { width: w };
-  return { position: "relative", flexShrink: 0, ...main, ...cross, ...flipStyle(rec(raw, "transform")) };
+  return { position: "relative", flexShrink: 0, ...main, ...cross, ...turn };
 };
 
-export const boxStyle = (raw: Rec, parent: Rec | undefined): Style => {
+export const boxStyle = (raw: Rec, parent: Rec | undefined, vector = false): Style => {
   const size = rec(raw, "size");
   const w = num(size, "x") ?? 0;
   const h = num(size, "y") ?? 0;
   const inFlow = parent !== undefined && isFlex(parent) && str(raw, "stackPositioning") !== "ABSOLUTE";
-  return parent && inFlow ? flowStyle(raw, parent, w, h) : absoluteStyle(raw, w, h);
+  return parent && inFlow ? flowStyle(raw, parent, w, h, vector) : absoluteStyle(raw, w, h);
 };

@@ -1,5 +1,5 @@
 import { backgroundDeclarations } from "./css-background";
-import { dropShadow, px, quoted, rgba, round, shadow, sides, type Declaration, type ImageUrl } from "./css-values";
+import { dropShadow, matrix, px, quoted, rgba, round, shadow, sides, type Declaration, type ImageUrl } from "./css-values";
 import type { Style, StyleValues } from "./style";
 
 type Serializers = { [K in keyof StyleValues]: (value: StyleValues[K], url: ImageUrl) => Declaration[] };
@@ -15,10 +15,12 @@ const SERIALIZERS: Serializers = {
   minWidth: (v) => one("min-width", px(v)),
   minHeight: (v) => one("min-height", px(v)),
   transform: (m) => [
-    ["transform", `matrix(${m.map((n) => round(n, 4)).join(",")},0,0)`],
+    ["transform", matrix(m)],
     ["transform-origin", "0 0"],
   ],
+  centerTransform: (m) => one("transform", matrix(m)),
   scale: ([x, y]) => one("scale", `${x} ${y}`),
+  contentSize: () => [],
   display: (v) => one("display", v),
   flexDirection: (v) => one("flex-direction", v),
   flexWrap: (v) => one("flex-wrap", v),
@@ -26,6 +28,7 @@ const SERIALIZERS: Serializers = {
   rowGap: (v) => one("row-gap", px(v)),
   stackOrder: () => [],
   padding: (v) => one("padding", sides(v)),
+  margin: (v) => one("margin", sides(v)),
   justifyContent: (v) => one("justify-content", v),
   alignItems: (v) => one("align-items", v),
   alignSelf: (v) => one("align-self", v),

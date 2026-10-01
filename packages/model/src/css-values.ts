@@ -1,5 +1,5 @@
 import type { Color } from "./color";
-import type { Shadow, Sides } from "./style";
+import type { Matrix2, Shadow, Sides } from "./style";
 
 export type ImageUrl = (hash: string) => string;
 
@@ -8,6 +8,8 @@ export type Declaration = readonly [string, string];
 export const round = (value: number, digits: number): number => Number(value.toFixed(digits));
 
 export const px = (value: number): string => `${round(value, 2)}px`;
+
+export const matrix = (m: Matrix2): string => `matrix(${m.map((n) => round(n, 4)).join(",")},0,0)`;
 
 export const sides = (value: Sides): string => value.map(px).join(" ");
 

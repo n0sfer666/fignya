@@ -99,6 +99,30 @@ describe("renderScreen", () => {
     expect(overlapped("column")).toEqual([["", ""], ["", ""], ["", "-2px"], ["", "-2px"]]);
   });
 
+  it("keeps the svg of a turned fill child at its stored size in the middle of the grown box", () => {
+    const vector: DesignNode = { id: "v", name: "v", kind: "vector", children: [], style: { flexGrow: 1, contentSize: [215, 0] }, paths: [] };
+    const svg = rootOf(renderScreen(modelOf("s", [frame("s", ["v"]), vector]), { imageUrl })).querySelector<SVGSVGElement>("[data-id=v] svg");
+    expect(svg ? [svg.style.left, svg.style.top, svg.style.width, svg.style.height] : []).toEqual(["calc(50% - 107.5px)", "calc(50% - 0px)", "215px", "0px"]);
+  });
+
+  it("leaves the svg of a screen root vector filling the root", () => {
+    const vector: DesignNode = { id: "v", name: "v", kind: "vector", children: [], style: { contentSize: [215, 0] }, paths: [] };
+    const svg = rootOf(renderScreen(modelOf("v", [vector]), { imageUrl })).querySelector<SVGSVGElement>("svg");
+    expect(svg?.getAttribute("style") ?? "").toBe("");
+  });
+
+  it("adds a negative gap to the margin that sizes a turned flow child", () => {
+    const nodes = [frame("s", ["a", "b"], { display: "flex", flexDirection: "row", gap: -2 }), frame("a"), frame("b", [], { centerTransform: [0, 1, -1, 0], margin: [-5, 5, -5, 5] })];
+    const turned = rootOf(renderScreen(modelOf("s", nodes), { imageUrl })).children[1];
+    expect(turned instanceof HTMLElement ? [turned.style.marginLeft, turned.style.marginTop, turned.style.transform] : []).toEqual(["3px", "-5px", "matrix(0,1,-1,0,0,0)"]);
+  });
+
+  it("adds a negative gap to the top margin of a turned child in a column", () => {
+    const nodes = [frame("s", ["a", "b"], { display: "flex", flexDirection: "column", gap: -2 }), frame("a"), frame("b", [], { centerTransform: [0, 1, -1, 0], margin: [-5, 5, -5, 5] })];
+    const turned = rootOf(renderScreen(modelOf("s", nodes), { imageUrl })).children[1];
+    expect(turned instanceof HTMLElement ? [turned.style.marginTop, turned.style.marginLeft] : []).toEqual(["-7px", "5px"]);
+  });
+
   it("starts the overlap from the first visible child", () => {
     const nodes = [frame("s", ["gone", "a", "b"], { display: "flex", gap: -3 }), { ...frame("gone"), hidden: true }, frame("a"), frame("b")];
     const root = rootOf(renderScreen(modelOf("s", nodes), { imageUrl }));

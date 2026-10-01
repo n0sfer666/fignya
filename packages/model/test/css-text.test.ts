@@ -36,6 +36,7 @@ describe("cssText", () => {
 
   it("serializes rotation matrix with origin", () => {
     expect(cssText({ transform: [0, 1, -1, 0] }, url)).toBe("transform:matrix(0,1,-1,0,0,0);transform-origin:0 0");
+    expect(cssText({ centerTransform: [0, 1, -1, 0], margin: [-5, 5, -5, 5], contentSize: [10, 20] }, url)).toBe("transform:matrix(0,1,-1,0,0,0);margin:-5px 5px -5px 5px");
   });
 
   it("serializes border radius as sides or ellipse", () => {

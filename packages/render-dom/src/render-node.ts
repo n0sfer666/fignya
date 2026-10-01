@@ -2,7 +2,7 @@ import { applyOverride, cssText, expandedComponentId, type DesignNode, type Imag
 import { carriesResize, constrainedStyle, hasOwnBox, resizeOf, type Resize } from "./constrain";
 import { stackChildren } from "./flow-stacking";
 import { EMPTY_SCOPE, nestedScope, type OverrideScope } from "./override-scope";
-import { renderSvg } from "./svg";
+import { centerSvg, renderSvg } from "./svg";
 import { viewBoxOf } from "./view-box";
 
 export type RenderContext = { nodes: NodeMap; imageUrl: ImageUrl };
@@ -11,7 +11,7 @@ type Branch = { depth: number; expanding: ReadonlySet<NodeId>; scope: OverrideSc
 
 const MAX_DEPTH = 64;
 
-const IN_FLOW: Style = { position: "relative", left: undefined, top: undefined, transform: undefined };
+const IN_FLOW: Style = { position: "relative", left: undefined, top: undefined, transform: undefined, centerTransform: undefined, margin: undefined, scale: undefined, contentSize: undefined };
 
 const scalesContent = (stored: DesignNode, componentId: NodeId, component: DesignNode): boolean =>
   stored.kind === "instance" && stored.componentId !== componentId && component.style.display !== "flex";
@@ -39,9 +39,11 @@ const renderTree = (ctx: RenderContext, id: NodeId, branch: Branch, style: (node
   const el = document.createElement("div");
   el.dataset.id = node.id;
   el.dataset.kind = node.kind;
-  el.style.cssText = cssText(style(node), ctx.imageUrl);
+  const own = style(node);
+  el.style.cssText = cssText(own, ctx.imageUrl);
   if (node.kind === "text") el.textContent = node.text;
-  if (node.kind === "vector") el.append(renderSvg(node.paths, viewBoxOf(stored, node.style, override?.paths)));
+  const svg = node.kind === "vector" ? renderSvg(node.paths, viewBoxOf(stored, node.style, override?.paths)) : undefined;
+  if (svg) el.append(own.contentSize ? centerSvg(svg, own.contentSize) : svg);
   const children = childrenOf(ctx, node, stored, branch, carriesResize(node.style, override?.style) ? branch.resize : undefined);
   const rendered = children.ids.flatMap((childId) => renderTree(ctx, childId, children.branch, (n) => n.style) ?? []);
   stackChildren(node.style, rendered);

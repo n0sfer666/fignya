@@ -33,7 +33,9 @@ export type StyleValues = {
   minWidth: Px;
   minHeight: Px;
   transform: Matrix2;
+  centerTransform: Matrix2;
   scale: [number, number];
+  contentSize: [Px, Px];
   display: "flex" | "-webkit-box";
   flexDirection: "row" | "column";
   flexWrap: "wrap";
@@ -41,6 +43,7 @@ export type StyleValues = {
   stackOrder: "first-on-top";
   rowGap: Px;
   padding: Sides;
+  margin: Sides;
   justifyContent: FlexAlign | "space-between";
   alignItems: FlexAlign | "baseline";
   alignSelf: "stretch";

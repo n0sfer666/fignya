@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DesignNode, NodeId, Override } from "@fignya/model";
+import { styleDiff, type DesignNode, type NodeId, type Override, type Style } from "@fignya/model";
 import { renderScreen } from "../src";
 import { frame, modelOf } from "./nodes";
 
@@ -32,6 +32,19 @@ describe("renderScreen overrides", () => {
     expect(el?.style.width).toBe("42px");
     expect(root.querySelector("[data-id=h]")).not.toBeNull();
     expect(root.querySelector("[data-id=v]")).toBeNull();
+  });
+
+  it("drops the turn of a flow child that an override places absolutely, and back", () => {
+    const turned: Style = { position: "relative", width: 10, height: 20, centerTransform: [0, 1, -1, 0], margin: [-5, 5, -5, 5] };
+    const placed: Style = { position: "absolute", left: 1, top: 2, width: 10, height: 20, transform: [0, 1, -1, 0] };
+    const styleOf = (base: Style, next: Style): CSSStyleDeclaration | undefined => {
+      const root = render([frame("s", ["i"]), instance("i", "c", [{ path: ["t"], style: styleDiff(base, next) }]), component("c", ["t"]), frame("t", [], base)]);
+      return root.querySelector<HTMLElement>("[data-id=t]")?.style;
+    };
+    const absolute = styleOf(turned, placed);
+    expect([absolute?.margin, absolute?.transform, absolute?.transformOrigin, absolute?.left]).toEqual(["", "matrix(0,1,-1,0,0,0)", "0 0", "1px"]);
+    const flow = styleOf(placed, turned);
+    expect([flow?.margin, flow?.transform, flow?.transformOrigin, flow?.left]).toEqual(["-5px 5px", "matrix(0,1,-1,0,0,0)", "", ""]);
   });
 
   it("does not leak overrides to other instances of the component", () => {
