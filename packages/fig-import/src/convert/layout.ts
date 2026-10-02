@@ -33,7 +33,7 @@ export const containerStyle = (raw: Rec): Style => {
   return { ...style, gap: wrapGap, flexWrap: "wrap", ...(rowGap === wrapGap ? {} : { rowGap }) };
 };
 
-const rotation = (t: Rec | undefined): Matrix2 | undefined => {
+export const rotation = (t: Rec | undefined): Matrix2 | undefined => {
   const m: Matrix2 = [num(t, "m00") ?? 1, num(t, "m10") ?? 0, num(t, "m01") ?? 0, num(t, "m11") ?? 1];
   return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 1 ? undefined : m;
 };
@@ -45,7 +45,7 @@ const absoluteStyle = (raw: Rec, w: number, h: number): Style => {
   return transform ? { ...style, transform } : style;
 };
 
-const isFlip = (m: Matrix2): boolean => m[1] === 0 && m[2] === 0 && Math.abs(m[0]) === 1 && Math.abs(m[3]) === 1;
+export const isFlip = (m: Matrix2): boolean => m[1] === 0 && m[2] === 0 && Math.abs(m[0]) === 1 && Math.abs(m[3]) === 1;
 
 const turnStyle = (t: Rec | undefined, w: number, h: number): Style => {
   const m = rotation(t);

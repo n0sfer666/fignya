@@ -3,6 +3,7 @@ import type { Rec } from "../fig/guards";
 import { parentKey, type FigNode } from "../tree/node-index";
 import { VARIABLE_FIELDS, type VariablePaints } from "../tree/variables";
 import { convertNode, type ConvertContext } from "./convert-node";
+import { innerFieldsOf } from "./inner-fields";
 import { instanceResolver } from "./instance-resolver-cache";
 import { mergedFields, type Resolved, type Target } from "./instance-resolver";
 import { modeFrames } from "./mode-frames";
@@ -36,15 +37,7 @@ export const instanceOverrides = (byKey: ReadonlyMap<string, FigNode>, pathOf: B
   const repaintAt = (instance: FigNode | undefined, ids: readonly NodeId[], raw: Rec): Rec =>
     instance && paints.bound(raw) ? paints.repaint(raw, modesAt(instance, ids)) : raw;
 
-  const innerFields = (ids: readonly NodeId[]): Rec => {
-    const fields: Rec = {};
-    for (let depth = ids.length - 2; depth >= 0; depth--) {
-      const inner = byKey.get(ids[depth] ?? "");
-      const target = inner && resolve(inner).targets.get(pathKey(ids.slice(depth + 1)));
-      if (target) Object.assign(fields, mergedFields(target));
-    }
-    return fields;
-  };
+  const innerFields = innerFieldsOf(byKey, resolve);
 
   const bases = new Map<string, Base>();
   const baseOf = (node: FigNode, ids: readonly NodeId[]): Base => {
