@@ -28,3 +28,14 @@ app_finish() {
   for dir in $created; do mv "$THUMBS/$dir" "$OUT/thumbs-$1/"; done
   echo "moved: ${created:-none}"
 }
+
+app_run() {
+  local tag=$1 script=$2
+  shift 2
+  app_start "$tag"
+  PORT=$PORT caffeinate -d -i bun "$S/$script" "$@"
+  local code=$?
+  app_finish "$tag"
+  echo "exit $code"
+  exit $code
+}

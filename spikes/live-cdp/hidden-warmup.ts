@@ -1,13 +1,13 @@
 import { clock, connect, imported, setElectronVisible, sleep, waitFor } from "./cdp";
+import { openLargestPage, thumbCounts, visibility, type ThumbCounts } from "./page-thumbs";
 
 const port = process.env.PORT ?? "9445";
 const hiddenMs = Number(process.env.HIDDEN_MS ?? "25000");
 const log = clock();
 const ev = await connect(port);
 
-const vis = async (): Promise<unknown> => ev("document.visibilityState");
-const loaded = async (): Promise<unknown> =>
-  ev(`(() => { const imgs = [...document.querySelectorAll(".screen img")]; return { loaded: imgs.filter((i) => i.complete && i.naturalWidth > 0).length, total: imgs.length, eager: imgs.filter((i) => i.loading === "eager").length }; })()`);
+const vis = (): Promise<unknown> => visibility(ev);
+const counts = (): Promise<ThumbCounts> => thumbCounts(ev);
 if (!(await imported(ev))) {
   log("import did not finish");
   process.exit(2);
@@ -22,14 +22,8 @@ if (!(await waitFor(hide, 10000))) {
   log(`window not hidden: ${String(await vis())}`);
   process.exit(3);
 }
-const picked = await ev(`(() => { const lis = [...document.querySelectorAll("ul.pages li")]; const count = (li) => Number(li.querySelector(".count")?.textContent ?? 0); const li = lis.reduce((a, b) => (count(b) > count(a) ? b : a)); li.click(); return count(li); })()`);
-const expected = typeof picked === "number" ? picked : 0;
+const expected = await openLargestPage(ev);
 log(`hidden, opened page with ${expected} screens`);
-const counts = async (): Promise<{ loaded: number; total: number; eager: number }> => {
-  const s = await loaded();
-  const n = (k: string): number => (typeof s === "object" && s !== null && k in s ? Number(Reflect.get(s, k)) : -1);
-  return { loaded: n("loaded"), total: n("total"), eager: n("eager") };
-};
 await sleep(hiddenMs);
 const hidden = await counts();
 log(`still ${String(await vis())} after ${hiddenMs} ms: ${JSON.stringify(hidden)}`);
