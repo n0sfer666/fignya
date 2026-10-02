@@ -14,7 +14,7 @@ if (!(await imported(ev))) {
   log("import did not finish");
   process.exit(2);
 }
-setElectronVisible(true);
+setElectronVisible(port, true);
 await waitFor(async () => (await ev("document.visibilityState")) === "visible", 5000);
 log(`imported, ${String(await ev("document.visibilityState"))}`);
 

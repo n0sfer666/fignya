@@ -79,14 +79,21 @@ export const connect = async (port: string, waitMs = 60000, callMs = 15000): Pro
 export const imported = (ev: Evaluate): Promise<boolean> =>
   waitFor(async () => (await ev(`document.querySelectorAll("ul.pages li").length`)) !== 0, 120000);
 
-export const osascript = (...lines: string[]): void => {
-  const r = Bun.spawnSync(["osascript", ...lines.flatMap((l) => ["-e", l])]);
+const jxa = (script: string): void => {
+  const r = Bun.spawnSync(["osascript", "-l", "JavaScript", "-e", script]);
   if (r.exitCode !== 0) console.error(`osascript: ${r.stderr.toString().trim()}`);
 };
 
-export const setElectronVisible = (visible: boolean): void =>
-  osascript(
-    'tell application "System Events"',
-    visible ? 'set frontmost of process "Electron" to true' : 'set visible of process "Electron" to false',
-    "end tell",
+const debuggedPids = (port: string): string[] =>
+  Bun.spawnSync(["pgrep", "-f", `remote-debugging-port=${port}( |$)`]).stdout.toString().split("\n").filter(Boolean);
+
+const toggle = (visible: boolean): string =>
+  visible ? "{ app.unhide; app.activateWithOptions($.NSApplicationActivateAllWindows); }" : "app.hide;";
+
+export const setElectronVisible = (port: string, visible: boolean): void => {
+  const pids = debuggedPids(port);
+  if (pids.length === 0) console.error(`no process with remote-debugging-port=${port}`);
+  jxa(
+    `ObjC.import("AppKit"); for (const pid of [${pids.join(", ")}]) { const app = $.NSRunningApplication.runningApplicationWithProcessIdentifier(pid); if (!app.isNil()) ${toggle(visible)} }`,
   );
+};

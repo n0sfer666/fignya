@@ -14,7 +14,7 @@ if (!(await imported(ev))) {
 }
 log("imported");
 const hide = async (): Promise<boolean> => {
-  setElectronVisible(false);
+  setElectronVisible(port, false);
   await sleep(300);
   return (await vis()) === "hidden";
 };
@@ -33,7 +33,7 @@ const counts = async (): Promise<{ loaded: number; total: number; eager: number 
 await sleep(hiddenMs);
 const hidden = await counts();
 log(`still ${String(await vis())} after ${hiddenMs} ms: ${JSON.stringify(hidden)}`);
-setElectronVisible(true);
+setElectronVisible(port, true);
 await waitFor(async () => (await vis()) === "visible", 5000);
 log(`revealed (${String(await vis())}): ${JSON.stringify(await counts())}`);
 const full = await waitFor(async () => {

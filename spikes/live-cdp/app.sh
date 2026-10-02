@@ -7,7 +7,7 @@ FIG=$OUT/copy.fig
 mkdir -p "$OUT" "$THUMBS"
 
 app_stop() {
-  pkill -f "remoteDebuggingPort $PORT"; pkill -f "remote-debugging-port=$PORT"
+  pkill -f "remoteDebuggingPort $PORT"; pkill -f "remote-debugging-port=$PORT( |\$)"
   for _ in $(seq 1 20); do curl -s -m 1 "http://127.0.0.1:$PORT/json" >/dev/null || break; sleep 1; done
 }
 

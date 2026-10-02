@@ -2,7 +2,8 @@
 
 Скрипты для T3 без участия пользователя: dev-экземпляр Electron с `--remoteDebuggingPort`, bun-скрипт
 по WebSocket CDP (`cdp.ts`: подключение к главному окну, `Runtime.evaluate`, скрыть/показать окно через
-System Events). Артефакты — в `out/` (в git не попадает): лог приложения, копия `.fig`, каталог миниатюр прогона.
+`NSRunningApplication` по pid процесса с `--remote-debugging-port=$PORT`). Артефакты — в `out/` (в git не попадает):
+лог приложения, копия `.fig`, каталог миниатюр прогона.
 
 Запуск/остановка экземпляра и перенос каталога миниатюр прогона — общие функции `app.sh` (`app_start`, `app_finish`).
 
@@ -13,7 +14,8 @@ $env.FIG_FILE = ("~/Downloads/ROI Navigator.fig" | path expand)
 bash spikes/live-cdp/run-hidden.sh <tag>
 ```
 
-Нужны `bun`, `osascript` и право Automation/Accessibility для System Events у терминала. Холодный кэш на
+Нужны `bun` и `osascript` (JXA). System Events не годится: ссылка на процесс разрешается по имени, и при втором
+запущенном «Electron» скрывается чужое окно — код 3. Холодный кэш на
 каждый прогон: свежая копия `FIG_FILE` (`cp -c`, клон APFS) в `out/copy.fig`, `touch` меняет mtime → новый ключ кэша;
 каталоги миниатюр, созданные прогоном (разница со списком до запуска), переносятся в `out/thumbs-<tag>`, чужие не трогаются;
 тег должен быть новым. Под `caffeinate -d -i`, порт `PORT`
