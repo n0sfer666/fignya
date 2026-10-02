@@ -1,4 +1,4 @@
-import { clock, connect, setElectronVisible, sleep } from "./cdp";
+import { clock, connect, imported, setElectronVisible, sleep, waitFor } from "./cdp";
 
 const port = process.env.PORT ?? "9445";
 const hiddenMs = Number(process.env.HIDDEN_MS ?? "25000");
@@ -8,16 +8,7 @@ const ev = await connect(port);
 const vis = async (): Promise<unknown> => ev("document.visibilityState");
 const loaded = async (): Promise<unknown> =>
   ev(`(() => { const imgs = [...document.querySelectorAll(".screen img")]; return { loaded: imgs.filter((i) => i.complete && i.naturalWidth > 0).length, total: imgs.length, eager: imgs.filter((i) => i.loading === "eager").length }; })()`);
-const waitFor = async (check: () => Promise<boolean>, ms: number): Promise<boolean> => {
-  const until = Date.now() + ms;
-  while (Date.now() < until) {
-    if (await check()) return true;
-    await sleep(250);
-  }
-  return false;
-};
-
-if (!(await waitFor(async () => (await ev(`document.querySelectorAll("ul.pages li").length`)) !== 0, 120000))) {
+if (!(await imported(ev))) {
   log("import did not finish");
   process.exit(2);
 }

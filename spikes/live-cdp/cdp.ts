@@ -1,6 +1,15 @@
-const isRec = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
+export const isRec = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 
 export const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+export const waitFor = async (check: () => Promise<boolean>, ms: number): Promise<boolean> => {
+  const until = Date.now() + ms;
+  while (Date.now() < until) {
+    if (await check()) return true;
+    await sleep(250);
+  }
+  return false;
+};
 
 export const clock = (): ((s: string) => void) => {
   const t0 = Date.now();
@@ -23,8 +32,9 @@ const mainTarget = async (port: string, waitMs: number): Promise<string> => {
 };
 
 export type Evaluate = (expression: string) => Promise<unknown>;
+export type Send = (method: string, params: Record<string, unknown>) => Promise<unknown>;
 
-export const connect = async (port: string, waitMs = 60000, callMs = 15000): Promise<Evaluate> => {
+export const session = async (port: string, waitMs = 60000, callMs = 15000): Promise<Send> => {
   const ws = new WebSocket(await mainTarget(port, waitMs));
   await new Promise((r) => (ws.onopen = r));
   let seq = 0;
@@ -36,28 +46,38 @@ export const connect = async (port: string, waitMs = 60000, callMs = 15000): Pro
     pending.delete(m.id);
     if (!call) return;
     if (isRec(m.error)) return call.reject(new Error(`CDP error: ${JSON.stringify(m.error)}`));
-    if (isRec(m.result) && isRec(m.result.exceptionDetails)) return call.reject(new Error(`evaluate threw: ${JSON.stringify(m.result.exceptionDetails)}`));
-    call.resolve(isRec(m.result) && isRec(m.result.result) ? m.result.result.value : undefined);
+    call.resolve(m.result);
   };
   ws.onclose = () => {
     for (const call of pending.values()) call.reject(new Error("CDP socket closed"));
     pending.clear();
   };
-  return (expression) =>
+  return (method, params) =>
     new Promise((resolve, reject) => {
       const id = ++seq;
       const timer = setTimeout(() => {
         pending.delete(id);
-        reject(new Error(`evaluate timed out after ${callMs} ms: ${expression.slice(0, 80)}`));
+        reject(new Error(`${method} timed out after ${callMs} ms: ${JSON.stringify(params).slice(0, 80)}`));
       }, callMs);
       const done = <TValue,>(f: (v: TValue) => void) => (v: TValue) => {
         clearTimeout(timer);
         f(v);
       };
       pending.set(id, { resolve: done(resolve), reject: done(reject) });
-      ws.send(JSON.stringify({ id, method: "Runtime.evaluate", params: { expression, returnByValue: true, awaitPromise: true } }));
+      ws.send(JSON.stringify({ id, method, params }));
     });
 };
+
+export const evaluator = (send: Send): Evaluate => async (expression) => {
+  const result = await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
+  if (isRec(result) && isRec(result.exceptionDetails)) throw new Error(`evaluate threw: ${JSON.stringify(result.exceptionDetails)}`);
+  return isRec(result) && isRec(result.result) ? result.result.value : undefined;
+};
+
+export const connect = async (port: string, waitMs = 60000, callMs = 15000): Promise<Evaluate> => evaluator(await session(port, waitMs, callMs));
+
+export const imported = (ev: Evaluate): Promise<boolean> =>
+  waitFor(async () => (await ev(`document.querySelectorAll("ul.pages li").length`)) !== 0, 120000);
 
 export const osascript = (...lines: string[]): void => {
   const r = Bun.spawnSync(["osascript", ...lines.flatMap((l) => ["-e", l])]);
