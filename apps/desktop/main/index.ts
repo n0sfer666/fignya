@@ -40,7 +40,7 @@ app.whenReady().then(() => {
   const fonts = createFontLibrary(join(app.getPath("userData"), "fonts"), (url) => net.fetch(url, { signal: AbortSignal.timeout(FONT_FETCH_TIMEOUT_MS) }));
   registerFontIpc(loaded, fonts);
   const thumbnails = createThumbnails(loaded, join(app.getPath("userData"), "thumbs"), async () => (await fonts.faces()).version);
-  registerPageIpc(thumbnails.activate);
+  registerPageIpc(thumbnails);
   serveAssets(async (asset) => {
     if (asset.kind === "image") return (await loaded).image(asset.id);
     if (asset.kind === "font") return fonts.read(asset.id);

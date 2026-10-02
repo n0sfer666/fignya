@@ -1,4 +1,5 @@
 import type { Page, Screen } from "@fignya/model";
+import type { ThumbFocus } from "../../../shared/api";
 import { BASE_TIER } from "../../../shared/thumb-tiers";
 import { thumbUrl } from "../../../shared/urls";
 import { bindGestures } from "./gestures";
@@ -35,12 +36,12 @@ const frameOf = (screen: Screen, version: string): HTMLElement => {
   return frame;
 };
 
-export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen): PageCanvas => {
+export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusScreens: (focus: ThumbFocus) => void): PageCanvas => {
   const world = document.createElement("div");
   world.className = "world";
   el.append(world);
   let version = "";
-  const sharpener = createSharpener(el, world, () => version);
+  const sharpener = createSharpener(el, world, () => version, focusScreens);
   let view: View = { x: 0, y: 0, zoom: 1 };
   let screens = new Map<string, Screen>();
   let live: { id: string; host: HTMLElement } | undefined;

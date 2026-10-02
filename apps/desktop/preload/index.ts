@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import type { ImportProgress } from "@fignya/fig-import";
 import {
   DOCUMENT_CHANNEL,
+  FOCUS_CHANNEL,
   FONT_CHANGED_CHANNEL,
   FONT_DOWNLOAD_CHANNEL,
   FONT_FACES_CHANNEL,
@@ -36,6 +37,7 @@ const api: FignyaApi = {
   },
   thumbRendered: (id) => ipcRenderer.send(THUMB_DONE_CHANNEL, id),
   showPage: (pageId) => ipcRenderer.send(PAGE_CHANNEL, pageId),
+  focusScreens: (focus) => ipcRenderer.send(FOCUS_CHANNEL, focus),
   documentFonts: () => ipcRenderer.invoke(FONT_USAGE_CHANNEL),
   fontFaces: () => ipcRenderer.invoke(FONT_FACES_CHANNEL),
   onFontFaces: subscribe<FontFaces>(FONT_CHANGED_CHANNEL),

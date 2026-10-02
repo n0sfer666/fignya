@@ -97,3 +97,15 @@ export const setElectronVisible = (port: string, visible: boolean): void => {
     `ObjC.import("AppKit"); for (const pid of [${pids.join(", ")}]) { const app = $.NSRunningApplication.runningApplicationWithProcessIdentifier(pid); if (!app.isNil()) ${toggle(visible)} }`,
   );
 };
+
+export const shownAfterImport = async (ev: Evaluate, port: string, log: (s: string) => void): Promise<number> => {
+  if (!(await imported(ev))) {
+    log("import did not finish");
+    return 2;
+  }
+  log("imported");
+  setElectronVisible(port, true);
+  if (await waitFor(async () => (await ev("document.visibilityState")) === "visible", 10000)) return 0;
+  log(`window not visible: ${String(await ev("document.visibilityState"))}`);
+  return 3;
+};

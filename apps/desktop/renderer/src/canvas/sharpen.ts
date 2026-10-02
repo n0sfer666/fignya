@@ -1,6 +1,9 @@
+import type { ThumbFocus } from "../../../shared/api";
 import { BASE_TIER, tierFor } from "../../../shared/thumb-tiers";
 import { thumbUrl } from "../../../shared/urls";
+import { changesOnly } from "./changes-only";
 import { decodedWithin } from "./decoded-within";
+import { settleTimer } from "./settle-timer";
 import { watchDensity } from "./watch-density";
 
 const SETTLE_MS = 200;
@@ -58,22 +61,24 @@ const rebase = (frame: HTMLElement, version: string): void => {
   if (img && id) img.src = thumbUrl(id, BASE_TIER, version);
 };
 
-export const createSharpener = (viewport: HTMLElement, world: HTMLElement, version: () => string): Sharpener => {
-  let timer: ReturnType<typeof setTimeout> | undefined;
+export const createSharpener = (viewport: HTMLElement, world: HTMLElement, version: () => string, focusScreens: (focus: ThumbFocus) => void): Sharpener => {
   let zoom = 1;
+  const report = changesOnly((next: ThumbFocus) => `${next.tier}|${next.screenIds.join()}`, focusScreens);
   const sharpen = (): void => {
     const tier = tierFor(zoom * window.devicePixelRatio);
     const bounds = viewport.getBoundingClientRect();
+    const visible: string[] = [];
     for (const frame of world.querySelectorAll<HTMLElement>(".screen")) {
-      retier(frame, overlaps(frame.getBoundingClientRect(), bounds) ? tier : BASE_TIER, version());
+      const shown = overlaps(frame.getBoundingClientRect(), bounds);
+      if (shown && frame.dataset.screenId) visible.push(frame.dataset.screenId);
+      retier(frame, shown ? tier : BASE_TIER, version());
     }
+    report({ tier, screenIds: visible });
   };
-  const refresh = (): void => {
-    clearTimeout(timer);
-    timer = setTimeout(sharpen, SETTLE_MS);
-  };
+  const timer = settleTimer(SETTLE_MS, sharpen);
+  const refresh = timer.restart;
   const unwatch = watchDensity(refresh);
-  world.addEventListener("load", refresh, true);
+  world.addEventListener("load", timer.ensure, true);
   return {
     schedule: (next) => {
       zoom = next;
@@ -85,9 +90,9 @@ export const createSharpener = (viewport: HTMLElement, world: HTMLElement, versi
       refresh();
     },
     dispose: () => {
-      clearTimeout(timer);
+      timer.cancel();
       unwatch();
-      world.removeEventListener("load", refresh, true);
+      world.removeEventListener("load", timer.ensure, true);
     },
   };
 };

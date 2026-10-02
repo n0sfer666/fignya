@@ -1,4 +1,5 @@
 import type { Page, Screen } from "@fignya/model";
+import type { ThumbFocus } from "../shared/api";
 import type { LoadedDocument } from "./load-document";
 import { retrying } from "./retrying";
 import { priorityQueue } from "./priority-queue";
@@ -6,10 +7,12 @@ import { fontKey } from "./thumb-cache";
 import { createThumbRenderer, type ThumbRenderer } from "./thumb-renderer";
 import { effectiveTier, thumbScale } from "./thumb-scale";
 import { createThumbStore, type ThumbStore } from "./thumb-store";
+import { inFocus, onPage, type ThumbTag } from "./thumb-tags";
 
 export type Thumbnails = {
   image: (screenId: string, tier: number) => Promise<Uint8Array | undefined>;
   activate: (pageId: string) => void;
+  focusScreens: (focus: ThumbFocus) => void;
 };
 
 type Located = { page: Page; screen: Screen };
@@ -28,7 +31,7 @@ const locate = (pages: Page[], id: string): Located | undefined => {
 
 export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string, fontsVersion: () => Promise<string>): Thumbnails => {
   const inflight = new Map<string, Promise<Uint8Array | undefined>>();
-  const queue = priorityQueue<string>();
+  const queue = priorityQueue<ThumbTag>();
   const stores = new Map<string, Promise<ThumbStore>>();
   let renderer: Promise<ThumbRenderer> | undefined;
 
@@ -70,14 +73,15 @@ export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string, 
     const cache = await storeFor(version);
     const cached = await cache.read(screen.id, tier);
     if (cached) return cached;
+    const tag = { page: page.id, screen, tier };
     let timeoutMs = FIRST_RENDER_TIMEOUT_MS;
-    const attempt = (): Promise<Uint8Array | undefined> => render(doc, screen, tier, timeoutMs);
+    const attempt = (): Promise<Uint8Array | undefined> => queue.run(tier, tag, () => render(doc, screen, tier, timeoutMs));
     const beforeRetry = (error: unknown): void => {
-      if (!queue.wants(page.id)) throw error;
+      if (!queue.wants(tag)) throw error;
       logError(`thumbnail ${screen.id} failed, retrying`)(error);
       timeoutMs = RETRY_RENDER_TIMEOUT_MS;
     };
-    const png = await queue.run(tier, page.id, () => retrying(RENDER_ATTEMPTS, attempt, beforeRetry));
+    const png = await retrying(RENDER_ATTEMPTS, attempt, beforeRetry);
     if (!png) return undefined;
     await cache.write(screen.id, tier, png).catch(logError("thumbnail cache write failed"));
     return png;
@@ -97,5 +101,5 @@ export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string, 
     return pending;
   };
 
-  return { image, activate: (pageId) => queue.keepOnly((tag) => tag === pageId) };
+  return { image, activate: (pageId) => queue.keepOnly(onPage(pageId)), focusScreens: (focus) => queue.prefer(inFocus(focus)) };
 };

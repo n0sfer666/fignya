@@ -17,7 +17,7 @@ export const Workspace = (props: WorkspaceProps) => {
   let el: HTMLDivElement | undefined;
   let canvas: PageCanvas | undefined;
   onMount(() => {
-    if (el) canvas = createPageCanvas(el, openScreen);
+    if (el) canvas = createPageCanvas(el, openScreen, window.fignya.focusScreens);
     const refonted = (faces: FontFaces): void => {
       applyFaces(faces);
       canvas?.reload(faces.version);

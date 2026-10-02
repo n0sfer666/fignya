@@ -6,6 +6,8 @@ export type DocumentState = { status: "ready"; pages: Page[] } | { status: "erro
 
 export type ThumbJob = { id: number; model: ScreenModel; scale: number };
 
+export type ThumbFocus = { tier: number; screenIds: string[] };
+
 export type FignyaApi = {
   documentState: () => Promise<DocumentState>;
   onProgress: (handler: (progress: ImportProgress) => void) => () => void;
@@ -14,6 +16,7 @@ export type FignyaApi = {
   onThumbJob: (handler: (job: ThumbJob) => void) => void;
   thumbRendered: (id: number) => void;
   showPage: (pageId: string) => void;
+  focusScreens: (focus: ThumbFocus) => void;
   documentFonts: () => Promise<FontUsage[]>;
   fontFaces: () => Promise<FontFaces>;
   onFontFaces: (handler: (faces: FontFaces) => void) => () => void;
@@ -28,6 +31,7 @@ export const SCREEN_CHANNEL = "document:screen";
 export const THUMB_JOB_CHANNEL = "thumb:job";
 export const THUMB_DONE_CHANNEL = "thumb:done";
 export const PAGE_CHANNEL = "thumb:page";
+export const FOCUS_CHANNEL = "thumb:focus";
 export const FONT_USAGE_CHANNEL = "fonts:usage";
 export const FONT_FACES_CHANNEL = "fonts:faces";
 export const FONT_CHANGED_CHANNEL = "fonts:changed";
