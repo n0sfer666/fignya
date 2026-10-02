@@ -73,6 +73,37 @@ describe("download batches", () => {
     expect(fontRequests(fontReport(usage, [], systemHas, mergeResults(first, retry)))).toEqual([]);
   });
 
+  it("treats only remembered absent faces as unavailable and asks for the rest", () => {
+    const absent = [
+      { family: "YS Text", ...REGULAR },
+      { family: "Roboto", weight: 450, italic: false },
+    ];
+    const rows = fontReport(usage, [], systemHas, [], absent);
+    expect(rows.map((r) => [r.family, r.status])).toEqual([
+      ["Roboto", "missing"],
+      ["YS Text", "unavailable"],
+    ]);
+    expect(fontRequests(rows)).toEqual([{ family: "Roboto", faces: [REGULAR, BOLD] }]);
+    const partly = fontReport(usage, [{ family: "Roboto", ...REGULAR, file: "a.woff2" }], systemHas, [], [{ family: "Roboto", ...BOLD }]);
+    expect(partly.map((r) => [r.family, r.status, r.unavailableFaces])).toEqual([
+      ["Roboto", "downloaded", 1],
+      ["YS Text", "missing", 0],
+    ]);
+    expect(fontRequests(partly)).toEqual([{ family: "YS Text", faces: [REGULAR] }]);
+    const failed: FontDownload[] = [{ family: "Roboto", status: "failed", missingFaces: 1 }];
+    expect(fontRequests(fontReport(usage, [], systemHas, failed, [{ family: "Roboto", ...BOLD }]))).toEqual([
+      { family: "Roboto", faces: [REGULAR] },
+      { family: "YS Text", faces: [REGULAR] },
+    ]);
+  });
+
+  it("keeps counting remembered absent faces after the rest of the family downloads", () => {
+    const fetched: FontDownload[] = [{ family: "Roboto", status: "downloaded", missingFaces: 0 }];
+    const rows = fontReport(usage.slice(1, 2), [{ family: "Roboto", ...REGULAR, file: "a.woff2" }], systemHas, fetched, [{ family: "Roboto", ...BOLD }]);
+    expect(rows.map((r) => [r.family, r.status, r.unavailableFaces])).toEqual([["Roboto", "downloaded", 1]]);
+    expect(fontRequests(rows)).toEqual([]);
+  });
+
   it("splits requests to the limits main accepts", () => {
     const faces = Array.from({ length: 40 }, (_, i) => ({ weight: i + 1, italic: false }));
     const many: FontUsage[] = Array.from({ length: 70 }, (_, i) => ({ family: `F${i}`, nodes: 1, faces }));

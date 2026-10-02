@@ -1,9 +1,10 @@
-import { mkdtemp, readdir, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { FontFaces } from "../shared/fonts";
 import { createFontLibrary } from "../main/font-library";
+import { RECHECK_AFTER_MS } from "../main/font-unavailable";
 import { cssAnswer, fakeFetcher } from "./font-fetcher";
 
 const ROBOTO = "https://fonts.googleapis.com/css2?family=Roboto:ital,wght@";
@@ -93,5 +94,63 @@ describe("font library", () => {
     ]);
     expect(results.map((r) => r.status)).toEqual(["failed", "unavailable"]);
     expect((await library.download([{ family: "YS Text", faces: [{ weight: 400, italic: false }] }])).map((r) => r.status)).toEqual(["unavailable"]);
+  });
+
+  it("remembers faces missing from Google Fonts across restarts until the recheck is due", async () => {
+    const dir = await tempDir();
+    const start = 1_000_000;
+    const ys = { family: "YS Text", faces: [{ weight: 400, italic: false }] };
+    const ysFace = { family: "YS Text", weight: 400, italic: false };
+    await createFontLibrary(dir, fakeFetcher(routes), () => start).download([ys, { family: "Roboto", faces: [{ weight: 400, italic: false }] }]);
+    expect(await createFontLibrary(dir, fakeFetcher({}), () => start + RECHECK_AFTER_MS - 1).unavailable()).toEqual([ysFace]);
+    expect(await createFontLibrary(dir, fakeFetcher({}), () => start + RECHECK_AFTER_MS).unavailable()).toEqual([]);
+    expect(await createFontLibrary(dir, fakeFetcher({}), () => start - 1).unavailable()).toEqual([]);
+    const later = start + RECHECK_AFTER_MS;
+    await createFontLibrary(dir, fakeFetcher({}), () => later).download([ys]);
+    expect(await createFontLibrary(dir, fakeFetcher({}), () => later + 1).unavailable()).toEqual([ysFace]);
+  });
+
+  it("remembers only the faces that were absent, not their family", async () => {
+    const dir = await tempDir();
+    await createFontLibrary(dir, fakeFetcher(routes)).download([
+      { family: "Roboto", faces: [{ weight: 450, italic: false }] },
+      { family: "Roboto", faces: [{ weight: 400, italic: false }, { weight: 500, italic: false }] },
+    ]);
+    expect(await createFontLibrary(dir, fakeFetcher({})).unavailable()).toEqual([
+      { family: "Roboto", weight: 450, italic: false },
+      { family: "Roboto", weight: 500, italic: false },
+    ]);
+  });
+
+  it("forgets a face once it downloads and keeps the record untouched through a failed attempt", async () => {
+    const dir = await tempDir();
+    const roboto = { family: "Roboto", faces: [{ weight: 400, italic: false }] };
+    await createFontLibrary(dir, fakeFetcher({})).download([roboto]);
+    const record = join(dir, "unavailable.json");
+    const before = await readFile(record, "utf8");
+    const offline = createFontLibrary(dir, async () => Promise.reject(new TypeError("offline")));
+    expect((await offline.download([roboto])).map((r) => r.status)).toEqual(["failed"]);
+    expect(await readFile(record, "utf8")).toBe(before);
+    await createFontLibrary(dir, fakeFetcher(routes)).download([roboto]);
+    expect(await createFontLibrary(dir, fakeFetcher({})).unavailable()).toEqual([]);
+  });
+
+  it("keeps downloading when the record cannot be written and writes it on the next attempt", async () => {
+    const dir = join(await tempDir(), "fonts");
+    await writeFile(dir, "");
+    const library = createFontLibrary(dir, fakeFetcher({}));
+    const ys = { family: "YS Text", faces: [{ weight: 400, italic: false }] };
+    expect((await library.download([ys])).map((r) => r.status)).toEqual(["unavailable"]);
+    await rm(dir);
+    await library.download([ys]);
+    expect(await createFontLibrary(dir, fakeFetcher({})).unavailable()).toEqual([{ family: "YS Text", weight: 400, italic: false }]);
+  });
+
+  it("ignores a corrupt availability record", async () => {
+    const dir = await tempDir();
+    await writeFile(join(dir, "unavailable.json"), '[["YS Text",400,false,"x"],["Geist",400.5,false,1],["Rubik"],{"0":"Rubik"}]');
+    expect(await createFontLibrary(dir, fakeFetcher({})).unavailable()).toEqual([]);
+    await writeFile(join(dir, "unavailable.json"), "[[");
+    expect(await createFontLibrary(dir, fakeFetcher({})).unavailable()).toEqual([]);
   });
 });

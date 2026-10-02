@@ -5,6 +5,7 @@ import {
   FONT_CHANGED_CHANNEL,
   FONT_DOWNLOAD_CHANNEL,
   FONT_FACES_CHANNEL,
+  FONT_UNAVAILABLE_CHANNEL,
   FONT_USAGE_CHANNEL,
   LOST_CHANNEL,
   PAGE_CHANNEL,
@@ -39,6 +40,7 @@ const api: FignyaApi = {
   fontFaces: () => ipcRenderer.invoke(FONT_FACES_CHANNEL),
   onFontFaces: subscribe<FontFaces>(FONT_CHANGED_CHANNEL),
   downloadFonts: (requests) => ipcRenderer.invoke(FONT_DOWNLOAD_CHANNEL, requests),
+  unavailableFonts: () => ipcRenderer.invoke(FONT_UNAVAILABLE_CHANNEL),
 };
 
 contextBridge.exposeInMainWorld("fignya", api);

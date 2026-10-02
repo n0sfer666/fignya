@@ -29,10 +29,11 @@ export const FontsPanel = () => {
   const [busy, setBusy] = createSignal(false);
   window.fignya.fontFaces().then(setFaces, (error: unknown) => console.error(`fignya: font cache: ${String(error)}`));
   onCleanup(window.fignya.onFontFaces(setFaces));
+  const [unavailable] = createResource(() => window.fignya.unavailableFonts());
   const measure = canvasMeasure();
   const presence = new Map<string, boolean>();
   const installed = (family: string): boolean => presence.get(family) ?? presence.set(family, isInstalled(family, measure)).get(family) ?? false;
-  const rows = createMemo(() => fontReport(usage.error ? [] : (usage() ?? []), faces().faces, installed, results()));
+  const rows = createMemo(() => fontReport(usage.error ? [] : (usage() ?? []), faces().faces, installed, results(), unavailable.error ? [] : (unavailable() ?? [])));
   const requests = () => fontRequests(rows());
   const download = async (): Promise<void> => {
     setBusy(true);
@@ -57,7 +58,7 @@ export const FontsPanel = () => {
           )}
         </For>
       </ul>
-      <Show when={requests().length > 0}>
+      <Show when={!unavailable.loading && requests().length > 0}>
         <button class="fonts-download" disabled={busy()} onClick={() => void download()}>
           {busy() ? "Downloading…" : "Download from Google Fonts"}
         </button>

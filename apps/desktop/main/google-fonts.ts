@@ -1,5 +1,5 @@
 import type { FontFaceUse } from "@fignya/fig-import";
-import type { FontDownload, FontRequest } from "../shared/fonts";
+import type { FamilyFace, FontDownload, FontRequest } from "../shared/fonts";
 import { parseFontCss, type FontSource } from "./font-css";
 import { mapLimited } from "./map-limited";
 
@@ -7,7 +7,9 @@ export type Fetcher = (url: string) => Promise<Response>;
 
 export type FetchedFace = FontSource & { family: string; bytes: Uint8Array };
 
-export type FamilyDownload = { result: FontDownload; faces: FetchedFace[] };
+export type FaceCheck = FamilyFace & { present: boolean };
+
+export type FamilyDownload = { result: FontDownload; faces: FetchedFace[]; checks: FaceCheck[] };
 
 const CSS_API = "https://fonts.googleapis.com/css2";
 
@@ -38,12 +40,13 @@ export const downloadFamily = async (fetcher: Fetcher, { family, faces }: FontRe
   try {
     const answers = await mapLimited(wanted, FETCH_LIMIT, (face) => faceCss(fetcher, family, face));
     const missingFaces = answers.filter((css) => css === undefined).length;
+    const checks = wanted.map((face, index) => ({ family, ...face, present: answers[index] !== undefined }));
     const sources = uniqueBy(answers.flatMap((css) => (css === undefined ? [] : parseFontCss(css))), (source) => source.url);
-    if (sources.length === 0) return { result: { family, status: "unavailable", missingFaces }, faces: [] };
+    if (sources.length === 0) return { result: { family, status: "unavailable", missingFaces }, faces: [], checks };
     const fetched = await mapLimited(sources, FETCH_LIMIT, async (source) => ({ ...source, family, bytes: await bytesOf(fetcher, source.url) }));
-    return { result: { family, status: "downloaded", missingFaces }, faces: fetched };
+    return { result: { family, status: "downloaded", missingFaces }, faces: fetched, checks };
   } catch (error) {
     console.error(`fignya: font ${family} download failed: ${String(error)}`);
-    return { result: { family, status: "failed", missingFaces: wanted.length }, faces: [] };
+    return { result: { family, status: "failed", missingFaces: wanted.length }, faces: [], checks: [] };
   }
 };

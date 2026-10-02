@@ -1,6 +1,6 @@
 import type { FontUsage, ImportProgress } from "@fignya/fig-import";
 import type { Page, ScreenModel } from "@fignya/model";
-import type { FontDownload, FontFaces, FontRequest } from "./fonts";
+import type { FamilyFace, FontDownload, FontFaces, FontRequest } from "./fonts";
 
 export type DocumentState = { status: "ready"; pages: Page[] } | { status: "error"; message: string };
 
@@ -18,6 +18,7 @@ export type FignyaApi = {
   fontFaces: () => Promise<FontFaces>;
   onFontFaces: (handler: (faces: FontFaces) => void) => () => void;
   downloadFonts: (requests: FontRequest[]) => Promise<FontDownload[]>;
+  unavailableFonts: () => Promise<FamilyFace[]>;
 };
 
 export const DOCUMENT_CHANNEL = "document:state";
@@ -31,3 +32,4 @@ export const FONT_USAGE_CHANNEL = "fonts:usage";
 export const FONT_FACES_CHANNEL = "fonts:faces";
 export const FONT_CHANGED_CHANNEL = "fonts:changed";
 export const FONT_DOWNLOAD_CHANNEL = "fonts:download";
+export const FONT_UNAVAILABLE_CHANNEL = "fonts:unavailable";

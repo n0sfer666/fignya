@@ -1,7 +1,7 @@
 import { BrowserWindow, ipcMain } from "electron";
 import type { FontUsage } from "@fignya/fig-import";
-import { FONT_CHANGED_CHANNEL, FONT_DOWNLOAD_CHANNEL, FONT_FACES_CHANNEL, FONT_USAGE_CHANNEL } from "../shared/api";
-import type { FontDownload, FontFaces } from "../shared/fonts";
+import { FONT_CHANGED_CHANNEL, FONT_DOWNLOAD_CHANNEL, FONT_FACES_CHANNEL, FONT_UNAVAILABLE_CHANNEL, FONT_USAGE_CHANNEL } from "../shared/api";
+import type { FamilyFace, FontDownload, FontFaces } from "../shared/fonts";
 import type { FontLibrary } from "./font-library";
 import { isFontRequests } from "./font-request-guards";
 import { assertApp } from "./ipc";
@@ -22,6 +22,10 @@ export const registerFontIpc = (loaded: Promise<LoadedDocument>, library: FontLi
   ipcMain.handle(FONT_FACES_CHANNEL, (event): Promise<FontFaces> => {
     assertApp(event);
     return library.faces();
+  });
+  ipcMain.handle(FONT_UNAVAILABLE_CHANNEL, (event): Promise<FamilyFace[]> => {
+    assertApp(event);
+    return library.unavailable();
   });
   ipcMain.handle(FONT_DOWNLOAD_CHANNEL, (event, requests: unknown): Promise<FontDownload[]> => {
     assertApp(event);

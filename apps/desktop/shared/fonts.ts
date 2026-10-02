@@ -2,6 +2,8 @@ import type { FontFaceUse } from "@fignya/fig-import";
 
 export type StoredFace = FontFaceUse & { family: string; unicodeRange?: string; file: string };
 
+export type FamilyFace = FontFaceUse & { family: string };
+
 export type FontFaces = { version: string; faces: StoredFace[] };
 
 export type FontRequest = { family: string; faces: FontFaceUse[] };

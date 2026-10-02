@@ -15,8 +15,12 @@ describe("downloadFamily", () => {
       "https://fonts.gstatic.com/s/a.woff2": () => new Response(new Uint8Array([1])),
       "https://fonts.gstatic.com/s/b.woff2": () => new Response(new Uint8Array([2])),
     });
-    const { result, faces } = await downloadFamily(fetcher, { family: "IBM Plex Mono", faces: [{ weight: 400, italic: false }, { weight: 950, italic: true }] });
+    const { result, faces, checks } = await downloadFamily(fetcher, { family: "IBM Plex Mono", faces: [{ weight: 400, italic: false }, { weight: 950, italic: true }] });
     expect(result).toEqual({ family: "IBM Plex Mono", status: "downloaded", missingFaces: 1 });
+    expect(checks).toEqual([
+      { family: "IBM Plex Mono", weight: 400, italic: false, present: true },
+      { family: "IBM Plex Mono", weight: 950, italic: true, present: false },
+    ]);
     expect(faces.map((f) => [f.family, f.weight, f.italic, f.unicodeRange, [...f.bytes]])).toEqual([
       ["IBM Plex Mono", 400, false, "U+0400-045F", [1]],
       ["IBM Plex Mono", 400, false, "U+0400-045F", [2]],
@@ -38,9 +42,10 @@ describe("downloadFamily", () => {
   });
 
   it("reports families Google Fonts does not have", async () => {
-    const { result, faces } = await downloadFamily(fakeFetcher({}), { family: "YS Text", faces: [{ weight: 400, italic: false }] });
+    const { result, faces, checks } = await downloadFamily(fakeFetcher({}), { family: "YS Text", faces: [{ weight: 400, italic: false }] });
     expect(result).toEqual({ family: "YS Text", status: "unavailable", missingFaces: 1 });
     expect(faces).toEqual([]);
+    expect(checks).toEqual([{ family: "YS Text", weight: 400, italic: false, present: false }]);
   });
 
   it("fails the whole family on network or server errors", async () => {
@@ -53,6 +58,6 @@ describe("downloadFamily", () => {
       }),
       { family: "IBM Plex Mono", faces: [{ weight: 400, italic: false }] },
     );
-    expect(broken).toEqual({ result: { family: "IBM Plex Mono", status: "failed", missingFaces: 1 }, faces: [] });
+    expect(broken).toEqual({ result: { family: "IBM Plex Mono", status: "failed", missingFaces: 1 }, faces: [], checks: [] });
   });
 });
