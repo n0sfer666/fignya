@@ -2,6 +2,7 @@ import type { Page, Screen } from "@fignya/model";
 import { BASE_TIER } from "../../../shared/thumb-tiers";
 import { thumbUrl } from "../../../shared/urls";
 import { bindGestures } from "./gestures";
+import { loadingFor } from "./loading-for";
 import { createSharpener } from "./sharpen";
 import { boundsOf, fitView, panBy, zoomAround, type View } from "./viewport";
 
@@ -26,7 +27,7 @@ const frameOf = (screen: Screen, version: string): HTMLElement => {
   frame.title = screen.name;
   frame.style.cssText = `left:${screen.x}px;top:${screen.y}px;width:${screen.width}px;height:${screen.height}px`;
   const img = document.createElement("img");
-  img.loading = "lazy";
+  img.loading = loadingFor(document.visibilityState);
   img.decoding = "async";
   img.draggable = false;
   img.src = thumbUrl(screen.id, BASE_TIER, version);
