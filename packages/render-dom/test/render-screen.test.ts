@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DesignNode } from "@fignya/model";
+import type { DesignNode, ImageFill, VectorPath } from "@fignya/model";
 import { renderScreen } from "../src";
 import { frame, modelOf } from "./nodes";
 
@@ -97,6 +97,29 @@ describe("renderScreen", () => {
     };
     expect(overlapped("row")).toEqual([["", ""], ["", ""], ["-2px", ""], ["-2px", ""]]);
     expect(overlapped("column")).toEqual([["", ""], ["", ""], ["", "-2px"], ["", "-2px"]]);
+  });
+
+  it("fills vector paths with an image pattern spanning the vector box", () => {
+    const fill: ImageFill = { hash: "ab", fit: "cover" };
+    const paths: VectorPath[] = [{ d: "M0 0Z", fill, rule: "nonzero" }, { d: "M1 1Z", fill, rule: "nonzero" }];
+    const vector: DesignNode = { id: "v", name: "v", kind: "vector", children: [], style: {}, paths };
+    const svg = rootOf(renderScreen(modelOf("s", [frame("s", ["v"]), vector]), { imageUrl })).querySelector("[data-id=v] svg");
+    const patterns = svg?.querySelectorAll("defs pattern") ?? [];
+    const image = patterns[0]?.querySelector("image");
+    expect(patterns.length).toBe(1);
+    expect([patterns[0]?.getAttribute("patternUnits"), patterns[0]?.getAttribute("width"), patterns[0]?.getAttribute("height")]).toEqual(["userSpaceOnUse", "100%", "100%"]);
+    expect([image?.getAttribute("href"), image?.getAttribute("preserveAspectRatio"), image?.getAttribute("width")]).toEqual([imageUrl("ab"), "xMidYMid slice", "100%"]);
+    expect([...(svg?.querySelectorAll("path") ?? [])].map((p) => p.getAttribute("fill"))).toEqual([`url(#${patterns[0]?.id})`, `url(#${patterns[0]?.id})`]);
+  });
+
+  it("gives each vector its own image pattern, sized by its own box", () => {
+    const fill: ImageFill = { hash: "ab", fit: "cover" };
+    const vector = (id: string): DesignNode => ({ id, name: id, kind: "vector", children: [], style: {}, paths: [{ d: "M0 0Z", fill, rule: "nonzero" }] });
+    const root = rootOf(renderScreen(modelOf("s", [frame("s", ["a", "b"]), vector("a"), vector("b")]), { imageUrl }));
+    const ids = ["a", "b"].map((id) => root.querySelector(`[data-id=${id}] svg pattern`)?.id);
+    const fills = ["a", "b"].map((id) => root.querySelector(`[data-id=${id}] svg path`)?.getAttribute("fill"));
+    expect(new Set(ids).size).toBe(2);
+    expect(fills).toEqual(ids.map((id) => `url(#${id})`));
   });
 
   it("keeps the svg of a turned fill child at its stored size in the middle of the grown box", () => {

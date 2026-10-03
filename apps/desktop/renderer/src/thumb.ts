@@ -1,17 +1,13 @@
-import type { ScreenModel } from "@fignya/model";
 import { renderScreen } from "@fignya/render-dom";
 import type { ThumbJob } from "../../shared/api";
 import { imageUrl } from "../../shared/urls";
 import { applyFaces } from "./fonts/apply-faces";
+import { imageHashes } from "./image-hashes";
 import { redecoding } from "./redecoding";
 
 const REDECODE_MS = 500;
 
 const nextFrame = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve()));
-
-const imageHashes = (model: ScreenModel): string[] => [
-  ...new Set([...model.nodes.values()].flatMap((n) => (n.style.background ?? []).flatMap((p) => (p.kind === "image" ? [p.hash] : [])))),
-];
 
 const decodeImage = (hash: string): Promise<void> => {
   const img = new Image();

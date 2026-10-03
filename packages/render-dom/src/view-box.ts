@@ -1,8 +1,13 @@
 import type { DesignNode, Style, VectorPath } from "@fignya/model";
 import { same, sizeOf, type Size } from "./constrain";
 
-const sameGeometry = (paths: VectorPath[], base: VectorPath[]): boolean =>
-  paths.length === base.length && paths.every((path, index) => path.d === base[index]?.d);
+const shapes = (paths: VectorPath[]): string[] => [...new Set(paths.map((path) => path.d))].sort();
+
+const sameGeometry = (paths: VectorPath[], base: VectorPath[]): boolean => {
+  const own = shapes(paths);
+  const stored = shapes(base);
+  return own.length === stored.length && own.every((d, index) => d === stored[index]);
+};
 
 const hasOwnGeometry = (stored: DesignNode, paths: VectorPath[] | undefined): boolean =>
   paths !== undefined && stored.kind === "vector" && !sameGeometry(paths, stored.paths);

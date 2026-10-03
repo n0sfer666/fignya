@@ -47,6 +47,20 @@ describe("vectorPaths", () => {
     ]);
   });
 
+  it("fills geometry with the image paint on top over the solid below it", () => {
+    const image = (hash: number, imageScaleMode: string) => ({ type: "IMAGE", image: { hash: new Uint8Array([hash]) }, imageScaleMode });
+    const raw = { fillPaints: [solid(1, 0, 0), image(0xab, "FIT"), image(0xcd, "FILL")], fillGeometry: [{ commandsBlob: 0 }] };
+    expect(vectorPaths(raw, blobPaths([blobOf([[1, 0, 0], [0]])]))).toEqual([
+      { d: "M0 0Z", fill: { r: 255, g: 0, b: 0, a: 1 }, rule: "nonzero" },
+      { d: "M0 0Z", fill: { hash: "cd", fit: "cover" }, rule: "nonzero" },
+    ]);
+  });
+
+  it("keeps the solid fill when a solid paint covers the image", () => {
+    const raw = { fillPaints: [{ type: "IMAGE", image: { hash: new Uint8Array([1]) } }, solid(0, 1, 0)], fillGeometry: [{ commandsBlob: 0 }] };
+    expect(vectorPaths(raw, blobPaths([blobOf([[0]])]))).toEqual([{ d: "Z", fill: { r: 0, g: 255, b: 0, a: 1 }, rule: "nonzero" }]);
+  });
+
   it("skips geometry without solid paint", () => {
     expect(vectorPaths({ fillGeometry: [{ commandsBlob: 0 }] }, blobPaths([blobOf([[0]])]))).toEqual([]);
   });

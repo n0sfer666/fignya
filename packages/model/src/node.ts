@@ -1,9 +1,11 @@
 import type { Color } from "./color";
-import type { Style } from "./style";
+import type { ImageFit, Style } from "./style";
 
 export type NodeId = string;
 
-export type VectorPath = { d: string; fill: Color; rule: "nonzero" | "evenodd" };
+export type ImageFill = { hash: string; fit: ImageFit };
+
+export type VectorPath = { d: string; fill: Color | ImageFill; rule: "nonzero" | "evenodd" };
 
 export type Constraint = "min" | "center" | "max" | "stretch" | "scale";
 

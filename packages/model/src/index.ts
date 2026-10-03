@@ -4,6 +4,7 @@ export type * from "./node";
 export type * from "./document";
 export { quoted, rgba, type Declaration, type ImageUrl } from "./css-values";
 export { cssDeclarations, cssText } from "./css-text";
+export { isImageFill } from "./image-fill";
 export { expandedComponentId, swapTargets } from "./instance";
 export { applyOverride, mergeOverride, pathKey } from "./override";
 export { screenModel } from "./screen-model";

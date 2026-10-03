@@ -42,7 +42,7 @@ const renderTree = (ctx: RenderContext, id: NodeId, branch: Branch, style: (node
   const own = style(node);
   el.style.cssText = cssText(own, ctx.imageUrl);
   if (node.kind === "text") el.textContent = node.text;
-  const svg = node.kind === "vector" ? renderSvg(node.paths, viewBoxOf(stored, node.style, override?.paths)) : undefined;
+  const svg = node.kind === "vector" ? renderSvg(node.paths, ctx.imageUrl, viewBoxOf(stored, node.style, override?.paths)) : undefined;
   if (svg) el.append(own.contentSize ? centerSvg(svg, own.contentSize) : svg);
   const children = childrenOf(ctx, node, stored, branch, carriesResize(node.style, override?.style) ? branch.resize : undefined);
   const rendered = children.ids.flatMap((childId) => renderTree(ctx, childId, children.branch, (n) => n.style) ?? []);

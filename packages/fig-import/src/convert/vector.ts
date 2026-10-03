@@ -1,6 +1,6 @@
-import type { Color, VectorPath } from "@fignya/model";
+import type { Color, ImageFill, VectorPath } from "@fignya/model";
 import { num, rec, recs, str, type Rec } from "../fig/guards";
-import { firstSolid } from "./paint";
+import { firstSolid, paintsOf } from "./paint";
 
 export const VECTOR_TYPES: ReadonlySet<string> = new Set(["VECTOR", "BOOLEAN_OPERATION", "STAR", "LINE", "REGULAR_POLYGON"]);
 
@@ -52,7 +52,12 @@ export const blobPaths = (blobs: Uint8Array[]): BlobPaths => {
   };
 };
 
-const paths = (raw: Rec, geometryKey: string, fill: Color | undefined, pathOf: BlobPaths): VectorPath[] => {
+const topImage = (raw: Rec, key: string): ImageFill | undefined => {
+  const [top] = paintsOf(raw, key);
+  return top?.kind === "image" ? { hash: top.hash, fit: top.fit } : undefined;
+};
+
+const paths = (raw: Rec, geometryKey: string, fill: Color | ImageFill | undefined, pathOf: BlobPaths): VectorPath[] => {
   if (!fill) return [];
   return recs(raw, geometryKey).flatMap((g): VectorPath[] => {
     const d = pathOf(num(g, "commandsBlob") ?? -1);
@@ -61,7 +66,13 @@ const paths = (raw: Rec, geometryKey: string, fill: Color | undefined, pathOf: B
   });
 };
 
+const fillLayers = (raw: Rec): (Color | ImageFill | undefined)[] => {
+  const solid = firstSolid(raw, "fillPaints");
+  const image = topImage(raw, "fillPaints");
+  return image ? [solid, image] : [solid];
+};
+
 export const vectorPaths = (raw: Rec, pathOf: BlobPaths): VectorPath[] => [
-  ...paths(raw, "fillGeometry", firstSolid(raw, "fillPaints"), pathOf),
+  ...fillLayers(raw).flatMap((fill) => paths(raw, "fillGeometry", fill, pathOf)),
   ...paths(raw, "strokeGeometry", firstSolid(raw, "strokePaints"), pathOf),
 ];

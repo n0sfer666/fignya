@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Constraints, DesignNode, NodeId, Override, Style, VectorPath } from "@fignya/model";
+import type { Constraints, DesignNode, ImageFill, NodeId, Override, Style, VectorPath } from "@fignya/model";
 import { renderScreen } from "../src";
 import { frame, modelOf } from "./nodes";
 
@@ -107,6 +107,13 @@ describe("renderScreen constraints", () => {
     expect(elementOf(flat, "k")?.querySelector("svg")?.hasAttribute("viewBox")).toBe(false);
     const recolored: VectorPath[] = PATHS.map((p) => ({ ...p, fill: { r: 1, g: 0, b: 0, a: 1 } }));
     const own = nestedSwap().map((n) => (n.id === "i" ? instance("i", "c", at(0, 0, 44, 44), [{ path: ["n"], componentId: "e" }, { path: ["n", "v"], paths: recolored }]) : n));
+    expect(elementOf(own, "v")?.querySelector("svg")?.getAttribute("viewBox")).toBe("0 0 14 14");
+  });
+
+  it("stretches paths whose override lays an image over the component geometry", () => {
+    const photo: ImageFill = { hash: "ab", fit: "cover" };
+    const layered: VectorPath[] = [...PATHS, ...PATHS.map((p) => ({ ...p, fill: photo }))];
+    const own = nestedSwap().map((n) => (n.id === "i" ? instance("i", "c", at(0, 0, 44, 44), [{ path: ["n"], componentId: "e" }, { path: ["n", "v"], paths: layered }]) : n));
     expect(elementOf(own, "v")?.querySelector("svg")?.getAttribute("viewBox")).toBe("0 0 14 14");
   });
 
