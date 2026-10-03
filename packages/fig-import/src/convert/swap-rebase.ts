@@ -2,6 +2,7 @@ import { sameValue, type NodeId } from "@fignya/model";
 import { rec, type Rec } from "../fig/guards";
 import { componentOf } from "../tree/component-keys";
 import { guidKey, type FigNode } from "../tree/node-index";
+import { unbound } from "./unbound";
 
 const OWN_FIELDS: ReadonlySet<string> = new Set([
   "guid",
@@ -29,7 +30,7 @@ export const swappedTo = (raw: Rec): NodeId | undefined => {
 const inheritedFields = (raw: Rec, from: Rec, to: Rec): Rec => {
   const inherited: Rec = {};
   for (const key of new Set([...Object.keys(from), ...Object.keys(to)])) {
-    if (!OWN_FIELDS.has(key) && sameValue(raw[key], from[key])) inherited[key] = to[key];
+    if (!OWN_FIELDS.has(key) && sameValue(unbound(raw[key]), unbound(from[key]))) inherited[key] = to[key];
   }
   return inherited;
 };
