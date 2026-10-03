@@ -104,7 +104,18 @@ bun spikes/live-cdp/page-fit.ts
 $env.FIG_FILE = ("~/Downloads/ROI Navigator.fig" | path expand)
 bun spikes/live-cdp/turned-grow.ts
 bun spikes/live-cdp/node-path.ts 12645:43534 14999:110842
+bun spikes/live-cdp/node-tree.ts 2479:25954 4
+bun spikes/live-cdp/screen-html.ts 2479:25954
 ```
+
+Сверка экрана с эталоном по нодам: `node-tree.ts <id> [depth]` — поддерево сырых узлов (тип, имя, размер, позиция, HIDDEN, stack,
+constraint, типы заливок/обводок, `sym` инстанса); `screen-html.ts <id>` — экран через `importFig` → `renderScreen` в happy-dom,
+содержимое shadow root в `out/<id с «-»>.html` (картинки — `img/<hash>`), по нему видно итоговый CSS/SVG узла по `data-id`.
+
+Миниатюры (без `.fig`): `bun spikes/live-cdp/tier-scan.ts <каталог кэша экземпляра>` — `@2x`, ужатый до `@1x`, против `@1x` (и `@1x`
+против base), среднее расхождение канала; растянутые/обрезанные уровни дают ~12 против ~1. `osr-size.cjs` и `osr-zoom.cjs` —
+голый Electron (`apps/desktop/node_modules/.bin/electron spikes/live-cdp/osr-zoom.cjs` из корня): offscreen-снимок большого размера не
+обрезается; зум страницы главного окна на общем http-origin меняет и offscreen-окно (26-10-03: inner 2629×1753 вместо 2880×1920).
 
 `turned-grow.ts` — повёрнутые (не отражение) flow-дети auto layout, критерий — `rotation`/`isFlip`/`isFlex` из
 `fig-import/src/convert/layout.ts`: с grow векторы получают долю слота, не-векторы — фиксированный бокс. Два прохода: сырые
