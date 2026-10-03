@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import type { ImportProgress } from "@fignya/fig-import";
 import {
+  CANVAS_ZOOM_CHANNEL,
   DOCUMENT_CHANNEL,
   FOCUS_CHANNEL,
   FONT_CHANGED_CHANNEL,
@@ -14,6 +15,7 @@ import {
   SCREEN_CHANNEL,
   THUMB_DONE_CHANNEL,
   THUMB_JOB_CHANNEL,
+  type CanvasZoom,
   type FignyaApi,
   type ThumbJob,
 } from "../shared/api";
@@ -43,6 +45,7 @@ const api: FignyaApi = {
   onFontFaces: subscribe<FontFaces>(FONT_CHANGED_CHANNEL),
   downloadFonts: (requests) => ipcRenderer.invoke(FONT_DOWNLOAD_CHANNEL, requests),
   unavailableFonts: () => ipcRenderer.invoke(FONT_UNAVAILABLE_CHANNEL),
+  onCanvasZoom: subscribe<CanvasZoom>(CANVAS_ZOOM_CHANNEL),
 };
 
 contextBridge.exposeInMainWorld("fignya", api);

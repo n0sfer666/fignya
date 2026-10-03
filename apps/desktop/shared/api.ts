@@ -8,6 +8,8 @@ export type ThumbJob = { id: number; model: ScreenModel; scale: number };
 
 export type ThumbFocus = { tier: number; screenIds: string[] };
 
+export type CanvasZoom = "in" | "out" | "actual";
+
 export type FignyaApi = {
   documentState: () => Promise<DocumentState>;
   onProgress: (handler: (progress: ImportProgress) => void) => () => void;
@@ -22,6 +24,7 @@ export type FignyaApi = {
   onFontFaces: (handler: (faces: FontFaces) => void) => () => void;
   downloadFonts: (requests: FontRequest[]) => Promise<FontDownload[]>;
   unavailableFonts: () => Promise<FamilyFace[]>;
+  onCanvasZoom: (handler: (zoom: CanvasZoom) => void) => () => void;
 };
 
 export const DOCUMENT_CHANNEL = "document:state";
@@ -37,3 +40,4 @@ export const FONT_FACES_CHANNEL = "fonts:faces";
 export const FONT_CHANGED_CHANNEL = "fonts:changed";
 export const FONT_DOWNLOAD_CHANNEL = "fonts:download";
 export const FONT_UNAVAILABLE_CHANNEL = "fonts:unavailable";
+export const CANVAS_ZOOM_CHANNEL = "canvas:zoom";

@@ -1,4 +1,5 @@
 import type { Screen } from "@fignya/model";
+import type { CanvasZoom } from "../../../shared/api";
 
 export type View = { x: number; y: number; zoom: number };
 export type Bounds = { x: number; y: number; width: number; height: number };
@@ -33,6 +34,14 @@ export const zoomAround = (view: View, factor: number, px: number, py: number): 
   const k = zoom / view.zoom;
   return { zoom, x: px - (px - view.x) * k, y: py - (py - view.y) * k };
 };
+
+const STEP_FACTOR: Record<CanvasZoom, (zoom: number) => number> = {
+  in: () => 2,
+  out: () => 0.5,
+  actual: (zoom) => 1 / zoom,
+};
+
+export const zoomStep = (view: View, step: CanvasZoom, px: number, py: number): View => zoomAround(view, STEP_FACTOR[step](view.zoom), px, py);
 
 export const toWorld = (view: View, px: number, py: number): { x: number; y: number } => ({
   x: (px - view.x) / view.zoom,

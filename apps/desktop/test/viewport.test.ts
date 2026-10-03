@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boundsOf, fitView, MAX_ZOOM, panBy, toWorld, zoomAround } from "../renderer/src/canvas/viewport";
+import { boundsOf, fitView, MAX_ZOOM, panBy, toWorld, zoomAround, zoomStep } from "../renderer/src/canvas/viewport";
 
 const screen = (x: number, y: number, width: number, height: number) => ({ id: `${x}`, name: "s", x, y, width, height });
 
@@ -19,6 +19,15 @@ describe("viewport", () => {
     const next = zoomAround(view, 2, 110, 120);
     expect(toWorld(next, 110, 120)).toEqual(toWorld(view, 110, 120));
     expect(zoomAround(view, 1000, 0, 0).zoom).toBe(MAX_ZOOM);
+  });
+
+  it("steps zoom around a point: in doubles, out halves, actual returns to 100%", () => {
+    const view = { x: 10, y: 20, zoom: 0.3 };
+    expect(zoomStep(view, "in", 50, 60).zoom).toBeCloseTo(0.6);
+    expect(zoomStep(view, "out", 50, 60).zoom).toBeCloseTo(0.15);
+    expect(zoomStep(view, "actual", 50, 60).zoom).toBeCloseTo(1);
+    expect(toWorld(zoomStep(view, "actual", 50, 60), 50, 60).x).toBeCloseTo(toWorld(view, 50, 60).x);
+    expect(zoomStep({ x: 0, y: 0, zoom: MAX_ZOOM }, "in", 0, 0).zoom).toBe(MAX_ZOOM);
   });
 
   it("pans by screen delta", () => {

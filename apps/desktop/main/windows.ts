@@ -35,5 +35,6 @@ export const createWindow = (options: BrowserWindowConstructorOptions): BrowserW
     if (event.url !== window.webContents.getURL()) event.preventDefault();
   });
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  window.webContents.on("did-finish-load", () => window.webContents.setZoomLevel(0));
   return window;
 };

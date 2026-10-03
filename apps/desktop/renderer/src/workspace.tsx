@@ -24,6 +24,7 @@ export const Workspace = (props: WorkspaceProps) => {
     };
     window.fignya.fontFaces().then(refonted, (error: unknown) => console.error(`fignya: font cache: ${String(error)}`));
     onCleanup(window.fignya.onFontFaces(refonted));
+    onCleanup(window.fignya.onCanvasZoom((step) => canvas?.zoomStep(step)));
   });
   onCleanup(() => canvas?.dispose());
   createEffect(() => {

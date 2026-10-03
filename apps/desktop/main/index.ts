@@ -1,6 +1,7 @@
-import { app, net } from "electron";
+import { app, Menu, net } from "electron";
 import { join } from "node:path";
-import { LOST_CHANNEL, PROGRESS_CHANNEL } from "../shared/api";
+import { CANVAS_ZOOM_CHANNEL, LOST_CHANNEL, PROGRESS_CHANNEL } from "../shared/api";
+import { menuTemplate } from "./app-menu";
 import { registerFontIpc } from "./font-ipc";
 import { createFontLibrary } from "./font-library";
 import { registerDocumentIpc } from "./ipc";
@@ -26,6 +27,7 @@ app.whenReady().then(() => {
   const toWindow = (channel: string, payload: unknown): void => {
     if (!window.isDestroyed()) window.webContents.send(channel, payload);
   };
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate((zoom) => toWindow(CANVAS_ZOOM_CHANNEL, zoom), process.platform === "darwin")));
   const loaded: Promise<LoadedDocument> = painted.then(() =>
     loadDocument(process.env.FIG_FILE, {
       progress: (progress) => toWindow(PROGRESS_CHANNEL, progress),

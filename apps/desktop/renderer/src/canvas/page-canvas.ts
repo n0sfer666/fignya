@@ -1,11 +1,11 @@
 import type { Page, Screen } from "@fignya/model";
-import type { ThumbFocus } from "../../../shared/api";
+import type { CanvasZoom, ThumbFocus } from "../../../shared/api";
 import { BASE_TIER } from "../../../shared/thumb-tiers";
 import { thumbUrl } from "../../../shared/urls";
 import { bindGestures } from "./gestures";
 import { loadingFor } from "./loading-for";
 import { createSharpener } from "./sharpen";
-import { boundsOf, fitView, panBy, zoomAround, type View } from "./viewport";
+import { boundsOf, fitView, panBy, zoomAround, zoomStep, type View } from "./viewport";
 
 const FIT_PADDING = 48;
 const FOCUS_PADDING = 32;
@@ -15,6 +15,7 @@ export type OpenScreen = (screen: Screen) => Promise<HTMLElement | undefined>;
 export type PageCanvas = {
   show: (page: Page) => void;
   focus: (screenId: string) => void;
+  zoomStep: (step: CanvasZoom) => void;
   open: (screenId: string) => Promise<void>;
   close: () => void;
   reload: (fontsVersion: string) => void;
@@ -108,6 +109,7 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
   return {
     show,
     focus,
+    zoomStep: (step) => apply(zoomStep(view, step, el.clientWidth / 2, el.clientHeight / 2)),
     open,
     close,
     reload: (next) => {
