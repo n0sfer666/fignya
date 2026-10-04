@@ -22,7 +22,8 @@
   первого отрицательный margin по главной оси (в `cssText` — ни gap, ни margin: только render-dom).
   В `stackWrap: WRAP` отрицательный gap клампится к 0. `stackReverseZIndex: true` (11 из 865 контейнеров
   с отрицательным gap) — первый ребёнок сверху: стиль `stackOrder: "first-on-top"`, render-dom даёт
-  детям `z-index` n−i. `stackWrap: WRAP` (только у
+  детям `z-index` n−i, а самому контейнеру `isolation: isolate` — иначе эти `z-index` уходят в контекст предка
+  и дети рисуются поверх поздних соседей предков (`13160:88951`: бейджи «+33%» поверх диалога). `stackWrap: WRAP` (только у
   HORIZONTAL; у VERTICAL — устаревший, игнорируем) — межстрочный
   отступ `stackCounterSpacing` (бывает null → `stackSpacing`).
 - Clip: `frameMaskDisabled !== true`.

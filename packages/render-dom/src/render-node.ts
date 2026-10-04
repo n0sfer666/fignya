@@ -46,7 +46,7 @@ const renderTree = (ctx: RenderContext, id: NodeId, branch: Branch, style: (node
   if (svg) el.append(own.contentSize ? centerSvg(svg, own.contentSize) : svg);
   const children = childrenOf(ctx, node, stored, branch, carriesResize(node.style, override?.style) ? branch.resize : undefined);
   const rendered = children.ids.flatMap((childId) => renderTree(ctx, childId, children.branch, (n) => n.style) ?? []);
-  stackChildren(node.style, rendered);
+  stackChildren(node.style, el, rendered);
   el.append(...rendered);
   return el;
 };

@@ -9,14 +9,15 @@ const overlap = (style: Style, children: HTMLElement[]): void => {
   for (const child of children.filter(inFlow).slice(1)) child.style[side] = `${(Number.parseFloat(child.style[side]) || 0) + gap}px`;
 };
 
-const reverseStacking = (children: HTMLElement[]): void => {
+const reverseStacking = (parent: HTMLElement, children: HTMLElement[]): void => {
+  parent.style.isolation = "isolate";
   children.forEach((child, i) => {
     child.style.zIndex = String(children.length - i);
   });
 };
 
-export const stackChildren = (style: Style, children: HTMLElement[]): void => {
+export const stackChildren = (style: Style, parent: HTMLElement, children: HTMLElement[]): void => {
   if (style.display !== "flex") return;
   overlap(style, children);
-  if (style.stackOrder === "first-on-top") reverseStacking(children);
+  if (style.stackOrder === "first-on-top") reverseStacking(parent, children);
 };

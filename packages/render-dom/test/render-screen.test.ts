@@ -158,6 +158,13 @@ describe("renderScreen", () => {
     expect([...root.children].map((c) => c instanceof HTMLElement && c.style.zIndex)).toEqual(["3", "2", "1"]);
   });
 
+  it("isolates a first-on-top container so its z-index stays inside", () => {
+    const nodes = [frame("s", ["row", "popup"]), frame("row", ["badge", "text"], { display: "flex", stackOrder: "first-on-top" }), frame("badge"), frame("text"), frame("popup")];
+    const root = rootOf(renderScreen(modelOf("s", nodes), { imageUrl }));
+    const [row, popup] = [...root.children].filter((c) => c instanceof HTMLElement);
+    expect([row?.style.isolation, popup?.style.isolation, root.style.isolation]).toEqual(["isolate", "", ""]);
+  });
+
   it("leaves children unshifted under a positive gap", () => {
     const root = rootOf(renderScreen(modelOf("s", [frame("s", ["a", "b"], { display: "flex", gap: 4 }), frame("a"), frame("b")]), { imageUrl }));
     expect(root.style.gap).toBe("4px");
