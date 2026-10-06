@@ -1,7 +1,7 @@
 import { utilityProcess } from "electron";
 import { join } from "node:path";
 import type { FontUsage, ImportProgress } from "@fignya/fig-import";
-import type { Page, ScreenModel } from "@fignya/model";
+import type { Page, ScreenModel, SearchHit } from "@fignya/model";
 import type { ImporterEvent, ImporterRequest } from "../importer/protocol";
 import { isImporterEvent } from "../importer/protocol-guards";
 import { pendingRequests } from "./pending-requests";
@@ -13,12 +13,15 @@ export type ImportClient = {
   fonts: Promise<FontUsage[]>;
   screen: (id: string) => Promise<ScreenModel | undefined>;
   image: (id: string) => Promise<Uint8Array | undefined>;
+  search: (query: string) => Promise<SearchHit[]>;
 };
 
 export const startImport = (path: string, events: ImportEvents): ImportClient => {
   const child = utilityProcess.fork(join(__dirname, "importer.js"), [], { serviceName: "fignya importer" });
   const screens = pendingRequests<ScreenModel | undefined>();
   const images = pendingRequests<Uint8Array | undefined>();
+  const searches = pendingRequests<SearchHit[]>();
+  const byRequest = { screen: screens, image: images, search: searches };
   const send = (request: ImporterRequest): void => child.postMessage(request);
   let ready = false;
   let gotFonts: (fonts: FontUsage[]) => void = () => undefined;
@@ -40,7 +43,8 @@ export const startImport = (path: string, events: ImportEvents): ImportClient =>
       } else if (event.type === "fonts") gotFonts(event.fonts);
       else if (event.type === "screen") screens.settle(event.reqId, event.model);
       else if (event.type === "image") images.settle(event.reqId, event.bytes);
-      else (event.request === "screen" ? screens : images).reject(event.reqId, new Error(event.message));
+      else if (event.type === "found") searches.settle(event.reqId, event.hits);
+      else byRequest[event.request].reject(event.reqId, new Error(event.message));
     };
     child.on("message", (message: unknown) => {
       if (isImporterEvent(message)) dispatch(message);
@@ -50,8 +54,7 @@ export const startImport = (path: string, events: ImportEvents): ImportClient =>
       const error = new Error(`importer exited with code ${code}`);
       reject(error);
       lostFonts(error);
-      screens.fail(error);
-      images.fail(error);
+      for (const pending of Object.values(byRequest)) pending.fail(error);
       if (ready) events.lost(error.message);
     });
   });
@@ -61,5 +64,6 @@ export const startImport = (path: string, events: ImportEvents): ImportClient =>
     fonts,
     screen: (id) => screens.ask((reqId) => send({ type: "screen", reqId, id })),
     image: (id) => images.ask((reqId) => send({ type: "image", reqId, id })),
+    search: (query) => searches.ask((reqId) => send({ type: "search", reqId, query })),
   };
 };

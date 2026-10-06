@@ -1,7 +1,7 @@
 import type { FigImport } from "@fignya/fig-import";
-import { screenModel } from "@fignya/model";
+import { screenModel, searchDocument } from "@fignya/model";
 import { errorMessage } from "../shared/error-message";
-import type { AssetQuery, ImporterEvent, ImporterRequest } from "./protocol";
+import type { ImporterEvent, ImporterRequest, Query } from "./protocol";
 
 export type ImporterHandler = (request: ImporterRequest) => Promise<void>;
 
@@ -14,11 +14,12 @@ export type ImporterDeps = {
 export const createImporterHandler = ({ send, load, settle }: ImporterDeps): ImporterHandler => {
   let loading: Promise<FigImport> | undefined;
 
-  const answer = async (query: AssetQuery): Promise<void> => {
+  const answer = async (query: Query): Promise<void> => {
     try {
       if (!loading) throw new Error("document is not loaded");
       const doc = await loading;
-      if (query.type === "screen") send({ type: "screen", reqId: query.reqId, model: screenModel(doc.document.nodes, query.id) });
+      if (query.type === "search") send({ type: "found", reqId: query.reqId, hits: searchDocument(doc.document, query.query) });
+      else if (query.type === "screen") send({ type: "screen", reqId: query.reqId, model: screenModel(doc.document.nodes, query.id) });
       else send({ type: "image", reqId: query.reqId, bytes: doc.images.get(query.id) });
     } catch (error) {
       send({ type: "refused", request: query.type, reqId: query.reqId, message: errorMessage(error) });

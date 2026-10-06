@@ -4,9 +4,10 @@ import { renderScreen } from "@fignya/render-dom";
 import type { FontFaces } from "../../shared/fonts";
 import { imageUrl } from "../../shared/urls";
 import { createPageCanvas, type PageCanvas } from "./canvas/page-canvas";
+import type { Focus } from "./focus";
 import { applyFaces } from "./fonts/apply-faces";
 
-export type WorkspaceProps = { page: Page | undefined; focusId: string | undefined };
+export type WorkspaceProps = { page: Page | undefined; focus: Focus | undefined };
 
 const openScreen = async (screen: Screen): Promise<HTMLElement | undefined> => {
   const model = await window.fignya.screen(screen.id);
@@ -33,10 +34,12 @@ export const Workspace = (props: WorkspaceProps) => {
     canvas?.show(props.page);
   });
   createEffect(() => {
-    const id = props.focusId;
-    if (!id) return;
-    canvas?.focus(id);
-    void canvas?.open(id);
+    const focus = props.focus;
+    if (!focus) return;
+    canvas?.focus(focus.id);
+    void canvas?.open(focus.id).then(() => {
+      if (props.focus === focus) canvas?.mark(focus.id, focus.target);
+    });
   });
   return <main class="workspace" ref={el} />;
 };

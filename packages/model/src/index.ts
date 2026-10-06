@@ -10,3 +10,6 @@ export { applyOverride, mergeOverride, pathKey } from "./override";
 export { screenModel } from "./screen-model";
 export { sameValue } from "./same-value";
 export { styleDiff } from "./style-diff";
+export type { SearchHit, SearchMatch, SearchPlace } from "./search-hit";
+export { parseNodeQuery } from "./node-query";
+export { searchDocument, SEARCH_LIMIT } from "./search-document";

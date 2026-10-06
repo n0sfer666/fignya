@@ -1,9 +1,10 @@
-import type { Page, Screen } from "@fignya/model";
+import type { NodeId, Page, Screen } from "@fignya/model";
 import type { CanvasZoom, ThumbFocus } from "../../../shared/api";
 import { BASE_TIER } from "../../../shared/thumb-tiers";
 import { thumbUrl } from "../../../shared/urls";
 import { bindGestures } from "./gestures";
 import { loadingFor } from "./loading-for";
+import { markNode, type NodeMark } from "./node-mark";
 import { createSharpener } from "./sharpen";
 import { boundsOf, fitView, panBy, zoomAround, zoomStep, type View } from "./viewport";
 
@@ -17,6 +18,7 @@ export type PageCanvas = {
   focus: (screenId: string) => void;
   zoomStep: (step: CanvasZoom) => void;
   open: (screenId: string) => Promise<void>;
+  mark: (screenId: string, target: NodeId[] | undefined) => void;
   close: () => void;
   reload: (fontsVersion: string) => void;
   dispose: () => void;
@@ -47,15 +49,22 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
   let screens = new Map<string, Screen>();
   let live: { id: string; host: HTMLElement } | undefined;
   let pending: string | undefined;
+  let marked: NodeMark | undefined;
 
   const apply = (next: View): void => {
     view = next;
     world.style.transform = `translate(${view.x}px,${view.y}px) scale(${view.zoom})`;
+    world.style.setProperty("--zoom", String(view.zoom));
     sharpener.schedule(view.zoom);
   };
   const frameEl = (id: string): HTMLElement | undefined =>
     [...world.children].find((c): c is HTMLElement => c instanceof HTMLElement && c.dataset.screenId === id);
+  const unmark = (): void => {
+    marked?.dispose();
+    marked = undefined;
+  };
   const unmount = (): void => {
+    unmark();
     if (!live) return;
     live.host.remove();
     frameEl(live.id)?.classList.remove("live");
@@ -82,6 +91,18 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
     frame.classList.add("live");
     frame.append(host);
     live = { id, host };
+  };
+  const mark = (screenId: string, target: NodeId[] | undefined): void => {
+    unmark();
+    const current = live;
+    const screen = screens.get(screenId);
+    const frame = frameEl(screenId);
+    if (!target || !screen || !frame || current?.id !== screenId) return;
+    const found = markNode(frame, current.host, target, () => view.zoom);
+    if (!found) return;
+    marked = found;
+    const { x, y, width, height } = found.bounds;
+    apply(fitView({ x: screen.x + x, y: screen.y + y, width, height }, el.clientWidth, el.clientHeight, FOCUS_PADDING));
   };
   const focus = (id: string): void => {
     const screen = screens.get(id);
@@ -111,6 +132,7 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
     focus,
     zoomStep: (step) => apply(zoomStep(view, step, el.clientWidth / 2, el.clientHeight / 2)),
     open,
+    mark,
     close,
     reload: (next) => {
       if (next === version) return;

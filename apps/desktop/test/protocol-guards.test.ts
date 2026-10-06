@@ -5,6 +5,7 @@ describe("isImporterRequest", () => {
   it("accepts load and asset queries", () => {
     expect(isImporterRequest({ type: "load", path: "a.fig" })).toBe(true);
     expect(isImporterRequest({ type: "screen", reqId: 1, id: "1:2" })).toBe(true);
+    expect(isImporterRequest({ type: "search", reqId: 2, query: "1:2" })).toBe(true);
   });
 
   it("rejects malformed requests", () => {
@@ -12,6 +13,8 @@ describe("isImporterRequest", () => {
     expect(isImporterRequest({ type: "load" })).toBe(false);
     expect(isImporterRequest({ type: "image", reqId: "1", id: "x" })).toBe(false);
     expect(isImporterRequest({ type: "drop", reqId: 1, id: "x" })).toBe(false);
+    expect(isImporterRequest({ type: "search", reqId: 1, id: "x" })).toBe(false);
+    expect(isImporterRequest({ type: "search", query: "x" })).toBe(false);
   });
 });
 
@@ -25,6 +28,8 @@ describe("isImporterEvent", () => {
     expect(isImporterEvent({ type: "screen", reqId: 1, model: undefined })).toBe(true);
     expect(isImporterEvent({ type: "image", reqId: 1, bytes: new Uint8Array() })).toBe(true);
     expect(isImporterEvent({ type: "refused", request: "screen", reqId: 1, message: "x" })).toBe(true);
+    expect(isImporterEvent({ type: "found", reqId: 1, hits: [] })).toBe(true);
+    expect(isImporterEvent({ type: "refused", request: "search", reqId: 1, message: "x" })).toBe(true);
   });
 
   it("rejects unknown and malformed events", () => {
@@ -34,5 +39,6 @@ describe("isImporterEvent", () => {
     expect(isImporterEvent({ type: "fonts", fonts: [{ family: 1, nodes: 1, faces: [] }] })).toBe(false);
     expect(isImporterEvent({ type: "fonts", fonts: [{ family: "Inter", nodes: 1, faces: [{ weight: "bold", italic: false }] }] })).toBe(false);
     expect(isImporterEvent({ type: "refused", request: "thumb", reqId: 1, message: "x" })).toBe(false);
+    expect(isImporterEvent({ type: "found", reqId: 1, hits: "1:2" })).toBe(false);
   });
 });

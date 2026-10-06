@@ -42,6 +42,15 @@ Core (Rust)
   canvas) и закэшированные, показывает недостающие; загрузка — IPC `fonts:download` → main
   (`font-library`) → `fignya://font/<file>`. `@font-face` вставляется в document главного и
   thumb-окна при старте из кэша (`fonts:faces`) и по событию `fonts:changed`.
+  Поиск: ⌘F (`renderer/src/search-box.tsx`) → IPC `document:search` → importer `search`/`found` →
+  `searchDocument` (`packages/model`): массив матчеров, сейчас только по id (`parseNodeQuery`: `a:b`, `a-b`,
+  ссылка с `node-id`, `I…;…` слой инстанса → цепочка id), `locateNode` — путь имён, `place` (страница и экран-предок
+  головы цепочки), `hidden` (сама, предки, оверрайды инстансов по звеньям цепочки). `collectHits`: матчеру — остаток
+  лимита, дубли по `target` отбрасываются. Новый критерий (имя, текст, компонент, стиль) — ещё один матчер и значение
+  `SearchHit.match`; обход `overrides` резолвит весь файл — текст оверрайдов искать только после `settled`. Renderer:
+  ввод с debounce (`search-runner.ts`, устаревшие ответы отбрасываются), Enter до ответа ищет сразу и берёт первый.
+  Выбор: страница → экран живым DOM → `canvas.mark(screenId, target)` (`node-mark.ts`: цепочка `[data-id]` в shadow
+  root целиком или ничего, обводка в координатах кадра, вписать ноду; ResizeObserver и `fonts` `loadingdone` — перемер).
 
 - `spikes/<id>-<name>/` — выбрасываемый код без TDD, каждый спайк самодостаточен (свой
   `package.json`/`Cargo.toml`, свой README с runbook и ожидаемым выводом).

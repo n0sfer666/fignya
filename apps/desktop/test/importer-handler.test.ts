@@ -26,11 +26,13 @@ describe("createImporterHandler", () => {
     await handle({ type: "load", path: "b.fig" });
     await handle({ type: "image", reqId: 1, id: "abc" });
     await handle({ type: "screen", reqId: 2, id: "1:2" });
+    await handle({ type: "search", reqId: 3, query: "1:2" });
     expect(paths).toEqual(["a.fig"]);
     expect(sent).toEqual([
       { type: "ready", pages: [] },
       { type: "image", reqId: 1, bytes },
       { type: "screen", reqId: 2, model: undefined },
+      { type: "found", reqId: 3, hits: [] },
     ]);
     expect(settled).toEqual([{ doc, afterEvents: 1 }]);
   });
@@ -40,10 +42,12 @@ describe("createImporterHandler", () => {
     await handle({ type: "screen", reqId: 1, id: "1:2" });
     await handle({ type: "load", path: "a.fig" });
     await handle({ type: "image", reqId: 2, id: "abc" });
+    await handle({ type: "search", reqId: 3, query: "1:2" });
     expect(sent).toEqual([
       { type: "refused", request: "screen", reqId: 1, message: "document is not loaded" },
       { type: "failed", message: "broken" },
       { type: "refused", request: "image", reqId: 2, message: "broken" },
+      { type: "refused", request: "search", reqId: 3, message: "broken" },
     ]);
     expect(settled).toEqual([]);
   });

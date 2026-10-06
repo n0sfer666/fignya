@@ -149,3 +149,80 @@ body,
 .fonts-download:hover:not(:disabled) {
   border-color: var(--accent);
 }
+
+.node-mark {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 calc(2px / var(--zoom, 1)) var(--accent);
+}
+
+.layout > .workspace,
+.layout > .search {
+  grid-row: 1;
+  grid-column: 2;
+}
+
+.search {
+  z-index: 10;
+  align-self: start;
+  justify-self: center;
+  width: min(560px, calc(100% - 32px));
+  margin-top: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
+  cursor: default;
+}
+
+.search input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+
+.search ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 4px;
+  max-height: 320px;
+  overflow: auto;
+  border-top: 1px solid var(--line);
+}
+
+.search li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 4px 10px;
+}
+
+.search li.active {
+  background: var(--line);
+}
+
+.search li.unreachable {
+  color: var(--muted);
+}
+
+.search .trail {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.search .meta,
+.search .empty {
+  color: var(--muted);
+}
+
+.search .empty {
+  padding: 6px 10px;
+}

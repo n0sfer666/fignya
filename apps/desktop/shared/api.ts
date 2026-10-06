@@ -1,5 +1,5 @@
 import type { FontUsage, ImportProgress } from "@fignya/fig-import";
-import type { Page, ScreenModel } from "@fignya/model";
+import type { Page, ScreenModel, SearchHit } from "@fignya/model";
 import type { FamilyFace, FontDownload, FontFaces, FontRequest } from "./fonts";
 
 export type DocumentState = { status: "ready"; pages: Page[] } | { status: "error"; message: string };
@@ -15,6 +15,7 @@ export type FignyaApi = {
   onProgress: (handler: (progress: ImportProgress) => void) => () => void;
   onLost: (handler: (message: string) => void) => () => void;
   screen: (id: string) => Promise<ScreenModel | undefined>;
+  search: (query: string) => Promise<SearchHit[]>;
   onThumbJob: (handler: (job: ThumbJob) => void) => void;
   thumbRendered: (id: number) => void;
   showPage: (pageId: string) => void;
@@ -31,6 +32,7 @@ export const DOCUMENT_CHANNEL = "document:state";
 export const PROGRESS_CHANNEL = "document:progress";
 export const LOST_CHANNEL = "document:lost";
 export const SCREEN_CHANNEL = "document:screen";
+export const SEARCH_CHANNEL = "document:search";
 export const THUMB_JOB_CHANNEL = "thumb:job";
 export const THUMB_DONE_CHANNEL = "thumb:done";
 export const PAGE_CHANNEL = "thumb:page";

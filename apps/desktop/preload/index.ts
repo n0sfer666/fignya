@@ -13,6 +13,7 @@ import {
   PAGE_CHANNEL,
   PROGRESS_CHANNEL,
   SCREEN_CHANNEL,
+  SEARCH_CHANNEL,
   THUMB_DONE_CHANNEL,
   THUMB_JOB_CHANNEL,
   type CanvasZoom,
@@ -34,6 +35,7 @@ const api: FignyaApi = {
   onProgress: subscribe<ImportProgress>(PROGRESS_CHANNEL),
   onLost: subscribe<string>(LOST_CHANNEL),
   screen: (id) => ipcRenderer.invoke(SCREEN_CHANNEL, id),
+  search: (query) => ipcRenderer.invoke(SEARCH_CHANNEL, query),
   onThumbJob: (handler) => {
     ipcRenderer.on(THUMB_JOB_CHANNEL, (_event, job: ThumbJob) => handler(job));
   },
