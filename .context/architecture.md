@@ -53,8 +53,16 @@ Core (Rust)
   лимита, дубли по `target` отбрасываются. Новый критерий (имя, текст, компонент, стиль) — ещё один матчер и значение
   `SearchHit.match`; обход `overrides` резолвит весь файл — текст оверрайдов искать только после `settled`. Renderer:
   ввод с debounce (`search-runner.ts`, устаревшие ответы отбрасываются), Enter до ответа ищет сразу и берёт первый.
-  Выбор: страница → экран живым DOM → `canvas.mark(screenId, target)` (`node-mark.ts`: цепочка `[data-id]` в shadow
-  root целиком или ничего, обводка в координатах кадра, вписать ноду; ResizeObserver и `fonts` `loadingdone` — перемер).
+  Выбор: страница → экран живым DOM → `canvas.mark(screenId, target)` (`find-target.ts`: цепочка `[data-id]` в shadow
+  root целиком или ничего) → выделение этой ноды и вписать её.
+  Выделение (раунд 4, только чтение): `canvas/live-selection.ts` держит выделение и hover живого экрана; жесты отдают
+  `composedPath` pointerdown, ⌘ и двойной клик (`double-click.ts`, 500 мс); `hit-node.ts` — самый глубокий `[data-id]` пути в
+  shadow root; `pick.ts` — уровень как в Figma (клик — общий префикс цепочки с родителем выделения, двойной — шаг
+  вглубь, ⌘ — hit). Рамки `.node-selection`/`.node-hover` — `outline-box.ts` в координатах кадра (ResizeObserver и `fonts`
+  `loadingdone` — перемер). Инспектор (`renderer/src/inspector.tsx`) читает итоговую ноду элемента из `renderedNode(el)`
+  (render-dom запоминает в WeakMap ноду после оверрайдов и подгонки под ресайз + компонент инстанса) и раскладывает
+  `cssDeclarations` по секциям (`inspect`, `packages/model`). Модели в renderer нет: данные инспектора — только то, что
+  отрисовано.
 
 - `spikes/<id>-<name>/` — выбрасываемый код без TDD, каждый спайк самодостаточен (свой
   `package.json`/`Cargo.toml`, свой README с runbook и ожидаемым выводом).
