@@ -231,6 +231,45 @@ bash spikes/live-cdp/run-select.sh <tag> [screen-id]
 24.1s all checks passed
 ```
 
+## Правка из инспектора
+
+```nu
+$env.FIG_FILE = ("~/Downloads/ROI Navigator.fig" | path expand)
+bash spikes/live-cdp/run-edit.sh <tag> [screen-id]
+```
+
+`edit-flow.ts` (помощники — `ui.ts`): ⌘F `<screen-id>` → Esc → ⌘+клик по видимому тексту внутри инстанса. Поле `font-size`
+(фокус и выделение через JS, ввод `Input.insertText`, Enter) +10 px → computed `font-size` элемента под рамкой, инспектор держит
+тот же `id`; тот же слой в других инстансах компонента не меняется; `text` → новый `textContent`; `abc` в `font-size` →
+`.field.invalid`, холст прежний; Esc — поле откатилось, выделение есть. ⌘Z ×2 (`rawKeyDown` с `code: KeyZ` — ловит renderer,
+пункт меню без регистрации хоткея) → исходные текст и размер, ⇧⌘Z → снова +10. Esc, Esc → `img` экрана с `r=` в `src` загружена;
+повторное открытие → правка на месте; `width` +20 → левый верхний угол рамки на месте, ширина больше, фокус остался в поле
+`width`; ⌘Z в том же поле без blur → `width` прежняя, ⇧⌘Z → снова +20 и поле показывает его. `height`: `999` и ⌘Z → в поле снова прежнее значение, документ не тронут; `height` +10 без Enter и клик по пустому холсту
+→ через 1.5 с выделения нет (перерисовка его не вернула), ⌘+клик по тому же тексту → `height` новый. Код 3 — нет видимого текста в
+инстансе, 7 — проверки упали. Скриншоты — `out/edit-<tag>/`. Ожидаемый вывод (ROI Navigator, mtime 26-10-02 15:16; 26-10-14):
+
+```
+16.5s selected 456:32603 font-size 13px text "Название сценария:"
+16.7s ok   font-size 23px shows in the live screen 23px
+16.7s same layer in all instances: ["23px","13px"]
+17.4s ok   broken input is flagged and not applied
+17.9s ok   ⌘Z restores the text Название сценария:
+18.1s ok   ⌘Z restores font-size 13px
+18.4s ok   ⌘⇧Z redoes font-size
+18.5s ok   closed screen shows a thumbnail of the edited revision
+19.4s ok   reopened screen keeps the edit
+19.7s box before [638.2,348.2,79.7] after [638.2,348.2,91.9]
+19.7s ok   width inside an instance grows the box in place
+19.7s ok   the field keeps focus after the live screen redraws (width)
+19.9s ok   ⌘Z right after Enter, still in the field, undoes the edit
+20.2s ok   ⌘⇧Z in the same field redoes it
+20.2s ok   the field shows the redone value
+20.7s ok   ⌘Z in a field undoes the typing, not the document (18px)
+22.2s ok   a click away commits the field and the redraw keeps the new (empty) selection
+22.5s ok   the edit from blur landed on the old layer
+22.6s all checks passed
+```
+
 ## Зум холста с клавиатуры
 
 ```nu
