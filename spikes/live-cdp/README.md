@@ -179,7 +179,7 @@ bash spikes/live-cdp/run-search.sh <tag>
 
 `search-jump.ts`: ⌘F через `Input.dispatchKeyEvent`, ввод `Input.insertText`, Enter. Сценарий: `2479-25954` → живой экран;
 из его shadow root — текст вне инстансов и текст внутри инстанса; переход на другую страницу; ссылка Figma на первый текст и
-`I<инстанс>;<текст>` на второй → обводка `.node-mark` совпадает с прямоугольником элемента (< 0.5 px; `delta -2` — цепочка
+`I<инстанс>;<текст>` на второй → обводка `.node-selection` совпадает с прямоугольником элемента (< 0.5 px; `delta -2` — цепочка
 `[data-id]` в DOM не найдена целиком) и в окне холста; `padding` первому тексту → обводка следует за relayout; `13160:88951` → живой экран; `9:99999999` → «Nothing found»; Esc закрывает поле, живой экран остаётся; поле открыто, приложение
 скрыто и показано снова (`setElectronVisible`) → поле не закрылось, ввод на месте. Скриншоты —
 `out/search-<tag>/`. Ожидаемый вывод (ROI Navigator, mtime 26-10-02 15:16; 26-10-06):
@@ -200,6 +200,36 @@ focus, hasFocus}`. 26-10-06 флак s3/s7: окно без фокуса ОС (`
 
 Коды: 0 — все проверки; 7 — часть `FAIL`; 2 — импорт не закончился; 1 — сбой CDP/скрипта. Буфер обмена перед прогоном лучше
 очистить от id ноды: поле подставит его при ⌘F (скрипт выделяет и перезаписывает ввод через 400 мс).
+
+## Выделение и инспектор
+
+```nu
+$env.FIG_FILE = ("~/Downloads/ROI Navigator.fig" | path expand)
+bash spikes/live-cdp/run-select.sh <tag> [screen-id]
+```
+
+`select-pick.ts`: ⌘F `<screen-id>` (по умолчанию `2479:25954`) → выделен корень экрана; Esc снимает выделение, экран живой.
+Цель — видимый текст глубже 3 уровней, по возможности внутри инстанса (`elementFromPoint` в shadow root попадает в него же).
+Мышь через `Input.dispatchMouseEvent`: наведение → `.node-hover` на верхнем уровне; клик → верхний уровень; повторный клик
+через 600 мс — тот же; двойной (`clickCount` 2 в пределах 500 мс) → шаг вглубь, текст при этом не выделен (без `user-select: none` на
+`.workspace` падает); ⌘+клик → сам текст и секция Typography;
+двойными кликами до инстанса → строка `component`; ctrl+колесо → рамка на элементе; Esc снимает выделение, второй Esc
+закрывает экран. Каждое выделение: одна `.node-selection` совпадает с прямоугольником элемента (< 0.5 px), `id` инспектора —
+тот элемент, `width` инспектора = inline `width` элемента. Код 3 — на экране нет подходящего текста, 7 — проверки упали.
+Скриншоты — `out/select-<tag>/`. Ожидаемый вывод (ROI Navigator, mtime 26-10-02 15:16; 26-10-14):
+
+```
+16.2s target {…"kinds":["frame","frame","frame","frame","frame","frame","instance","frame","frame","text"]}
+16.4s ok   hover outlines the top level {"count":1,"delta":0,"width":"1440px"}
+16.6s ok   click → 2479:25978 (depth 1): …, inspector id 2479:25978 width 1440px
+18.5s ok   double click → 2479:25979 (depth 2): …, inspector id 2479:25979 width 900px
+18.5s ok   double click does not select text
+19.3s ok   ⌘+click → 456:32603 (depth 9): …, inspector id 456:32603 width 131px
+23.3s ok   inspector names the instance component
+23.6s ok   selection follows zoom {"count":1,"delta":0.0087890625,"width":""}
+24.1s ok   second Esc closes the live screen
+24.1s all checks passed
+```
 
 ## Зум холста с клавиатуры
 
