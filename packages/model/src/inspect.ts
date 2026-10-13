@@ -1,5 +1,6 @@
 import { cssDeclarations } from "./css-text";
 import { px, type Declaration, type ImageUrl } from "./css-values";
+import { editDefaults } from "./edit-defaults";
 import type { DesignNode } from "./node";
 import type { Style } from "./style";
 
@@ -32,6 +33,7 @@ const layerOf = (node: DesignNode, component: DesignNode | undefined): Declarati
     ["name", node.name],
     ["type", node.kind],
   ];
+  if (node.kind === "text") return [...base, ["text", node.text]];
   if (node.kind !== "instance") return base;
   return [...base, ["component", component ? `${component.name} (${node.componentId})` : node.componentId]];
 };
@@ -39,7 +41,7 @@ const layerOf = (node: DesignNode, component: DesignNode | undefined): Declarati
 const overlapOf = (style: Style): Declaration[] => (style.gap !== undefined && style.gap < 0 ? [["gap", px(style.gap)]] : []);
 
 export const inspect = (node: DesignNode, component: DesignNode | undefined, url: ImageUrl): Inspection => {
-  const declarations = [...cssDeclarations(node.style, url), ...overlapOf(node.style)];
+  const declarations = [...cssDeclarations(node.style, url), ...overlapOf(node.style), ...editDefaults(node)];
   const sections = ORDER.map((title) => ({ title, rows: declarations.filter(([name]) => sectionOf(name) === title) }));
   return { layer: layerOf(node, component), sections: sections.filter((s) => s.rows.length > 0) };
 };

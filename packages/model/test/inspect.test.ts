@@ -79,7 +79,8 @@ describe("inspect", () => {
       text: "Hi",
       style: { overflow: "hidden", color: red, fontFamily: "Inter", fontSize: 14, lineHeight: 20, textAlign: "center", overflowWrap: "break-word", lineClamp: 2 },
     };
-    const { sections } = inspect(text, undefined, url);
+    const { layer, sections } = inspect(text, undefined, url);
+    expect(layer.at(-1)).toEqual(["text", "Hi"]);
     expect(sections.map((s) => s.title)).toEqual(["Appearance", "Typography"]);
     expect(sections[1]?.rows.map(([name]) => name)).toEqual([
       "color",
@@ -90,6 +91,7 @@ describe("inspect", () => {
       "overflow-wrap",
       "-webkit-box-orient",
       "-webkit-line-clamp",
+      "font-weight",
     ]);
   });
 
@@ -98,26 +100,45 @@ describe("inspect", () => {
     const component: DesignNode = { id: "7:8", name: "Button/Primary", kind: "component", children: [], style: {} };
     expect(inspect(instance, component, url).layer.at(-1)).toEqual(["component", "Button/Primary (7:8)"]);
     expect(inspect(instance, undefined, url).layer.at(-1)).toEqual(["component", "7:8"]);
-    expect(inspect(instance, undefined, url).sections).toEqual([]);
+    expect(inspect(instance, undefined, url).sections.map((s) => s.title)).toEqual(["Appearance", "Fill"]);
   });
 
   it("serializes image fills with the given url", () => {
     const image: DesignNode = { ...frame, style: { background: [{ kind: "image", hash: "ab", fit: "cover" }] } };
-    const fill = inspect(image, undefined, url).sections[0];
+    const fill = inspect(image, undefined, url).sections.find((s) => s.title === "Fill");
     expect(fill?.title).toBe("Fill");
     expect(fill?.rows.find(([name]) => name === "background-image")?.[1]).toContain("img://ab");
   });
 
   it("shows a negative gap that the rendered CSS replaces with margins", () => {
     const overlap: DesignNode = { ...frame, style: { display: "flex", gap: -8 } };
-    expect(inspect(overlap, undefined, url).sections).toEqual([
+    expect(inspect(overlap, undefined, url).sections[0]?.rows.slice(0, 2)).toEqual([
+      ["display", "flex"],
+      ["gap", "-8px"],
+    ]);
+  });
+
+  it("adds editable fields missing from the style with their defaults", () => {
+    const bare: DesignNode = { id: "9:9", name: "Row", kind: "frame", children: [], style: { display: "flex" } };
+    expect(inspect(bare, undefined, url).sections).toEqual([
       {
         title: "Layout",
         rows: [
           ["display", "flex"],
-          ["gap", "-8px"],
+          ["gap", "0px"],
+          ["padding", "0px 0px 0px 0px"],
         ],
       },
+      {
+        title: "Appearance",
+        rows: [
+          ["opacity", "1"],
+          ["border-radius", "0px"],
+        ],
+      },
+      { title: "Fill", rows: [["background-color", ""]] },
     ]);
+    const vector: DesignNode = { id: "9:8", name: "Icon", kind: "vector", children: [], style: { opacity: 0.4 }, paths: [] };
+    expect(inspect(vector, undefined, url).sections).toEqual([{ title: "Appearance", rows: [["opacity", "0.4"]] }]);
   });
 });

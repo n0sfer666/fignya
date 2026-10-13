@@ -15,3 +15,10 @@ export { inspect, type Inspection, type InspectSection, type InspectSectionTitle
 export type { SearchHit, SearchMatch, SearchPlace } from "./search-hit";
 export { parseNodeQuery } from "./node-query";
 export { searchDocument, SEARCH_LIMIT } from "./search-document";
+export { EDIT_KEYS, type Edit, type EditChange, type EditKey, type StylePatch } from "./edit";
+export { editedNode } from "./edited-node";
+export { createEditHistory, type EditHistory } from "./edit-history";
+export { fieldEdit, isEditField, type EditField } from "./edit-fields";
+export { isNoopEdit } from "./edit-noop";
+export { isStylePatch } from "./style-patch-guard";
+export { locateNode } from "./locate-node";
