@@ -11,6 +11,7 @@ export { screenModel } from "./screen-model";
 export { contentOf } from "./screen-content";
 export { sameValue } from "./same-value";
 export { styleDiff } from "./style-diff";
+export { inspect, type Inspection, type InspectSection, type InspectSectionTitle } from "./inspect";
 export type { SearchHit, SearchMatch, SearchPlace } from "./search-hit";
 export { parseNodeQuery } from "./node-query";
 export { searchDocument, SEARCH_LIMIT } from "./search-document";
