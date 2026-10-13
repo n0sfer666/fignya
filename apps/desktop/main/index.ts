@@ -1,9 +1,10 @@
 import { app, Menu, net } from "electron";
 import { join } from "node:path";
-import { CANVAS_ZOOM_CHANNEL, CHANGED_CHANNEL, LOST_CHANNEL, PROGRESS_CHANNEL, type DocumentChanged } from "../shared/api";
+import { CANVAS_ZOOM_CHANNEL, CHANGED_CHANNEL, EXPORT_REQUEST_CHANNEL, LOST_CHANNEL, PROGRESS_CHANNEL, type DocumentChanged } from "../shared/api";
 import { menuTemplate } from "./app-menu";
 import { createDocumentEditor } from "./document-editor";
 import { registerEditIpc } from "./edit-ipc";
+import { registerExportIpc } from "./export-ipc";
 import { registerFontIpc } from "./font-ipc";
 import { createFontLibrary } from "./font-library";
 import { registerDocumentIpc } from "./ipc";
@@ -51,7 +52,9 @@ app.whenReady().then(() => {
     toWindow(CHANGED_CHANNEL, changed);
   });
   registerEditIpc(editor);
-  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate((zoom) => toWindow(CANVAS_ZOOM_CHANNEL, zoom), process.platform === "darwin", editor)));
+  registerExportIpc(window, loaded, fonts);
+  const exportScreen = (): void => toWindow(EXPORT_REQUEST_CHANNEL, undefined);
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate((zoom) => toWindow(CANVAS_ZOOM_CHANNEL, zoom), process.platform === "darwin", editor, exportScreen)));
   serveAssets(async (asset) => {
     if (asset.kind === "image") return (await loaded).image(asset.id);
     if (asset.kind === "font") return fonts.read(asset.id);

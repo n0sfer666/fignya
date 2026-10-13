@@ -5,6 +5,11 @@ import {
   CHANGED_CHANNEL,
   DOCUMENT_CHANNEL,
   EDIT_CHANNEL,
+  EXPORT_AVAILABLE_CHANNEL,
+  EXPORT_CHANNEL,
+  EXPORT_FAILED_CHANNEL,
+  EXPORT_IMAGES_CHANNEL,
+  EXPORT_REQUEST_CHANNEL,
   FOCUS_CHANNEL,
   FONT_CHANGED_CHANNEL,
   FONT_DOWNLOAD_CHANNEL,
@@ -55,6 +60,11 @@ const api: FignyaApi = {
   edit: (edit) => ipcRenderer.invoke(EDIT_CHANNEL, edit),
   onChanged: subscribe<DocumentChanged>(CHANGED_CHANNEL),
   step: (step) => ipcRenderer.send(HISTORY_CHANNEL, step),
+  exportAvailable: (screenId) => ipcRenderer.send(EXPORT_AVAILABLE_CHANNEL, screenId),
+  onExportRequest: subscribe<undefined>(EXPORT_REQUEST_CHANNEL),
+  exportImages: (hashes) => ipcRenderer.invoke(EXPORT_IMAGES_CHANNEL, hashes),
+  exportScreen: (bundle) => ipcRenderer.invoke(EXPORT_CHANNEL, bundle),
+  exportFailed: (message) => ipcRenderer.send(EXPORT_FAILED_CHANNEL, message),
 };
 
 contextBridge.exposeInMainWorld("fignya", api);

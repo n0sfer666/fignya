@@ -48,7 +48,9 @@ const frameOf = (screen: Screen, version: string, revision: number): HTMLElement
 
 export type SelectNode = (node: Selected | undefined) => void;
 
-export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusScreens: (focus: ThumbFocus) => void, onSelect: SelectNode): PageCanvas => {
+export type LiveScreen = (screenId: string | undefined) => void;
+
+export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusScreens: (focus: ThumbFocus) => void, onSelect: SelectNode, onLive: LiveScreen): PageCanvas => {
   const world = document.createElement("div");
   world.className = "world";
   el.append(world);
@@ -80,6 +82,7 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
     frame?.classList.remove("live");
     if (frame && staleThumbs.delete(live.id)) sharpener.renew(frame);
     live = undefined;
+    onLive(undefined);
   };
   const close = (): void => {
     pending = undefined;
@@ -104,6 +107,7 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
     host.style.clipPath = contentClip(screen);
     frame.append(host);
     live = { id, host };
+    onLive(id);
     selection.attach({ frame, host });
     if (staleOpen !== id) return;
     staleOpen = undefined;

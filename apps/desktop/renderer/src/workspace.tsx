@@ -4,6 +4,8 @@ import { renderScreen } from "@fignya/render-dom";
 import type { FontFaces } from "../../shared/fonts";
 import { imageUrl } from "../../shared/urls";
 import { createPageCanvas, type PageCanvas, type SelectNode } from "./canvas/page-canvas";
+import { bindExport } from "./export-binding";
+import { exportLive } from "./export-live";
 import type { Focus } from "./focus";
 import { applyFaces } from "./fonts/apply-faces";
 import { historyStep, inTextField } from "./history-step";
@@ -19,7 +21,9 @@ export const Workspace = (props: WorkspaceProps) => {
   let el: HTMLDivElement | undefined;
   let canvas: PageCanvas | undefined;
   onMount(() => {
-    if (el) canvas = createPageCanvas(el, openScreen, window.fignya.focusScreens, (node) => props.onSelect(node));
+    const exporting = bindExport(window.fignya, () => props.page?.screens ?? [], exportLive);
+    onCleanup(exporting.dispose);
+    if (el) canvas = createPageCanvas(el, openScreen, window.fignya.focusScreens, (node) => props.onSelect(node), exporting.onLive);
     const refonted = (faces: FontFaces): void => {
       applyFaces(faces);
       canvas?.reload(faces.version);

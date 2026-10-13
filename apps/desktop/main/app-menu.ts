@@ -29,8 +29,15 @@ export const editItems = ({ undo, redo }: DocumentHistory): EditItem[] => [
   { label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", registerAccelerator: false, click: redo },
 ];
 
-export const menuTemplate = (send: SendZoom, mac: boolean, history: DocumentHistory): MenuItemConstructorOptions[] => [
+export const EXPORT_ITEM_ID = "export-screen";
+
+type ExportItem = Pick<MenuItemConstructorOptions, "id" | "label" | "accelerator" | "enabled"> & { click: () => void };
+
+export const exportItems = (run: () => void): ExportItem[] => [{ id: EXPORT_ITEM_ID, label: "Export Screen…", accelerator: "CmdOrCtrl+E", enabled: false, click: run }];
+
+export const menuTemplate = (send: SendZoom, mac: boolean, history: DocumentHistory, exportScreen: () => void): MenuItemConstructorOptions[] => [
   ...(mac ? [{ role: "appMenu" } satisfies MenuItemConstructorOptions] : []),
+  { label: "File", submenu: exportItems(exportScreen) },
   {
     label: "Edit",
     submenu: [...editItems(history), { type: "separator" }, { role: "cut" }, { role: "copy" }, { role: "paste" }, { role: "selectAll" }],

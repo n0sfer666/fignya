@@ -1,5 +1,6 @@
 import type { FontUsage, ImportProgress } from "@fignya/fig-import";
 import type { Box, Edit, EditChange, Page, ScreenModel, SearchHit } from "@fignya/model";
+import type { ExportResult, ImageFiles, ScreenExport } from "./export";
 import type { FamilyFace, FontDownload, FontFaces, FontRequest } from "./fonts";
 
 export type DocumentState = { status: "ready"; pages: Page[] } | { status: "error"; message: string };
@@ -33,6 +34,11 @@ export type FignyaApi = {
   edit: (edit: Edit) => Promise<void>;
   onChanged: (handler: (change: DocumentChanged) => void) => () => void;
   step: (step: HistoryStep) => void;
+  exportAvailable: (screenId: string | undefined) => void;
+  onExportRequest: (handler: () => void) => () => void;
+  exportImages: (hashes: string[]) => Promise<ImageFiles>;
+  exportScreen: (bundle: ScreenExport) => Promise<ExportResult>;
+  exportFailed: (message: string) => void;
 };
 
 export const DOCUMENT_CHANNEL = "document:state";
@@ -53,3 +59,8 @@ export const CANVAS_ZOOM_CHANNEL = "canvas:zoom";
 export const EDIT_CHANNEL = "document:edit";
 export const CHANGED_CHANNEL = "document:changed";
 export const HISTORY_CHANNEL = "document:history";
+export const EXPORT_AVAILABLE_CHANNEL = "export:available";
+export const EXPORT_REQUEST_CHANNEL = "export:request";
+export const EXPORT_IMAGES_CHANNEL = "export:images";
+export const EXPORT_CHANNEL = "export:screen";
+export const EXPORT_FAILED_CHANNEL = "export:failed";

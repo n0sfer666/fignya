@@ -8,6 +8,10 @@ describe("fontFaceRule", () => {
     );
   });
 
+  it("points the face at a given file url", () => {
+    expect(fontFaceRule({ family: "Inter", weight: 400, italic: false, file: "ab.woff2" }, (file) => `fonts/${file}`)).toContain("src:url('fonts/ab.woff2')");
+  });
+
   it("escapes family names taken from the document", () => {
     expect(fontFaceRule({ family: "A'}*{x", weight: 400, italic: false, file: "ab.woff2" })).toContain("font-family:'A\\'}*{x';font-style:normal");
   });
