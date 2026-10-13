@@ -93,18 +93,14 @@ Fonts → `userData/fonts/` → `fignya://font/…`, ключ миниатюр `
 `canvas/loading-for.ts` — `eager`, если окно `hidden` при создании кадров (`run-hidden.sh`: eager → 0, lazy → 5). Ключа файла Figma
 в `.fig` нет — ждём от пользователя. Коммиты `2be7710`, `f769363`, `44ee531`, `8b549c2`, `2ab243c`.
 
-Сессии 26-10-03 (1–2), миниатюры. Eager на больших страницах — без кода: Work (201 экран) при `MIN_ZOOM` 0.02 — 1782×1690 при
-холсте 1200×868, но lazy в окне просит те же N (`run-fit.sh`: 201 за 17.3 с); размеры страниц — `page-fit.ts` (For dev 712×1948,
-остальные ≤ 410×251). Приоритет кадрам в окне: `settle-timer.ts` (жест — `restart`, load — `ensure`), `thumb:focus` {tier, screenIds},
-очередь из `architecture.md`. `run-zoom.sh`: base / резкая 12.9 / 13.4 → 0.5–0.8 / 0.8–1.0 с; `run-fit.sh` 13.9–14.7 шт/с. T3 пройден.
+Сессии 26-10-03 (1–3). Миниатюры: eager на Work (201 экран, 1782×1690 при `MIN_ZOOM` 0.02) — без кода, lazy просит те же N
+(`run-fit.sh`, `page-fit.ts`); приоритет кадрам в окне — `settle-timer.ts`, `thumb:focus` {tier, screenIds}, резкая 13.4 → 0.8–1.0 с, T3
+пройден. Сверка `2479:25954` («Work» / «Создание сценария» / «Сценарий_старт»): ⌘+/⌘−/⌘0 → `canvas:zoom` (`app-menu.ts`, зум страницы
+Chromium утекал в thumb-окно); swap не считает оверрайдом кэш `color` привязанной заливки (`unbound.ts`); VECTOR с IMAGE → `<pattern>`.
+TILE, прозрачность картинки, cover вектора — «Не ждать» в README; PATTERN-заливка отложена. Спайки `live-cdp`: `node-tree.ts`,
+`screen-html.ts`, `tier-scan.ts`. Коммиты `0b9dfea`, `1808cb6`, `a0f0e79`.
 
-Сессия 26-10-03 (3), сверка `2479:25954` («Work» / «Создание сценария» / «Сценарий_старт»), три фикса: зум страницы Chromium
-per-host утекал в thumb-окно → своё меню, ⌘+/⌘−/⌘0 → `canvas:zoom` (`app-menu.ts`); swap считал оверрайдом кэш `color` привязанной к
-переменной заливки (`unbound.ts`); VECTOR с IMAGE-заливкой → `<pattern>`. TILE, прозрачность картинки, cover растянутого вектора — «Не
-ждать» в README. Отложено: PATTERN-заливка (`sourceNodeId`). Спайки `live-cdp`: `node-tree.ts`, `screen-html.ts`, `tier-scan.ts` и др.
-Коммиты `0b9dfea`, `1808cb6`, `a0f0e79`.
-
-Сессии 26-10-04: итога T3 и эталонов нет, `.fig` тот же (mtime 26-10-02 15:16). Находка на «Work» / «Создание сценария / с тотал
+Сессии 26-10-04 и 26-10-13: итога T3 и эталонов нет, `.fig` тот же (mtime 26-10-02 15:16). Находка на «Work» / «Создание сценария / с тотал
 оптимизацией / WIP» (`13160:88951`): бейджи «+22%…» поверх диалога — `stackReverseZIndex` без своего stacking context → `isolation:
 isolate` (`flow-stacking.ts`, T4), коммит `308fbf2`. Лог `tile memory limits exceeded` — не причина.
 
