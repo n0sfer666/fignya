@@ -34,8 +34,10 @@ const mainTarget = async (port: string, waitMs: number): Promise<string> => {
 export type Evaluate = (expression: string) => Promise<unknown>;
 export type Send = (method: string, params: Record<string, unknown>) => Promise<unknown>;
 
-export const session = async (port: string, waitMs = 60000, callMs = 15000): Promise<Send> => {
-  const ws = new WebSocket(await mainTarget(port, waitMs));
+export const session = async (port: string, waitMs = 60000, callMs = 15000): Promise<Send> => socket(await mainTarget(port, waitMs), callMs);
+
+export const socket = async (url: string, callMs = 15000): Promise<Send> => {
+  const ws = new WebSocket(url);
   await new Promise((r) => (ws.onopen = r));
   let seq = 0;
   const pending = new Map<number, { resolve: (value: unknown) => void; reject: (error: Error) => void }>();

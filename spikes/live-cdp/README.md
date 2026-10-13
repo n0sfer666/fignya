@@ -270,6 +270,53 @@ bash spikes/live-cdp/run-edit.sh <tag> [screen-id]
 22.6s all checks passed
 ```
 
+## Экспорт экрана (File → Export Screen…)
+
+```nu
+$env.FIG_FILE = ("~/Downloads/ROI Navigator.fig" | path expand)
+bash spikes/live-cdp/run-export.sh <tag> [screen-id]
+```
+
+`export-flow.ts`: кроме renderer-CDP (`PORT`), main-процесс под Node-инспектором (`INSPECT`, по умолчанию 9446; `app.sh`
+передаёт `--inspect`, подключение — `main-cdp.ts`). Пункт меню `export-screen` неактивен без живого экрана → ⌘F `<screen-id>`
+→ пункт активен → `window.fignya.edit` opacity 0.5 у корня экрана → в main подменяются `dialog.showSaveDialog` (папка
+`out/export-<tag>/site`) и `shell.showItemInFolder`, клик по пункту меню. Проверки папки: `index.html` и `styles.css` есть, в HTML
+нет `style="`, нигде нет `fignya://`, все `images/…` и `fonts/…` из HTML/CSS существуют, и других файлов там нет (картинки —
+только отрисованные: `screenImages`, а не все хэши модели). Затем `index.html` открывается в новом
+`BrowserWindow` с file:// (снимок `export.png`), у начертаний `document.fonts` нет статуса `error` (а при непустом `fonts/` хотя
+бы одно `loaded`), у каждого `[data-id]` бокс
+(±1 px, в координатах экрана) и computed-стиль совпадают с живым экраном (`live.png`); наследуемые свойства текста (`color`,
+`font-*`, `line-height`) сравниваются только у `text`: у прочих узлов живой экран наследует их от UI приложения, а экспорт — от
+дефолтов браузера, и на отрисовку это не влияет. Затем `showSaveDialog` подменяется медленным (1 с) с путём на существующий
+файл `as-file`, `showErrorBox` — счётчиком, пункт меню кликается дважды подряд: диалог один, ошибка одна (`EEXIST`), файл цел. Код 2 — импорт не закончился, 1 — проверки упали. Ожидаемый вывод (26-10-14):
+
+```
+15.3s ok   export menu item disabled without a live screen
+16.2s ok   search 2479:25954 opens the screen
+16.2s ok   export menu item enabled with a live screen
+16.5s ok   edit redraws the live screen
+18.0s live nodes: 247
+18.3s ok   File → Export Screen writes the folder
+18.3s html 30325 B, css 30205 B, 1 images, 0 fonts
+18.3s ok   index.html and styles.css written
+18.3s ok   no inline styles in index.html
+18.3s ok   no fignya:// urls
+18.3s ok   all 1 referenced files exist
+18.3s ok   every written file is referenced
+19.0s export fonts: []
+19.0s ok   exported faces load from file://
+19.0s ok   exported page matches the live screen (247 nodes, 0 diffs)
+19.0s ok   export carries the edit
+20.5s ok   export onto a file shows an error
+22.0s errors: ["Export failed: EEXIST: file already exists, mkdir '…/out/export-<tag>/as-file'"]
+22.0s ok   a second ⌘E during an export opens no second dialog
+22.0s ok   the file in the way is left as is
+22.0s all checks passed
+```
+
+С `89:2590` (Roboto из кэша Google Fonts): `0 images, 27 fonts`, `all 27 referenced files exist`, в `export fonts` у используемого
+начертания `Roboto 400 loaded`, у прочих `unloaded`, `55 nodes, 0 diffs`.
+
 ## Зум холста с клавиатуры
 
 ```nu
