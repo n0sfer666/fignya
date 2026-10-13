@@ -63,6 +63,15 @@ Core (Rust)
   (render-dom запоминает в WeakMap ноду после оверрайдов и подгонки под ресайз + компонент инстанса) и раскладывает
   `cssDeclarations` по секциям (`inspect`, `packages/model`). Модели в renderer нет: данные инспектора — только то, что
   отрисовано.
+  Правка (раунд 4, срез 2): поле инспектора (`inspector-field.tsx`) → `fieldEdit` (`packages/model/edit-fields.ts`,
+  разбор `css-input.ts`) → `Edit { target, style?, text? }`; `target` — `canvas/edit-target.ts`: цепочка развёрнутых
+  инстансов + слой, как у поиска. `window.fignya.edit` → main (`edit-ipc.ts`, `edit-guards.ts` + `isStylePatch` проверяют недоверенный
+  ввод) → importer (`createEditHistory`: `editedNode` пишет стиль/текст узла или оверрайд внешнего инстанса, снимки до/после
+  для undo/redo) → `EditChange { screenId, target }` → main бампит ревизию миниатюры (`screen-revisions.ts`) и шлёт
+  `document:changed` → `page-canvas.changed`: миниатюра с `r=` (у живого экрана — при закрытии), живой экран
+  перерисовывается, текущее выделение возвращается по точному адресу (`findEditTarget`). ⌘Z/⌘⇧Z — `history-step.ts` в
+  renderer → `document:history`; меню Edit → `document-editor.ts` напрямую. Строки инспектора — `Index`: поле в фокусе
+  переживает перерисовку; при смене слоя (`Show keyed` по цепочке id) поля создаются заново.
 
 - `spikes/<id>-<name>/` — выбрасываемый код без TDD, каждый спайк самодостаточен (свой
   `package.json`/`Cargo.toml`, свой README с runbook и ожидаемым выводом).
