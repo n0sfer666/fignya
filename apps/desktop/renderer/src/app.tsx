@@ -1,6 +1,6 @@
 import { batch, createResource, createSignal, Match, onCleanup, Switch } from "solid-js";
 import type { NodeId, SearchPlace } from "@fignya/model";
-import type { RenderedNode } from "@fignya/render-dom";
+import type { Selected } from "./canvas/live-selection";
 import type { Focus } from "./focus";
 import { ImportStatus } from "./import-status";
 import { Inspector } from "./inspector";
@@ -12,7 +12,7 @@ export const App = () => {
   const [state] = createResource(() => window.fignya.documentState());
   const [pageId, setPageId] = createSignal<string>();
   const [focus, setFocus] = createSignal<Focus>();
-  const [selected, setSelected] = createSignal<RenderedNode>();
+  const [selected, setSelected] = createSignal<Selected>();
   const pages = () => {
     const current = state();
     return current?.status === "ready" ? current.pages : [];

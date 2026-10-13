@@ -1,13 +1,13 @@
 import { contentOf, type NodeId, type Page, type Screen } from "@fignya/model";
-import type { RenderedNode } from "@fignya/render-dom";
-import type { CanvasZoom, ThumbFocus } from "../../../shared/api";
+import type { CanvasZoom, DocumentChanged, ThumbFocus } from "../../../shared/api";
 import { BASE_TIER } from "../../../shared/thumb-tiers";
 import { thumbUrl } from "../../../shared/urls";
 import { contentClip } from "./content-clip";
+import { editTarget, findEditTarget } from "./edit-target";
 import { findTarget } from "./find-target";
 import { bindGestures } from "./gestures";
 import { loadingFor } from "./loading-for";
-import { createLiveSelection } from "./live-selection";
+import { createLiveSelection, type Selected } from "./live-selection";
 import { createSharpener } from "./sharpen";
 import { boundsOf, fitView, panBy, zoomAround, zoomStep, type View } from "./viewport";
 
@@ -24,13 +24,15 @@ export type PageCanvas = {
   mark: (screenId: string, target: NodeId[] | undefined) => void;
   close: () => void;
   reload: (fontsVersion: string) => void;
+  changed: (change: DocumentChanged) => Promise<void>;
   dispose: () => void;
 };
 
-const frameOf = (screen: Screen, version: string): HTMLElement => {
+const frameOf = (screen: Screen, version: string, revision: number): HTMLElement => {
   const frame = document.createElement("div");
   frame.className = "screen";
   frame.dataset.screenId = screen.id;
+  frame.dataset.revision = String(revision);
   frame.title = screen.name;
   frame.style.cssText = `left:${screen.x}px;top:${screen.y}px;width:${screen.width}px;height:${screen.height}px`;
   const img = document.createElement("img");
@@ -39,12 +41,12 @@ const frameOf = (screen: Screen, version: string): HTMLElement => {
   img.loading = loadingFor(document.visibilityState);
   img.decoding = "async";
   img.draggable = false;
-  img.src = thumbUrl(screen.id, BASE_TIER, version);
+  img.src = thumbUrl(screen.id, BASE_TIER, version, revision);
   frame.append(img);
   return frame;
 };
 
-export type SelectNode = (node: RenderedNode | undefined) => void;
+export type SelectNode = (node: Selected | undefined) => void;
 
 export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusScreens: (focus: ThumbFocus) => void, onSelect: SelectNode): PageCanvas => {
   const world = document.createElement("div");
@@ -56,6 +58,10 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
   let screens = new Map<string, Screen>();
   let live: { id: string; host: HTMLElement } | undefined;
   let pending: string | undefined;
+  let redraws = 0;
+  let staleOpen: string | undefined;
+  const revisions = new Map<string, number>();
+  const staleThumbs = new Set<string>();
   const selection = createLiveSelection(() => view.zoom, onSelect);
 
   const apply = (next: View): void => {
@@ -70,7 +76,9 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
     selection.attach(undefined);
     if (!live) return;
     live.host.remove();
-    frameEl(live.id)?.classList.remove("live");
+    const frame = frameEl(live.id);
+    frame?.classList.remove("live");
+    if (frame && staleThumbs.delete(live.id)) sharpener.renew(frame);
     live = undefined;
   };
   const close = (): void => {
@@ -82,6 +90,7 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
     const screen = screens.get(id);
     if (!screen || live?.id === id) return;
     pending = id;
+    staleOpen = undefined;
     const host = await openScreen(screen).catch((error: unknown) => {
       console.error(`fignya: screen ${id} failed to open: ${String(error)}`);
       return undefined;
@@ -96,6 +105,40 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
     frame.append(host);
     live = { id, host };
     selection.attach({ frame, host });
+    if (staleOpen !== id) return;
+    staleOpen = undefined;
+    await redraw(screen);
+  };
+  const redraw = async (screen: Screen): Promise<void> => {
+    redraws += 1;
+    const mine = redraws;
+    const host = await openScreen(screen).catch((error: unknown) => {
+      console.error(`fignya: screen ${screen.id} failed to redraw: ${String(error)}`);
+      return undefined;
+    });
+    const current = live;
+    const frame = frameEl(screen.id);
+    if (mine !== redraws || !host || !frame || current?.id !== screen.id) return;
+    const selected = selection.current();
+    const target = selected && editTarget(selected);
+    host.style.clipPath = contentClip(screen);
+    current.host.replaceWith(host);
+    live = { id: screen.id, host };
+    selection.attach({ frame, host }, target && host.shadowRoot ? findEditTarget(host.shadowRoot, target) : undefined);
+  };
+  const changed = async ({ screenId, revision }: DocumentChanged): Promise<void> => {
+    revisions.set(screenId, revision);
+    const frame = frameEl(screenId);
+    const screen = screens.get(screenId);
+    if (!frame || !screen) return;
+    frame.dataset.revision = String(revision);
+    if (pending === screenId) staleOpen = screenId;
+    if (live?.id === screenId) {
+      staleThumbs.add(screenId);
+      await redraw(screen);
+      return;
+    }
+    sharpener.renew(frame);
   };
   const mark = (screenId: string, target: NodeId[] | undefined): void => {
     const current = live;
@@ -114,7 +157,7 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
   const show = (page: Page): void => {
     close();
     screens = new Map(page.screens.map((s) => [s.id, s]));
-    world.replaceChildren(...page.screens.map((s) => frameOf(s, version)));
+    world.replaceChildren(...page.screens.map((s) => frameOf(s, version, revisions.get(s.id) ?? 0)));
     const bounds = boundsOf(page.screens);
     apply(bounds ? fitView(bounds, el.clientWidth, el.clientHeight, FIT_PADDING) : { x: 0, y: 0, zoom: 1 });
   };
@@ -145,6 +188,7 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
       version = next;
       sharpener.restart();
     },
+    changed,
     dispose: () => {
       unbind();
       sharpener.dispose();

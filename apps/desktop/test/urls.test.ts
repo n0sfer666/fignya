@@ -21,6 +21,13 @@ describe("asset urls", () => {
     expect(parseAssetUrl(thumbUrl("1:2", 2, "ab"))).toEqual({ kind: "thumb", id: "1:2", tier: 2 });
   });
 
+  it("carries the screen revision only to bust the browser cache", () => {
+    expect(thumbUrl("1:2", 0.5, "", 3)).toBe("fignya://thumb/1%3A2?r=3");
+    expect(thumbUrl("1:2", 2, "ab", 1)).toBe("fignya://thumb/1%3A2?tier=2&v=ab&r=1");
+    expect(thumbUrl("1:2", 2, "ab", 0)).toBe("fignya://thumb/1%3A2?tier=2&v=ab");
+    expect(parseAssetUrl(thumbUrl("1:2", 2, "ab", 4))).toEqual({ kind: "thumb", id: "1:2", tier: 2 });
+  });
+
   it("rejects foreign or malformed urls", () => {
     expect(parseAssetUrl("https://image/ab")).toBeUndefined();
     expect(parseAssetUrl("fignya://other/ab")).toBeUndefined();

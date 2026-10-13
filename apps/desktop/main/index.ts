@@ -1,7 +1,9 @@
 import { app, Menu, net } from "electron";
 import { join } from "node:path";
-import { CANVAS_ZOOM_CHANNEL, LOST_CHANNEL, PROGRESS_CHANNEL } from "../shared/api";
+import { CANVAS_ZOOM_CHANNEL, CHANGED_CHANNEL, LOST_CHANNEL, PROGRESS_CHANNEL, type DocumentChanged } from "../shared/api";
 import { menuTemplate } from "./app-menu";
+import { createDocumentEditor } from "./document-editor";
+import { registerEditIpc } from "./edit-ipc";
 import { registerFontIpc } from "./font-ipc";
 import { createFontLibrary } from "./font-library";
 import { registerDocumentIpc } from "./ipc";
@@ -27,7 +29,6 @@ app.whenReady().then(() => {
   const toWindow = (channel: string, payload: unknown): void => {
     if (!window.isDestroyed()) window.webContents.send(channel, payload);
   };
-  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate((zoom) => toWindow(CANVAS_ZOOM_CHANNEL, zoom), process.platform === "darwin")));
   const loaded: Promise<LoadedDocument> = painted.then(() =>
     loadDocument(process.env.FIG_FILE, {
       progress: (progress) => toWindow(PROGRESS_CHANNEL, progress),
@@ -43,6 +44,14 @@ app.whenReady().then(() => {
   registerFontIpc(loaded, fonts);
   const thumbnails = createThumbnails(loaded, join(app.getPath("userData"), "thumbs"), async () => (await fonts.faces()).version);
   registerPageIpc(thumbnails);
+  const editor = createDocumentEditor(loaded, (change) => {
+    thumbnails.touched();
+    if (!change) return;
+    const changed: DocumentChanged = { ...change, revision: thumbnails.changed(change.screenId) };
+    toWindow(CHANGED_CHANNEL, changed);
+  });
+  registerEditIpc(editor);
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate((zoom) => toWindow(CANVAS_ZOOM_CHANNEL, zoom), process.platform === "darwin", editor)));
   serveAssets(async (asset) => {
     if (asset.kind === "image") return (await loaded).image(asset.id);
     if (asset.kind === "font") return fonts.read(asset.id);

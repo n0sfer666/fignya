@@ -1,4 +1,6 @@
+import type { NodeId } from "@fignya/model";
 import { renderedNode, type RenderedNode } from "@fignya/render-dom";
+import { editTarget } from "./edit-target";
 import type { GesturePoint, GestureTap } from "./gestures";
 import { hitNode } from "./hit-node";
 import { outlineBox, type OutlineBox } from "./outline-box";
@@ -7,8 +9,11 @@ import type { Bounds } from "./viewport";
 
 export type LiveScreen = { frame: HTMLElement; host: HTMLElement };
 
+export type Selected = RenderedNode & { target: NodeId[] };
+
 export type LiveSelection = {
-  attach: (screen: LiveScreen | undefined) => void;
+  attach: (screen: LiveScreen | undefined, el?: Element) => void;
+  current: () => Element | undefined;
   click: (tap: GestureTap) => boolean;
   hover: (point: GesturePoint | undefined) => void;
   select: (el: Element | undefined) => Bounds | undefined;
@@ -17,12 +22,18 @@ export type LiveSelection = {
 
 type Outlined = { el: Element; box: OutlineBox };
 
+const selectedOf = (el: Element): Selected | undefined => {
+  const rendered = renderedNode(el);
+  const target = editTarget(el);
+  return rendered && target && { ...rendered, target };
+};
+
 const modeOf = (tap: GestureTap): PickMode => {
   if (tap.meta) return "deep";
   return tap.double ? "inner" : "click";
 };
 
-export const createLiveSelection = (zoom: () => number, onSelect: (node: RenderedNode | undefined) => void): LiveSelection => {
+export const createLiveSelection = (zoom: () => number, onSelect: (node: Selected | undefined) => void): LiveSelection => {
   let screen: LiveScreen | undefined;
   let selected: Outlined | undefined;
   let hovered: Outlined | undefined;
@@ -40,7 +51,7 @@ export const createLiveSelection = (zoom: () => number, onSelect: (node: Rendere
     unhover();
     selected?.box.dispose();
     selected = el && outline(el, "node-selection");
-    onSelect(selected && renderedNode(selected.el));
+    onSelect(selected && selectedOf(selected.el));
     return selected?.box.bounds;
   };
   const hover = (point: GesturePoint | undefined): void => {
@@ -51,10 +62,11 @@ export const createLiveSelection = (zoom: () => number, onSelect: (node: Rendere
     if (next && next !== selected?.el) hovered = outline(next, "node-hover");
   };
   return {
-    attach: (next) => {
-      select(undefined);
+    attach: (next, el) => {
       screen = next;
+      select(el);
     },
+    current: () => selected?.el,
     click: (tap) => {
       const hit = hitOf(tap.path);
       if (hit) select(pickNode(hit, selected?.el, modeOf(tap)));

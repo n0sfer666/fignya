@@ -6,6 +6,7 @@ import { imageUrl } from "../../shared/urls";
 import { createPageCanvas, type PageCanvas, type SelectNode } from "./canvas/page-canvas";
 import type { Focus } from "./focus";
 import { applyFaces } from "./fonts/apply-faces";
+import { historyStep, inTextField } from "./history-step";
 
 export type WorkspaceProps = { page: Page | undefined; focus: Focus | undefined; onSelect: SelectNode };
 
@@ -26,6 +27,16 @@ export const Workspace = (props: WorkspaceProps) => {
     window.fignya.fontFaces().then(refonted, (error: unknown) => console.error(`fignya: font cache: ${String(error)}`));
     onCleanup(window.fignya.onFontFaces(refonted));
     onCleanup(window.fignya.onCanvasZoom((step) => canvas?.zoomStep(step)));
+    onCleanup(window.fignya.onChanged((change) => void canvas?.changed(change)));
+    const keydown = (e: KeyboardEvent): void => {
+      const step = historyStep(e);
+      if (!step) return;
+      e.preventDefault();
+      if (inTextField(e.target)) document.execCommand(step);
+      else window.fignya.step(step);
+    };
+    window.addEventListener("keydown", keydown);
+    onCleanup(() => window.removeEventListener("keydown", keydown));
   });
   onCleanup(() => canvas?.dispose());
   createEffect(() => {

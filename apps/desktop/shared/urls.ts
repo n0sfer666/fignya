@@ -8,8 +8,8 @@ export const imageUrl = (hash: string): string => `${SCHEME}://image/${encodeURI
 
 export const fontUrl = (file: string): string => `${SCHEME}://font/${encodeURIComponent(file)}`;
 
-export const thumbUrl = (screenId: string, tier: number = BASE_TIER, version = ""): string => {
-  const query = [tier === BASE_TIER ? "" : `tier=${tier}`, version ? `v=${encodeURIComponent(version)}` : ""].filter(Boolean).join("&");
+export const thumbUrl = (screenId: string, tier: number = BASE_TIER, version = "", revision = 0): string => {
+  const query = [tier === BASE_TIER ? "" : `tier=${tier}`, version ? `v=${encodeURIComponent(version)}` : "", revision ? `r=${revision}` : ""].filter(Boolean).join("&");
   return `${SCHEME}://thumb/${encodeURIComponent(screenId)}${query ? `?${query}` : ""}`;
 };
 

@@ -275,3 +275,33 @@ body,
   margin: 12px;
   color: var(--muted);
 }
+
+.inspector .field input,
+.inspector .field textarea {
+  box-sizing: border-box;
+  width: calc(100% + 5px);
+  margin: -2px 0 -2px -5px;
+  padding: 1px 4px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  resize: vertical;
+}
+
+.inspector .field input:hover,
+.inspector .field textarea:hover {
+  border-color: var(--line);
+}
+
+.inspector .field input:focus,
+.inspector .field textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.inspector .field.invalid input,
+.inspector .field.invalid textarea {
+  border-color: #f24822;
+}
