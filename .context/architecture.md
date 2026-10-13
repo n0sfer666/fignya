@@ -72,6 +72,14 @@ Core (Rust)
   перерисовывается, текущее выделение возвращается по точному адресу (`findEditTarget`). ⌘Z/⌘⇧Z — `history-step.ts` в
   renderer → `document:history`; меню Edit → `document-editor.ts` напрямую. Строки инспектора — `Index`: поле в фокусе
   переживает перерисовку; при смене слоя (`Show keyed` по цепочке id) поля создаются заново.
+  Экспорт (раунд 4, срез 3): меню File → Export Screen… (`app-menu.ts`, id `export-screen`; доступность шлёт renderer через
+  `export:available` при открытии/закрытии живого экрана) → `export:request` → `export-live.ts`: модель экрана из importer
+  (с правками) → `screenImages` (хэши, которые реально отрисованы) → main `export:images` (имена `<hash>.<ext>` по сигнатуре)
+  → `exportScreen` (`packages/render-dom`: тот же `renderRoot`, `classStyles` переносит `style` в общие `.nN`, CSS страницы —
+  `HOST_CSS` + `NODE_CSS`, как в shadow root) → main `export:screen` (`export-guards.ts` проверяет ввод) → диалог →
+  `exportFiles` (картинки из документа, начертания семейств экрана из кэша шрифтов → `fonts/` + `@font-face` перед CSS) →
+  `writeExport` (атомарно, чужие файлы папки не трогает) → Finder. Наследуемое (цвет и шрифт UI) живой экран получает от
+  приложения, экспорт — от браузера; узлы с текстом задают их явно.
 
 - `spikes/<id>-<name>/` — выбрасываемый код без TDD, каждый спайк самодостаточен (свой
   `package.json`/`Cargo.toml`, свой README с runbook и ожидаемым выводом).
