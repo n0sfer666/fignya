@@ -106,11 +106,15 @@ bun spikes/live-cdp/turned-grow.ts
 bun spikes/live-cdp/node-path.ts 12645:43534 14999:110842
 bun spikes/live-cdp/node-tree.ts 2479:25954 4
 bun spikes/live-cdp/screen-html.ts 2479:25954
+bun spikes/live-cdp/find-text.ts "Сыробогатов" "Мужская фертильность"
+bun spikes/live-cdp/raw-node.ts 12645:43587 symbolData
 ```
 
 Сверка экрана с эталоном по нодам: `node-tree.ts <id> [depth]` — поддерево сырых узлов (тип, имя, размер, позиция, HIDDEN, stack,
 constraint, типы заливок/обводок, `sym` инстанса); `screen-html.ts <id>` — экран через `importFig` → `renderScreen` в happy-dom,
 содержимое shadow root в `out/<id с «-»>.html` (картинки — `img/<hash>`), по нему видно итоговый CSS/SVG узла по `data-id`.
+Откуда взялся текст или значение: `find-text.ts <строка>…` — узлы, в сырье которых встречается строка (так нашлись режимы
+STRING-переменной `content/categoryName`); `raw-node.ts <id> [ключ…]` — JSON сырого узла целиком или выбранных полей.
 
 Миниатюры (без `.fig`): `bun spikes/live-cdp/tier-scan.ts <каталог кэша экземпляра>` — `@2x`, ужатый до `@1x`, против `@1x` (и `@1x`
 против base), среднее расхождение канала; растянутые/обрезанные уровни дают ~12 против ~1. `osr-size.cjs` и `osr-zoom.cjs` —
@@ -185,3 +189,17 @@ focus, hasFocus}`. 26-10-06 флак s3/s7: окно без фокуса ОС (`
 
 Коды: 0 — все проверки; 7 — часть `FAIL`; 2 — импорт не закончился; 1 — сбой CDP/скрипта. Буфер обмена перед прогоном лучше
 очистить от id ноды: поле подставит его при ⌘F (скрипт выделяет и перезаписывает ввод через 400 мс).
+
+## Зум холста с клавиатуры
+
+```nu
+$env.FIG_FILE = ("~/Downloads/ROI Navigator.fig" | path expand)
+bash spikes/live-cdp/run-key-zoom.sh <tag> "03 screens" 600
+```
+
+`key-zoom.ts [страница] [пауза мс]`: настоящие нажатия ⌘= ⌘= ⌘= ⌘− ⌘− ⌘− ⌘0 ⌘⇧= ⌘⇧= ⌘− ⌘0 через System Events (`key code`,
+не зависит от раскладки), перед каждым окно выводится вперёд. На каждое нажатие строка: `front` — приложение на переднем плане,
+`keydown` в рендерере, `ipc` — пришёл ли `canvas:zoom`, `moved` — сменился ли `transform` у `.world`, `lag` от keydown до IPC,
+`longtask`. Окно должно быть на переднем плане: работа за машиной во время прогона уводит фокус (`front=Arc…`, `ipc=0`).
+Ожидание (26-10-13, «03 screens» и Work): `ipc missing: 0/11`, lag 1–47 мс, longtask 0; на Work/For dev ⌘− после fit не
+двигает холст — fit уже на `MIN_ZOOM` 0.02. Коды: 0 — все нажатия дошли; 5 — часть без IPC; 2 — импорт не закончился; 3 — окно не стало видимым.
