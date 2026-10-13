@@ -1,0 +1,7 @@
+{
+  "name": "@fignya/model",
+  "type": "module",
+  "private": true,
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "types": "tsc --noEmit -p ." }
+}

@@ -1,0 +1,79 @@
+import type { Color } from "./color";
+
+export type Px = number;
+
+export type Sides = readonly [Px, Px, Px, Px];
+
+export type Matrix2 = readonly [number, number, number, number];
+
+export type Shadow = { inset: boolean; x: Px; y: Px; blur: Px; spread: Px; color: Color };
+
+export type ColorStop = { color: Color; position: number };
+
+export type ImageFit = "cover" | "contain" | "tile" | "stretch";
+
+export type Paint =
+  | { kind: "solid"; color: Color }
+  | { kind: "linear"; angle: number; stops: ColorStop[] }
+  | { kind: "radial"; stops: ColorStop[] }
+  | { kind: "image"; hash: string; fit: ImageFit };
+
+export type FlexAlign = "flex-start" | "center" | "flex-end";
+
+export type TextAlign = "left" | "center" | "right" | "justify";
+
+export type LetterSpacing = { value: number; unit: "px" | "em" };
+
+export type StyleValues = {
+  position: "relative" | "absolute";
+  left: Px;
+  top: Px;
+  width: Px;
+  height: Px;
+  minWidth: Px;
+  minHeight: Px;
+  transform: Matrix2;
+  centerTransform: Matrix2;
+  scale: [number, number];
+  contentSize: [Px, Px];
+  display: "flex" | "-webkit-box";
+  flexDirection: "row" | "column";
+  flexWrap: "wrap";
+  gap: Px;
+  stackOrder: "first-on-top";
+  rowGap: Px;
+  padding: Sides;
+  margin: Sides;
+  justifyContent: FlexAlign | "space-between";
+  alignItems: FlexAlign | "baseline";
+  alignSelf: "stretch";
+  flexGrow: number;
+  flexShrink: number;
+  flexBasis: Px;
+  borderRadius: Sides | "50%";
+  outline: { width: Px; color: Color };
+  boxShadow: Shadow[];
+  dropShadow: Shadow[];
+  filterBlur: Px;
+  backdropBlur: Px;
+  opacity: number;
+  overflow: "hidden";
+  background: Paint[];
+  color: Color;
+  fontFamily: string;
+  fontSize: Px;
+  fontWeight: number;
+  fontStyle: "italic";
+  lineHeight: Px | "normal";
+  letterSpacing: LetterSpacing;
+  textAlign: TextAlign;
+  textTransform: "uppercase" | "lowercase" | "capitalize";
+  textDecoration: "underline" | "line-through";
+  fontVariantCaps: "small-caps" | "all-small-caps";
+  whiteSpace: "pre-wrap" | "pre-line" | "pre";
+  overflowWrap: "break-word";
+  textOverflow: "ellipsis";
+  lineClamp: number;
+};
+
+export type Style = Partial<StyleValues>;

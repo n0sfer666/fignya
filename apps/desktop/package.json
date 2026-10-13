@@ -1,0 +1,23 @@
+{
+  "name": "@fignya/desktop",
+  "productName": "fignya",
+  "private": true,
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "types": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json"
+  },
+  "devDependencies": {
+    "@fignya/fig-import": "workspace:*",
+    "@fignya/model": "workspace:*",
+    "@fignya/render-dom": "workspace:*",
+    "@types/node": "^26.6.2",
+    "electron": "^44.4.5",
+    "electron-vite": "^5.0.0",
+    "solid-js": "^1.9.15",
+    "vite": "^7.3.6",
+    "vite-plugin-solid": "^2.11.14"
+  }
+}

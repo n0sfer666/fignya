@@ -1,1 +1,1 @@
-{"types":"cd spikes/s1-dom-perf && bun run types"}
+{"types":"bun run types","test":"bun run test"}

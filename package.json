@@ -1,0 +1,16 @@
+{
+  "name": "fignya",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "dev": "bun run --cwd apps/desktop dev",
+    "test": "vitest run",
+    "types": "bun run --filter '@fignya/*' types"
+  },
+  "devDependencies": {
+    "happy-dom": "^20.14.5",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "@fignya/render-dom",
+  "type": "module",
+  "private": true,
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "types": "tsc --noEmit -p ." },
+  "dependencies": {
+    "@fignya/model": "workspace:*"
+  }
+}

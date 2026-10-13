@@ -1,0 +1,21 @@
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { Window } from "happy-dom";
+import { screenModel } from "../../packages/model/src";
+import { importFig } from "../../packages/fig-import/src";
+import { renderScreen } from "../../packages/render-dom/src";
+
+const path = process.env.FIG_FILE;
+if (!path) throw new Error("FIG_FILE is not set");
+const [id = ""] = process.argv.slice(2);
+const window = new Window();
+Object.assign(globalThis, { document: window.document, window, HTMLElement: window.HTMLElement, Node: window.Node });
+const { document } = importFig(new Uint8Array(readFileSync(path)));
+const model = screenModel(document.nodes, id);
+if (!model) throw new Error(`${id}: no screen`);
+const root = renderScreen(model, { imageUrl: (hash) => `img/${hash}` });
+const shadow = root.shadowRoot;
+const html = shadow ? [...shadow.childNodes].map((n) => ("outerHTML" in n ? String(n.outerHTML) : "")).join("\n") : root.outerHTML;
+const out = join(import.meta.dir, "out", `${id.replace(":", "-")}.html`);
+writeFileSync(out, html);
+console.log(out);
