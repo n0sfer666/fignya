@@ -1,11 +1,13 @@
 import { contentOf, type NodeId, type Page, type Screen } from "@fignya/model";
+import type { RenderedNode } from "@fignya/render-dom";
 import type { CanvasZoom, ThumbFocus } from "../../../shared/api";
 import { BASE_TIER } from "../../../shared/thumb-tiers";
 import { thumbUrl } from "../../../shared/urls";
 import { contentClip } from "./content-clip";
+import { findTarget } from "./find-target";
 import { bindGestures } from "./gestures";
 import { loadingFor } from "./loading-for";
-import { markNode, type NodeMark } from "./node-mark";
+import { createLiveSelection } from "./live-selection";
 import { createSharpener } from "./sharpen";
 import { boundsOf, fitView, panBy, zoomAround, zoomStep, type View } from "./viewport";
 
@@ -42,7 +44,9 @@ const frameOf = (screen: Screen, version: string): HTMLElement => {
   return frame;
 };
 
-export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusScreens: (focus: ThumbFocus) => void): PageCanvas => {
+export type SelectNode = (node: RenderedNode | undefined) => void;
+
+export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusScreens: (focus: ThumbFocus) => void, onSelect: SelectNode): PageCanvas => {
   const world = document.createElement("div");
   world.className = "world";
   el.append(world);
@@ -52,7 +56,7 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
   let screens = new Map<string, Screen>();
   let live: { id: string; host: HTMLElement } | undefined;
   let pending: string | undefined;
-  let marked: NodeMark | undefined;
+  const selection = createLiveSelection(() => view.zoom, onSelect);
 
   const apply = (next: View): void => {
     view = next;
@@ -62,12 +66,8 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
   };
   const frameEl = (id: string): HTMLElement | undefined =>
     [...world.children].find((c): c is HTMLElement => c instanceof HTMLElement && c.dataset.screenId === id);
-  const unmark = (): void => {
-    marked?.dispose();
-    marked = undefined;
-  };
   const unmount = (): void => {
-    unmark();
+    selection.attach(undefined);
     if (!live) return;
     live.host.remove();
     frameEl(live.id)?.classList.remove("live");
@@ -95,17 +95,16 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
     host.style.clipPath = contentClip(screen);
     frame.append(host);
     live = { id, host };
+    selection.attach({ frame, host });
   };
   const mark = (screenId: string, target: NodeId[] | undefined): void => {
-    unmark();
     const current = live;
     const screen = screens.get(screenId);
-    const frame = frameEl(screenId);
-    if (!target || !screen || !frame || current?.id !== screenId) return;
-    const found = markNode(frame, current.host, target, () => view.zoom);
-    if (!found) return;
-    marked = found;
-    const { x, y, width, height } = found.bounds;
+    if (!screen || current?.id !== screenId) return;
+    const root = current.host.shadowRoot;
+    const bounds = selection.select(target && root ? findTarget(root, target) : undefined);
+    if (!bounds) return;
+    const { x, y, width, height } = bounds;
     apply(fitView({ x: screen.x + x, y: screen.y + y, width, height }, el.clientWidth, el.clientHeight, FOCUS_PADDING));
   };
   const focus = (id: string): void => {
@@ -122,13 +121,16 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
   const unbind = bindGestures(el, {
     pan: (dx, dy) => apply(panBy(view, dx, dy)),
     zoom: (factor, x, y) => apply(zoomAround(view, factor, x, y)),
-    click: (target) => {
-      const id = target instanceof Element ? target.closest<HTMLElement>(".screen")?.dataset.screenId : undefined;
-      if (id) void open(id);
+    click: (tap) => {
+      if (selection.click(tap)) return;
+      const id = tap.target instanceof Element ? tap.target.closest<HTMLElement>(".screen")?.dataset.screenId : undefined;
+      if (id && id !== live?.id) void open(id);
+      else selection.select(undefined);
     },
+    hover: (point) => selection.hover(point),
   });
   const keydown = (e: KeyboardEvent): void => {
-    if (e.key === "Escape") close();
+    if (e.key === "Escape" && !selection.clear()) close();
   };
   window.addEventListener("keydown", keydown);
   return {
@@ -147,6 +149,7 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
       unbind();
       sharpener.dispose();
       window.removeEventListener("keydown", keydown);
+      selection.attach(undefined);
       world.remove();
     },
   };

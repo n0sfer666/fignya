@@ -1,13 +1,21 @@
+import { isDoubleClick, type Tap } from "./double-click";
+
 const CLICK_SLOP = 4;
 const ZOOM_SPEED = 0.01;
+
+export type GesturePoint = { path: EventTarget[]; meta: boolean };
+
+export type GestureTap = GesturePoint & { target: EventTarget | null; double: boolean };
 
 export type GestureHandlers = {
   pan: (dx: number, dy: number) => void;
   zoom: (factor: number, x: number, y: number) => void;
-  click: (target: EventTarget | null) => void;
+  click: (tap: GestureTap) => void;
+  hover: (point: GesturePoint | undefined) => void;
 };
 
 export const bindGestures = (el: HTMLElement, on: GestureHandlers): (() => void) => {
+  let lastTap: Tap | undefined;
   const local = (e: MouseEvent): { x: number; y: number } => {
     const rect = el.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -21,6 +29,7 @@ export const bindGestures = (el: HTMLElement, on: GestureHandlers): (() => void)
   const down = (e: PointerEvent): void => {
     if (e.button !== 0 && e.button !== 1) return;
     const start = { x: e.clientX, y: e.clientY };
+    const path = e.composedPath();
     let last = start;
     let dragged = false;
     el.setPointerCapture(e.pointerId);
@@ -35,7 +44,14 @@ export const bindGestures = (el: HTMLElement, on: GestureHandlers): (() => void)
       el.removeEventListener("pointerup", up);
       el.removeEventListener("pointercancel", cancel);
       el.removeEventListener("lostpointercapture", cancel);
-      if (clicked && !dragged) on.click(e.target);
+      if (dragged) lastTap = undefined;
+      else if (clicked && e.button === 0) tap();
+    };
+    const tap = (): void => {
+      const next = { time: e.timeStamp, x: e.clientX, y: e.clientY };
+      const double = isDoubleClick(lastTap, next, CLICK_SLOP);
+      lastTap = double ? undefined : next;
+      on.click({ target: e.target, path, meta: e.metaKey, double });
     };
     const up = (u: PointerEvent): void => {
       if (u.pointerId === e.pointerId) end(true);
@@ -48,10 +64,18 @@ export const bindGestures = (el: HTMLElement, on: GestureHandlers): (() => void)
     el.addEventListener("pointercancel", cancel);
     el.addEventListener("lostpointercapture", cancel);
   };
+  const hover = (m: PointerEvent): void => {
+    if (m.buttons === 0) on.hover({ path: m.composedPath(), meta: m.metaKey });
+  };
+  const leave = (): void => on.hover(undefined);
   el.addEventListener("wheel", wheel, { passive: false });
   el.addEventListener("pointerdown", down);
+  el.addEventListener("pointermove", hover);
+  el.addEventListener("pointerleave", leave);
   return () => {
     el.removeEventListener("wheel", wheel);
     el.removeEventListener("pointerdown", down);
+    el.removeEventListener("pointermove", hover);
+    el.removeEventListener("pointerleave", leave);
   };
 };

@@ -1,7 +1,9 @@
 import { batch, createResource, createSignal, Match, onCleanup, Switch } from "solid-js";
 import type { NodeId, SearchPlace } from "@fignya/model";
+import type { RenderedNode } from "@fignya/render-dom";
 import type { Focus } from "./focus";
 import { ImportStatus } from "./import-status";
+import { Inspector } from "./inspector";
 import { SearchBox } from "./search-box";
 import { Sidebar } from "./sidebar";
 import { Workspace } from "./workspace";
@@ -10,6 +12,7 @@ export const App = () => {
   const [state] = createResource(() => window.fignya.documentState());
   const [pageId, setPageId] = createSignal<string>();
   const [focus, setFocus] = createSignal<Focus>();
+  const [selected, setSelected] = createSignal<RenderedNode>();
   const pages = () => {
     const current = state();
     return current?.status === "ready" ? current.pages : [];
@@ -40,8 +43,9 @@ export const App = () => {
       <Match when={state()?.status === "ready"}>
         <div class="layout">
           <Sidebar pages={pages()} pageId={page()?.id} onPage={choosePage} onScreen={(id) => setFocus({ id })} />
-          <Workspace page={page()} focus={focus()} />
+          <Workspace page={page()} focus={focus()} onSelect={(node) => setSelected(node)} />
           <SearchBox onPick={pick} />
+          <Inspector selected={selected()} />
         </div>
       </Match>
     </Switch>
