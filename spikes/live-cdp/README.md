@@ -130,6 +130,10 @@ override/prop/derived через `mergedFields`, вложенные инстан
 через оверрайды 1586 / 94 / 92 / 3 / `growOther` 1 — он же `growOtherNoise` (`6869:86774 → 456:32646` «Left side»).
 `growOther − growOtherNoise` > 0 → нужна обёртка-слот. `node-path.ts <id>…` печатает «страница / … / фрейм»
 (неизвестный id — `not found`, код 1).
+`section-screens.ts <id>…` — экраны секции, как в Screens (вложенные секции раскрываются, скрытые — `visible: false` — пропускаются,
+как `pages.ts`): `секция  экран  число INSTANCE  имя`; в Screens секций нет, run-shots по id секции даёт `no page`. Обход —
+`screen-frames.ts` (общий с `overflow-scan.ts`, тот фильтрует ещё и opacity 0). Ожидание 26-10-13: `2479:26710` — 16 экранов,
+`9402:158329` — 20, `5873:93717` — 2.
 
 ## Шум float в матрице поворота: видимость
 

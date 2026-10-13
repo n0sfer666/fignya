@@ -4,6 +4,7 @@ import { contentBounds, shown } from "../../packages/fig-import/src/tree/content
 import type { FigNode } from "../../packages/fig-import/src/tree/node-index";
 import { childrenOf } from "../../packages/fig-import/src/tree/placements";
 import { figIndex } from "./fig-index";
+import { screenFrames } from "./screen-frames";
 
 const { root } = figIndex();
 
@@ -12,17 +13,11 @@ const openInstances = (node: FigNode): number =>
     .filter((c) => shown(c) && !clipsContent(c.raw, c.type))
     .reduce((n, c) => n + Number(c.type === "INSTANCE") + openInstances(c), 0);
 
-const framesIn = (node: FigNode): FigNode[] => {
-  if (node.type === "SECTION") return frames(node);
-  return node.type === "FRAME" ? [node] : [];
-};
-
-const frames = (node: FigNode): FigNode[] => node.children.filter(shown).flatMap(framesIn);
 
 let total = 0;
 let over = 0;
 for (const page of root.children) {
-  for (const screen of frames(page)) {
+  for (const screen of screenFrames(page, shown)) {
     total++;
     if (clipsContent(screen.raw, screen.type)) continue;
     const size = rec(screen.raw, "size");
