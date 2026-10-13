@@ -17,6 +17,12 @@ if (!(await imported(ev))) {
 setElectronVisible(port, true);
 await waitFor(async () => (await ev("document.visibilityState")) === "visible", 5000);
 log(`imported, ${String(await ev("document.visibilityState"))}`);
+const spill = process.env.SPILL === "1";
+if (spill) {
+  const width = Number(await ev("innerWidth"));
+  await send("Emulation.setDeviceMetricsOverride", { width, height: 3200, deviceScaleFactor: 0, mobile: false });
+  log(`spill viewport ${width}×3200`);
+}
 
 const openScreen = (id: string): string => `(async () => {
   const frameOf = () => [...document.querySelectorAll(".world > .screen")].find((f) => f.dataset.screenId === ${JSON.stringify(id)});
@@ -58,10 +64,36 @@ const measure = `(() => {
     const r = el.getBoundingClientRect();
     rects[el.dataset.id + "#" + n] = [r2(r.x - hr.x), r2(r.y - hr.y), r2(r.width), r2(r.height)];
   }
-  return { clip: { x: hr.x, y: hr.y, width: hr.width, height: hr.height, scale: 1 }, rects, visibility: document.visibilityState };
+  const all = Object.values(rects);
+  const x0 = Math.min(0, ...all.map((r) => r[0]));
+  const y0 = Math.min(0, ...all.map((r) => r[1]));
+  const x1 = Math.max(hr.width, ...all.map((r) => r[0] + r[2]));
+  const y1 = Math.max(hr.height, ...all.map((r) => r[1] + r[3]));
+  const extent = { x: hr.x + x0, y: hr.y + y0, width: x1 - x0, height: y1 - y0, scale: 1 };
+  return { clip: { x: hr.x, y: hr.y, width: hr.width, height: hr.height, scale: 1 }, extent, rects, visibility: document.visibilityState };
 })()`;
 
 type Shot = { ok: boolean; text: string };
+
+const thumbShown = (id: string): string => `(async () => {
+  window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+  await new Promise((r) => setTimeout(r, 300));
+  const img = document.querySelector(\`.world > .screen[data-screen-id="${id}"] img\`);
+  if (document.querySelector(".world > .screen.live") || !img) return false;
+  return Promise.race([img.decode().then(() => true, () => false), new Promise((r) => setTimeout(() => r(false), 10000))]);
+})()`;
+
+const capture = async (path: string, clip: Record<string, unknown>): Promise<void> => {
+  const shot = await send("Page.captureScreenshot", { format: "png", clip });
+  if (isRec(shot) && typeof shot.data === "string") writeFileSync(path, Buffer.from(shot.data, "base64"));
+};
+
+const shootSpill = async (id: string, file: string, extent: Record<string, unknown>): Promise<void> => {
+  await capture(`${dir}/${file}-spill.png`, extent);
+  if (!(await ev(thumbShown(id)))) log(`${file}: thumbnail not shown`);
+  await sleep(1500);
+  await capture(`${dir}/${file}-thumb.png`, extent);
+};
 const fail = (text: string): Shot => ({ ok: false, text });
 
 const shoot = async (id: string): Promise<Shot> => {
@@ -76,6 +108,7 @@ const shoot = async (id: string): Promise<Shot> => {
   const file = id.replace(":", "-");
   writeFileSync(`${dir}/${file}.png`, Buffer.from(shot.data, "base64"));
   writeFileSync(`${dir}/${file}.json`, JSON.stringify(m));
+  if (spill && isRec(m.extent)) await shootSpill(id, file, m.extent);
   return { ok: true, text: `${Object.keys(m.rects).length} nodes, ${String(m.visibility)}` };
 };
 

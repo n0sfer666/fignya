@@ -9,6 +9,7 @@ const dirOf = (tag: string): string => `${out}/shots-${tag}`;
 
 type Rects = Map<string, string>;
 const rectsOf = (file: string): Rects => {
+  if (!existsSync(file)) return new Map();
   const parsed: unknown = JSON.parse(readFileSync(file, "utf8"));
   const rects = isRec(parsed) ? parsed.rects : undefined;
   if (!isRec(rects)) throw new Error(`${file}: no rects`);
