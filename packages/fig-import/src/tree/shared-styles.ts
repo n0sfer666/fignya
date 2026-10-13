@@ -2,7 +2,8 @@ import { rec, recs, str, type Rec } from "../fig/guards";
 import { STYLE_REFS, type FieldMap } from "../fig/style-refs";
 import { refKey } from "./asset-ref";
 import { guidKey } from "./node-index";
-import { BOUND_FLOAT_FIELDS, bindings, boundField } from "./variable-floats";
+import { bindings } from "./variable-bindings";
+import { BOUND_FLOAT_FIELDS, boundField } from "./variable-floats";
 
 type Styles = ReadonlyMap<string, Rec>;
 

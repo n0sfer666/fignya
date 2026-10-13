@@ -1,4 +1,5 @@
-import { rec, recs, str, type Rec } from "../fig/guards";
+import { str, type Rec } from "../fig/guards";
+import { bindings, boundAlias } from "./variable-bindings";
 import type { Resolve } from "./variable-values";
 import type { Modes } from "./variable-modes";
 
@@ -23,8 +24,6 @@ const FLOAT_FIELDS: ReadonlyMap<string, string> = new Map([
 
 export const BOUND_FLOAT_FIELDS: readonly string[] = [...FLOAT_FIELDS.values()];
 
-export const bindings = (fields: Rec): Rec[] => recs(rec(fields, "variableConsumptionMap"), "entries");
-
 export const boundField = (entry: Rec): string | undefined => FLOAT_FIELDS.get(str(entry, "variableField") ?? "");
 
 export const bindsFloats = (fields: Rec): boolean => bindings(fields).some((e) => boundField(e) !== undefined);
@@ -38,7 +37,7 @@ const targetsOf = (entry: Rec, bound: ReadonlySet<string>): string[] => {
 };
 
 const boundValues = (resolve: Resolve<number>, modes: Modes, fields: Rec, entry: Rec, bound: ReadonlySet<string>): [string, number][] => {
-  const alias = rec(rec(rec(entry, "variableData") ?? {}, "value") ?? {}, "alias");
+  const alias = boundAlias(entry);
   const value = alias && resolve(modes, alias);
   if (value === undefined) return [];
   return targetsOf(entry, bound).flatMap((field): [string, number][] => (fields[field] === value ? [] : [[field, value]]));

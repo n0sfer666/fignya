@@ -1,4 +1,4 @@
-import { num, rec, recs, type Rec } from "../fig/guards";
+import { num, rec, recs, str, type Rec } from "../fig/guards";
 import { refKey } from "./asset-ref";
 import { guidKey } from "./node-index";
 import { setKey, type Variables } from "./variable-index";
@@ -39,3 +39,5 @@ const cachedResolver = <T>(vars: Variables, pick: (value: Rec) => T | undefined)
 export const colorResolver = (vars: Variables): Resolve<Rec> => cachedResolver(vars, (value) => rec(value, "colorValue"));
 
 export const floatResolver = (vars: Variables): Resolve<number> => cachedResolver(vars, (value) => num(value, "floatValue"));
+
+export const stringResolver = (vars: Variables): Resolve<string> => cachedResolver(vars, (value) => str(value, "textValue"));
