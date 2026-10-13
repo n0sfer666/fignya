@@ -1,10 +1,10 @@
 import type { FontUsage, ImportProgress } from "@fignya/fig-import";
-import type { Page, ScreenModel, SearchHit } from "@fignya/model";
+import type { Box, Page, ScreenModel, SearchHit } from "@fignya/model";
 import type { FamilyFace, FontDownload, FontFaces, FontRequest } from "./fonts";
 
 export type DocumentState = { status: "ready"; pages: Page[] } | { status: "error"; message: string };
 
-export type ThumbJob = { id: number; model: ScreenModel; scale: number };
+export type ThumbJob = { id: number; model: ScreenModel; scale: number; origin: Pick<Box, "x" | "y"> };
 
 export type ThumbFocus = { tier: number; screenIds: string[] };
 

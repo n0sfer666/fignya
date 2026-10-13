@@ -14,6 +14,11 @@ export type Sharpener = { schedule: (zoom: number) => void; refresh: () => void;
 
 const overlaps = (a: DOMRect, b: DOMRect): boolean => a.right > b.left && a.left < b.right && a.bottom > b.top && a.top < b.bottom;
 
+const inView = (frame: HTMLElement, bounds: DOMRect): boolean => {
+  const img = frame.querySelector("img");
+  return overlaps(frame.getBoundingClientRect(), bounds) || (img !== null && overlaps(img.getBoundingClientRect(), bounds));
+};
+
 const tierIn = (value: string | undefined): number | undefined => (value === undefined ? undefined : Number(value));
 
 const isShown = (img: HTMLImageElement): boolean => img.complete && img.naturalWidth > 0;
@@ -69,7 +74,7 @@ export const createSharpener = (viewport: HTMLElement, world: HTMLElement, versi
     const bounds = viewport.getBoundingClientRect();
     const visible: string[] = [];
     for (const frame of world.querySelectorAll<HTMLElement>(".screen")) {
-      const shown = overlaps(frame.getBoundingClientRect(), bounds);
+      const shown = inView(frame, bounds);
       if (shown && frame.dataset.screenId) visible.push(frame.dataset.screenId);
       retier(frame, shown ? tier : BASE_TIER, version());
     }

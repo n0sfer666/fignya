@@ -1,5 +1,6 @@
 import type { Page, Screen } from "@fignya/model";
 import { num, rec, str } from "../fig/guards";
+import { contentBounds } from "./content-bounds";
 import type { FigNode } from "./node-index";
 
 const offset = (node: FigNode): { x: number; y: number } => {
@@ -14,7 +15,9 @@ const collect = (node: FigNode, ox: number, oy: number, out: Screen[]): void => 
     if (child.type === "SECTION") collect(child, ox + x, oy + y, out);
     if (child.type !== "FRAME") continue;
     const size = rec(child.raw, "size");
-    out.push({ id: child.key, name: str(child.raw, "name") ?? child.key, x: ox + x, y: oy + y, width: num(size, "x") ?? 0, height: num(size, "y") ?? 0 });
+    const content = contentBounds(child);
+    const screen = { id: child.key, name: str(child.raw, "name") ?? child.key, x: ox + x, y: oy + y, width: num(size, "x") ?? 0, height: num(size, "y") ?? 0 };
+    out.push(content ? { ...screen, content } : screen);
   }
 };
 

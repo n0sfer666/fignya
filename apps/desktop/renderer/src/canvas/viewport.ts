@@ -1,4 +1,4 @@
-import type { Screen } from "@fignya/model";
+import { contentOf, type Screen } from "@fignya/model";
 import type { CanvasZoom } from "../../../shared/api";
 
 export type View = { x: number; y: number; zoom: number };
@@ -11,10 +11,14 @@ const clampZoom = (zoom: number): number => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM
 
 export const boundsOf = (screens: Screen[]): Bounds | undefined => {
   if (screens.length === 0) return undefined;
-  const left = Math.min(...screens.map((s) => s.x));
-  const top = Math.min(...screens.map((s) => s.y));
-  const right = Math.max(...screens.map((s) => s.x + s.width));
-  const bottom = Math.max(...screens.map((s) => s.y + s.height));
+  const boxes = screens.map((s) => {
+    const box = contentOf(s);
+    return { ...box, x: s.x + box.x, y: s.y + box.y };
+  });
+  const left = Math.min(...boxes.map((b) => b.x));
+  const top = Math.min(...boxes.map((b) => b.y));
+  const right = Math.max(...boxes.map((b) => b.x + b.width));
+  const bottom = Math.max(...boxes.map((b) => b.y + b.height));
   return { x: left, y: top, width: right - left, height: bottom - top };
 };
 

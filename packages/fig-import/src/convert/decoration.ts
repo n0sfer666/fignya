@@ -1,9 +1,8 @@
 import type { Color, Shadow, Sides, Style } from "@fignya/model";
+import { clipsContent } from "../fig/clips-content";
 import { bool, num, rec, recs, str, type Rec } from "../fig/guards";
 import { colorOf } from "./color";
 import { firstSolid, visiblePaints } from "./paint";
-
-const CLIPPING = new Set(["FRAME", "INSTANCE", "SYMBOL"]);
 
 const CORNERS = ["rectangleTopLeftCornerRadius", "rectangleTopRightCornerRadius", "rectangleBottomRightCornerRadius", "rectangleBottomLeftCornerRadius"];
 
@@ -73,7 +72,7 @@ const strokeStyle = (raw: Rec): { shadows: Shadow[]; style: Style } => {
 export const decorationStyle = (raw: Rec, type: string, isVector: boolean): Style => {
   const stroke = isVector ? { shadows: [], style: {} } : strokeStyle(raw);
   const opacity = num(raw, "opacity") ?? 1;
-  const clips = CLIPPING.has(type) && bool(raw, "frameMaskDisabled") !== true;
+  const clips = clipsContent(raw, type);
   const byContent = isVector || type === "TEXT" || visiblePaints(raw, "fillPaints").length === 0;
   return {
     ...radius(raw, type),

@@ -37,6 +37,10 @@ Core (Rust)
   {tier, screenIds} кадров в окне: впереди их base и нужный уровень, устаревшие уровни — нет. `load`
   миниатюр `sharpen` не откладывает (`settle-timer.ts`: жест — `restart`, load — `ensure`). Ретрай
   отрисовки встаёт в очередь заново, а не держит слот.
+  Вылет за рамку: импортер даёт экрану без clip `Screen.content` (`content-bounds.ts`: видимые потомки до
+  обрезающих FRAME/INSTANCE/SYMBOL, инстанс — своим боксом, слои целиком дальше 6000 px от рамки отброшены; нет — рамка, `contentOf`). Миниатюра (PNG с альфой) и img
+  на холсте — по content, живой host режется `clip-path` по нему; фон и обводка `.screen`, клик и фокус — по
+  рамке, fit страницы — по content.
   Шрифты: importer после `settled` шлёт `fonts` (семейства/начертания текстов и оверрайдов) в main
   (`LoadedDocument.fonts`), renderer берёт их через `fonts:usage`, отсеивает установленные (замер
   canvas) и закэшированные, показывает недостающие; загрузка — IPC `fonts:download` → main

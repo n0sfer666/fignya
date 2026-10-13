@@ -9,6 +9,11 @@ describe("viewport", () => {
     expect(boundsOf([])).toBeUndefined();
   });
 
+  it("includes content painted past a screen's frame", () => {
+    const open = { ...screen(10, 20, 100, 50), content: { x: -5, y: 0, width: 105, height: 300 } };
+    expect(boundsOf([open, screen(200, -10, 50, 50)])).toEqual({ x: 5, y: -10, width: 245, height: 330 });
+  });
+
   it("fits bounds centered without upscaling", () => {
     expect(fitView({ x: 0, y: 0, width: 1000, height: 500 }, 520, 520, 10)).toEqual({ zoom: 0.5, x: 10, y: 135 });
     expect(fitView({ x: 100, y: 100, width: 10, height: 10 }, 100, 100, 0).zoom).toBe(1);

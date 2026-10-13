@@ -1,11 +1,12 @@
-import type { Page, Screen } from "@fignya/model";
+import { contentOf, type Page, type Screen } from "@fignya/model";
 import type { ThumbFocus } from "../shared/api";
 import type { LoadedDocument } from "./load-document";
 import { retrying } from "./retrying";
 import { priorityQueue } from "./priority-queue";
 import { fontKey } from "./thumb-cache";
+import { thumbGeometry } from "./thumb-geometry";
 import { createThumbRenderer, type ThumbRenderer } from "./thumb-renderer";
-import { effectiveTier, thumbScale } from "./thumb-scale";
+import { effectiveTier } from "./thumb-scale";
 import { createThumbStore, type ThumbStore } from "./thumb-store";
 import { inFocus, onPage, type ThumbTag } from "./thumb-tags";
 
@@ -63,9 +64,9 @@ export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string, 
   const render = async (doc: LoadedDocument, screen: Screen, tier: number, timeoutMs: number): Promise<Uint8Array | undefined> => {
     const model = await doc.screen(screen.id);
     if (!model) return undefined;
-    const scale = thumbScale(screen.width, screen.height, tier);
+    const { scale, origin, width, height } = thumbGeometry(screen, tier);
     const draw = await rendererOf();
-    const image = await draw(model, scale, Math.max(1, Math.ceil(screen.width * scale)), Math.max(1, Math.ceil(screen.height * scale)), timeoutMs);
+    const image = await draw({ model, scale, origin }, width, height, timeoutMs);
     return image.toPNG();
   };
 
@@ -91,7 +92,8 @@ export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string, 
     const doc = await loaded;
     const located = locate(doc.pages, id);
     if (!located) return undefined;
-    const tier = effectiveTier(located.screen.width, located.screen.height, requested);
+    const box = contentOf(located.screen);
+    const tier = effectiveTier(box.width, box.height, requested);
     const version = await fontsVersion();
     const key = `${id}@${tier}@${version}`;
     const known = inflight.get(key);

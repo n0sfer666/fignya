@@ -1,6 +1,5 @@
 import { ipcMain, type IpcMainEvent, type NativeImage } from "electron";
-import type { ScreenModel } from "@fignya/model";
-import { THUMB_DONE_CHANNEL, THUMB_JOB_CHANNEL } from "../shared/api";
+import { THUMB_DONE_CHANNEL, THUMB_JOB_CHANNEL, type ThumbJob } from "../shared/api";
 import { retrying } from "./retrying";
 import { createWindow, loadPage } from "./windows";
 
@@ -8,7 +7,7 @@ const CAPTURE_TIMEOUT_MS = 15000;
 const CAPTURE_ATTEMPTS = 3;
 const CAPTURE_RETRY_MS = 100;
 
-export type ThumbRenderer = (model: ScreenModel, scale: number, width: number, height: number, renderTimeoutMs: number) => Promise<NativeImage>;
+export type ThumbRenderer = (job: Omit<ThumbJob, "id">, width: number, height: number, renderTimeoutMs: number) => Promise<NativeImage>;
 
 type Waiting = { id: number; resolve: () => void; reject: (error: Error) => void };
 
@@ -21,7 +20,7 @@ const withTimeout = <T>(promise: Promise<T>, ms: number, what: string): Promise<
 const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const createThumbRenderer = async (onGone: () => void): Promise<ThumbRenderer> => {
-  const window = createWindow({ show: false, width: 400, height: 400, useContentSize: true, webPreferences: { offscreen: true, backgroundThrottling: false } });
+  const window = createWindow({ show: false, width: 400, height: 400, useContentSize: true, transparent: true, backgroundColor: "#00000000", webPreferences: { offscreen: true, backgroundThrottling: false } });
   let waiting: Waiting | undefined;
   let lastId = 0;
   let disposed = false;
@@ -56,7 +55,7 @@ export const createThumbRenderer = async (onGone: () => void): Promise<ThumbRend
     dispose();
     throw error;
   });
-  return async (model, scale, width, height, renderTimeoutMs) => {
+  return async (job, width, height, renderTimeoutMs) => {
     if (disposed) throw new Error("thumbnail renderer is gone");
     lastId += 1;
     const id = lastId;
@@ -64,7 +63,7 @@ export const createThumbRenderer = async (onGone: () => void): Promise<ThumbRend
     const rendered = new Promise<void>((resolve, reject) => {
       waiting = { id, resolve, reject };
     });
-    window.webContents.send(THUMB_JOB_CHANNEL, { id, model, scale });
+    window.webContents.send(THUMB_JOB_CHANNEL, { ...job, id });
     try {
       await guarded(rendered, renderTimeoutMs, "render");
     } finally {

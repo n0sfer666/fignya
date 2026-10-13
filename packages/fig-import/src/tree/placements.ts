@@ -6,7 +6,7 @@ export type Placement = { node: FigNode; parent: FigNode; parentId?: NodeId };
 
 const SKIPPED_TYPES: ReadonlySet<string> = new Set(["SLICE", "STICKY", "CONNECTOR", "WIDGET"]);
 
-const childrenOf = (node: FigNode): FigNode[] =>
+export const childrenOf = (node: FigNode): FigNode[] =>
   VECTOR_TYPES.has(node.type) ? [] : node.children.filter((c) => !SKIPPED_TYPES.has(c.type));
 
 export const childIdsOf = (node: FigNode): NodeId[] => childrenOf(node).map((c) => c.key);

@@ -3,6 +3,7 @@ import { inFocus, onPage, type ThumbTag } from "../main/thumb-tags";
 
 const wide = { id: "1:1", name: "wide", x: 0, y: 0, width: 1440, height: 900 };
 const tall = { id: "1:2", name: "tall", x: 0, y: 0, width: 1440, height: 4096 };
+const spilled = { id: "1:3", name: "spilled", x: 0, y: 0, width: 1440, height: 960, content: { x: 0, y: 0, width: 1440, height: 4096 } };
 const tag = (screen: ThumbTag["screen"], tier: number, page = "p"): ThumbTag => ({ page, screen, tier });
 
 describe("thumbnail tags", () => {
@@ -23,5 +24,11 @@ describe("thumbnail tags", () => {
     const focused = inFocus({ tier: 2, screenIds: [tall.id] });
     expect(focused(tag(tall, 1))).toBe(true);
     expect(focused(tag(tall, 2))).toBe(false);
+  });
+
+  it("caps the tier by content painted past the frame", () => {
+    const focused = inFocus({ tier: 2, screenIds: [spilled.id] });
+    expect(focused(tag(spilled, 1))).toBe(true);
+    expect(focused(tag(spilled, 2))).toBe(false);
   });
 });

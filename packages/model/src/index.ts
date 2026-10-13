@@ -8,6 +8,7 @@ export { isImageFill } from "./image-fill";
 export { expandedComponentId, swapTargets } from "./instance";
 export { applyOverride, mergeOverride, pathKey } from "./override";
 export { screenModel } from "./screen-model";
+export { contentOf } from "./screen-content";
 export { sameValue } from "./same-value";
 export { styleDiff } from "./style-diff";
 export type { SearchHit, SearchMatch, SearchPlace } from "./search-hit";

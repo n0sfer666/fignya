@@ -17,7 +17,7 @@ const decodeImage = (hash: string): Promise<void> => {
 
 const render = async (job: ThumbJob): Promise<void> => {
   const stage = document.createElement("div");
-  stage.style.cssText = `transform:scale(${job.scale});transform-origin:0 0`;
+  stage.style.cssText = `transform:scale(${job.scale}) translate(${-job.origin.x}px,${-job.origin.y}px);transform-origin:0 0`;
   stage.append(renderScreen(job.model, { imageUrl }));
   document.body.replaceChildren(stage);
   stage.getBoundingClientRect();

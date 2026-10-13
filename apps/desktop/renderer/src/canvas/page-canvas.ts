@@ -1,7 +1,8 @@
-import type { NodeId, Page, Screen } from "@fignya/model";
+import { contentOf, type NodeId, type Page, type Screen } from "@fignya/model";
 import type { CanvasZoom, ThumbFocus } from "../../../shared/api";
 import { BASE_TIER } from "../../../shared/thumb-tiers";
 import { thumbUrl } from "../../../shared/urls";
+import { contentClip } from "./content-clip";
 import { bindGestures } from "./gestures";
 import { loadingFor } from "./loading-for";
 import { markNode, type NodeMark } from "./node-mark";
@@ -31,6 +32,8 @@ const frameOf = (screen: Screen, version: string): HTMLElement => {
   frame.title = screen.name;
   frame.style.cssText = `left:${screen.x}px;top:${screen.y}px;width:${screen.width}px;height:${screen.height}px`;
   const img = document.createElement("img");
+  const box = contentOf(screen);
+  img.style.cssText = `left:${box.x}px;top:${box.y}px;width:${box.width}px;height:${box.height}px`;
   img.loading = loadingFor(document.visibilityState);
   img.decoding = "async";
   img.draggable = false;
@@ -89,6 +92,7 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
     if (!host || !frame) return;
     unmount();
     frame.classList.add("live");
+    host.style.clipPath = contentClip(screen);
     frame.append(host);
     live = { id, host };
   };
