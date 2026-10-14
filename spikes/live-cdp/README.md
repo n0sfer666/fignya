@@ -453,6 +453,61 @@ bash spikes/live-cdp/run-swap.sh <tag> [screen-id]
 13.3s all checks passed
 ```
 
+## Агент через MCP
+
+```nu
+$env.FIG_FILE = ("~/Downloads/ROI Navigator.fig" | path expand)
+bash spikes/live-cdp/run-mcp.sh <tag> [screen-id]
+```
+
+`mcp-flow.ts` (renderer-CDP + Node-инспектор main, `INSPECT` 9446): File → Enable MCP Server кликом по пункту меню из main
+(если флажок уже стоит — не трогает) → сырые запросы без токена, с чужим токеном (401) и с `Origin` (403) → SDK-клиент
+Streamable HTTP с токеном из `~/Library/Application Support/fignya/mcp.json` (порт — `FIGNYA_MCP_PORT`, по умолчанию 7341):
+10 инструментов, плашка агента, `document` → `open_screen <screen-id>` (по умолчанию `2479:25954`) → `outline` экрана (первый
+текст, который есть на холсте; раскрытие первого инстанса) → `inspect` → `screenshot` экрана → пачка с неизвестным ключом
+(отказ `{ index: 1 }`, холст прежний) → `apply_edits` цвета `#ff00aa` (цвет на холсте, вспышка `.agent-flash`, Edit → Undo
+Agent Edit активен, снимок другой) → снимок узла → `select` + `selection` (вид приходит из renderer асинхронно — опрос до 3 с) →
+`undo_agent_edit` (цвет прежний, пункт серый) → повторный — отказ → `logs/mcp.log` с вызовами без значений → флажок
+выключается обратно. Снимки и ответы — `out/mcp-<tag>/` (`outline.txt`, `inspect.json`, `screen-before.png`, `screen-after.png`,
+`node.png`). Код 2 — импорт не закончился, 3 — на холсте нет текста из конспекта, 1 — проверки упали. Ожидаемый вывод
+`run-mcp.sh` (26-10-14):
+
+```
+17.3s ok   Enable MCP Server starts the server, no token → 401
+17.3s ok   a foreign token → 401
+17.3s ok   an Origin header → 403
+17.4s ok   the client lists 10 tools
+17.4s ok   the agent badge shows
+17.4s ok   document lists 2479:25954
+17.4s ok   open_screen answers
+17.6s ok   open_screen makes the screen live
+17.6s outline: 90 lines
+17.6s text node: 2479:25960 of 9
+17.6s ok   outline expands the instance 2479:25955
+17.7s ok   inspect gives the editable color
+17.8s screen shot 1568×1046 px
+17.8s ok   the screen shot fits 1568 px
+17.8s refused: {"index":1,"reason":"\"zIndex\" is not an editable style key"}
+17.8s ok   an invalid edit refuses the batch with its index
+17.8s ok   a refused batch leaves the canvas as it was
+17.8s applied: {"step":1,"changed":["2479:25960"],"screens":["2479:25954"]}
+17.8s ok   apply_edits applies a css color
+18.0s ok   the canvas shows the new color
+18.0s ok   the changed node flashes
+18.0s ok   Undo Agent Edit is enabled
+18.4s ok   the screen shot reflects the edit
+19.0s node shot 1568×48 px
+19.1s ok   select answers
+19.1s ok   selection reports the selected node
+19.1s undone: {"changed":["2479:25960"],"screens":["2479:25954"]}
+19.3s ok   undo_agent_edit restores the color
+19.3s ok   Undo Agent Edit is disabled again
+19.4s ok   a second undo_agent_edit is refused: nothing to undo
+19.4s ok   mcp.log has the calls without edit values
+19.4s ok   disabling stops the server
+19.4s all checks passed
+```
+
 ## Зум холста с клавиатуры
 
 ```nu
