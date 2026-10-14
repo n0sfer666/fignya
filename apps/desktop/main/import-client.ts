@@ -2,21 +2,26 @@ import { utilityProcess } from "electron";
 import { join } from "node:path";
 import type { FontUsage, ImportProgress } from "@fignya/fig-import";
 import type { Edit, EditChange, Page, ScreenModel, SearchHit } from "@fignya/model";
-import type { ImporterEvent, ImporterRequest } from "../importer/protocol";
+import type { ImporterEvent, ImporterRequest, Restored } from "../importer/protocol";
 import { isImporterEvent } from "../importer/protocol-guards";
 import { pendingRequests } from "./pending-requests";
 
 export type ImportEvents = { progress: (progress: ImportProgress) => void; lost: (message: string) => void };
 
+export type Edited = { change: EditChange | undefined; dirty: boolean };
+
+export type OpenedDocument = { pages: Page[]; restored: Restored };
+
 export type ImportClient = {
-  pages: Promise<Page[]>;
+  opened: Promise<OpenedDocument>;
   fonts: Promise<FontUsage[]>;
   screen: (id: string) => Promise<ScreenModel | undefined>;
   image: (id: string) => Promise<Uint8Array | undefined>;
   search: (query: string) => Promise<SearchHit[]>;
-  edit: (edit: Edit) => Promise<EditChange | undefined>;
-  undo: () => Promise<EditChange | undefined>;
-  redo: () => Promise<EditChange | undefined>;
+  edit: (edit: Edit) => Promise<Edited>;
+  undo: () => Promise<Edited>;
+  redo: () => Promise<Edited>;
+  save: () => Promise<boolean>;
 };
 
 export const startImport = (path: string, events: ImportEvents): ImportClient => {
@@ -24,8 +29,9 @@ export const startImport = (path: string, events: ImportEvents): ImportClient =>
   const screens = pendingRequests<ScreenModel | undefined>();
   const images = pendingRequests<Uint8Array | undefined>();
   const searches = pendingRequests<SearchHit[]>();
-  const edits = pendingRequests<EditChange | undefined>();
-  const byRequest = { screen: screens, image: images, search: searches, edit: edits, undo: edits, redo: edits };
+  const edits = pendingRequests<Edited>();
+  const saves = pendingRequests<boolean>();
+  const byRequest = { screen: screens, image: images, search: searches, edit: edits, undo: edits, redo: edits, save: saves };
   const send = (request: ImporterRequest): void => child.postMessage(request);
   let ready = false;
   let gotFonts: (fonts: FontUsage[]) => void = () => undefined;
@@ -35,12 +41,12 @@ export const startImport = (path: string, events: ImportEvents): ImportClient =>
     lostFonts = reject;
   });
   fonts.catch(() => undefined);
-  const pages = new Promise<Page[]>((resolve, reject) => {
+  const opened = new Promise<OpenedDocument>((resolve, reject) => {
     const dispatch = (event: ImporterEvent): void => {
       if (event.type === "progress") events.progress(event.progress);
       else if (event.type === "ready") {
         ready = true;
-        resolve(event.pages);
+        resolve({ pages: event.pages, restored: event.restored });
       } else if (event.type === "failed") {
         reject(new Error(event.message));
         child.kill();
@@ -48,7 +54,8 @@ export const startImport = (path: string, events: ImportEvents): ImportClient =>
       else if (event.type === "screen") screens.settle(event.reqId, event.model);
       else if (event.type === "image") images.settle(event.reqId, event.bytes);
       else if (event.type === "found") searches.settle(event.reqId, event.hits);
-      else if (event.type === "edited") edits.settle(event.reqId, event.change);
+      else if (event.type === "edited") edits.settle(event.reqId, { change: event.change, dirty: event.dirty });
+      else if (event.type === "saved") saves.settle(event.reqId, event.dirty);
       else byRequest[event.request].reject(event.reqId, new Error(event.message));
     };
     child.on("message", (message: unknown) => {
@@ -59,13 +66,13 @@ export const startImport = (path: string, events: ImportEvents): ImportClient =>
       const error = new Error(`importer exited with code ${code}`);
       reject(error);
       lostFonts(error);
-      for (const pending of [screens, images, searches, edits]) pending.fail(error);
+      for (const pending of [screens, images, searches, edits, saves]) pending.fail(error);
       if (ready) events.lost(error.message);
     });
   });
   send({ type: "load", path });
   return {
-    pages,
+    opened,
     fonts,
     screen: (id) => screens.ask((reqId) => send({ type: "screen", reqId, id })),
     image: (id) => images.ask((reqId) => send({ type: "image", reqId, id })),
@@ -73,5 +80,6 @@ export const startImport = (path: string, events: ImportEvents): ImportClient =>
     edit: (edit) => edits.ask((reqId) => send({ type: "edit", reqId, edit })),
     undo: () => edits.ask((reqId) => send({ type: "undo", reqId })),
     redo: () => edits.ask((reqId) => send({ type: "redo", reqId })),
+    save: () => saves.ask((reqId) => send({ type: "save", reqId })),
   };
 };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isEdit } from "../main/edit-guards";
+import { isEdit, pickEdit } from "../shared/edit-guards";
 
 const red = { r: 255, g: 0, b: 0, a: 1 };
 
@@ -33,5 +33,14 @@ describe("isEdit", () => {
     expect(isEdit({ target: ["1:2"], style: { opacity: 2 } })).toBe(false);
     expect(isEdit({ target: ["1:2"], style: { color: { r: 300, g: 0, b: 0, a: 1 } } })).toBe(false);
     expect(isEdit({ target: ["1:2"], text: "x".repeat(100_001) })).toBe(false);
+  });
+});
+
+describe("pickEdit", () => {
+  it("keeps only the fields of an edit", () => {
+    const style = { target: ["1:2"], style: { width: 1 } };
+    const text = { target: ["1:2"], text: "" };
+    expect(pickEdit({ ...style, ...{ junk: 1 } })).toEqual(style);
+    expect(Object.keys(pickEdit(text))).toEqual(["target", "text"]);
   });
 });

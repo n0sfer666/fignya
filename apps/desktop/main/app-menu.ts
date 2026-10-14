@@ -29,6 +29,12 @@ export const editItems = ({ undo, redo }: DocumentHistory): EditItem[] => [
   { label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", registerAccelerator: false, click: redo },
 ];
 
+export const SAVE_ITEM_ID = "save-document";
+
+type SaveItem = Pick<MenuItemConstructorOptions, "id" | "label" | "accelerator"> & { click: () => void };
+
+export const saveItems = (run: () => void): SaveItem[] => [{ id: SAVE_ITEM_ID, label: "Save", accelerator: "CmdOrCtrl+S", click: run }];
+
 export const EXPORT_ITEM_ID = "export-screen";
 
 type ExportItem = Pick<MenuItemConstructorOptions, "id" | "label" | "accelerator" | "enabled"> & { click: () => void };
@@ -43,9 +49,16 @@ export const playItems = (run: () => void): PlayItem[] => [
   { id: PLAY_ITEM_ID, label: "Play", accelerator: "Alt+CmdOrCtrl+Enter", registerAccelerator: false, enabled: false, click: run },
 ];
 
-export const menuTemplate = (send: SendZoom, mac: boolean, history: DocumentHistory, exportScreen: () => void, play: () => void): MenuItemConstructorOptions[] => [
+export const menuTemplate = (
+  send: SendZoom,
+  mac: boolean,
+  history: DocumentHistory,
+  save: () => void,
+  exportScreen: () => void,
+  play: () => void,
+): MenuItemConstructorOptions[] => [
   ...(mac ? [{ role: "appMenu" } satisfies MenuItemConstructorOptions] : []),
-  { label: "File", submenu: exportItems(exportScreen) },
+  { label: "File", submenu: [...saveItems(save), { type: "separator" }, ...exportItems(exportScreen)] },
   {
     label: "Edit",
     submenu: [...editItems(history), { type: "separator" }, { role: "cut" }, { role: "copy" }, { role: "paste" }, { role: "selectAll" }],

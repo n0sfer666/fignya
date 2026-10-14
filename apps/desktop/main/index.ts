@@ -3,6 +3,8 @@ import { join } from "node:path";
 import { CANVAS_ZOOM_CHANNEL, CHANGED_CHANNEL, EXPORT_REQUEST_CHANNEL, LOST_CHANNEL, PLAY_AVAILABLE_CHANNEL, PLAY_REQUEST_CHANNEL, PROGRESS_CHANNEL, type DocumentChanged } from "../shared/api";
 import { menuTemplate, PLAY_ITEM_ID } from "./app-menu";
 import { createDocumentEditor } from "./document-editor";
+import { reportRestored } from "./restore-report";
+import { bindDocumentSave } from "./save-binding";
 import { registerEditIpc } from "./edit-ipc";
 import { registerExportIpc } from "./export-ipc";
 import { registerFontIpc } from "./font-ipc";
@@ -24,6 +26,7 @@ registerScheme();
 app.on("window-all-closed", () => undefined);
 
 app.whenReady().then(() => {
+  const mac = process.platform === "darwin";
   const window = createWindow({ width: 1440, height: 900, show: false, backgroundColor: "#1e1e1e", title: "fignya" });
   window.once("ready-to-show", () => window.show());
   window.on("closed", () => app.quit());
@@ -46,18 +49,25 @@ app.whenReady().then(() => {
   registerFontIpc(loaded, fonts);
   const thumbnails = createThumbnails(loaded, join(app.getPath("userData"), "thumbs"), async () => (await fonts.faces()).version);
   registerPageIpc(thumbnails);
-  const editor = createDocumentEditor(loaded, (change) => {
-    thumbnails.touched();
-    if (!change) return;
-    const changed: DocumentChanged = { ...change, revision: thumbnails.changed(change.screenId) };
-    toWindow(CHANGED_CHANNEL, changed);
+  const editor = createDocumentEditor(loaded, {
+    applied: (change) => {
+      thumbnails.touched();
+      if (!change) return;
+      const changed: DocumentChanged = { ...change, revision: thumbnails.changed(change.screenId) };
+      toWindow(CHANGED_CHANNEL, changed);
+    },
+    dirty: (dirty) => {
+      if (mac && !window.isDestroyed()) window.setDocumentEdited(dirty);
+    },
   });
   registerEditIpc(editor);
+  const save = bindDocumentSave(window, loaded, editor);
+  loaded.then((doc) => reportRestored(window, doc)).catch(() => undefined);
   registerExportIpc(window, loaded, fonts);
   registerMenuAvailability(PLAY_AVAILABLE_CHANNEL, PLAY_ITEM_ID);
   const exportScreen = (): void => toWindow(EXPORT_REQUEST_CHANNEL, undefined);
   const play = (): void => toWindow(PLAY_REQUEST_CHANNEL, undefined);
-  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate((zoom) => toWindow(CANVAS_ZOOM_CHANNEL, zoom), process.platform === "darwin", editor, exportScreen, play)));
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate((zoom) => toWindow(CANVAS_ZOOM_CHANNEL, zoom), mac, editor, save, exportScreen, play)));
   serveAssets(async (asset) => {
     if (asset.kind === "image") return (await loaded).image(asset.id);
     if (asset.kind === "font") return fonts.read(asset.id);

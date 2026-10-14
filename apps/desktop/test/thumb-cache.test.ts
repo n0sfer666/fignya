@@ -12,6 +12,13 @@ describe("thumb cache", () => {
     expect(cacheKey("/a.fig", 10, 1, "r2")).not.toBe(key);
   });
 
+  it("keeps the key without restored edits and changes it with them", () => {
+    const key = cacheKey("/a.fig", 10, 1, "r1");
+    expect(cacheKey("/a.fig", 10, 1, "r1", "")).toBe(key);
+    expect(cacheKey("/a.fig", 10, 1, "r1", "e1")).not.toBe(key);
+    expect(cacheKey("/a.fig", 10, 1, "r1", "e2")).not.toBe(cacheKey("/a.fig", 10, 1, "r1", "e1"));
+  });
+
   it("keeps the key without downloaded fonts and changes it with every font set", () => {
     const key = cacheKey("/a.fig", 10, 1, "r1");
     expect(fontKey(key, "")).toBe(key);
