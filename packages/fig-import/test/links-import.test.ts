@@ -54,7 +54,7 @@ describe("click links", () => {
     const slimmed: Rec = { ...message, nodeChanges: recs(message, "nodeChanges").map(slimNode) };
     expect(importDocument(slimmed)).toEqual(importDocument(message));
     const button = recs(slimmed, "nodeChanges")[4];
-    expect(button?.prototypeInteractions).toEqual([{ isDeleted: false, event: { interactionType: "ON_CLICK" }, actions: [{ connectionType: "INTERNAL_NODE", navigationType: "NAVIGATE", transitionNodeID: guid(20) }] }]);
+    expect(button?.prototypeInteractions).toEqual([{ id: guid(920), isDeleted: false, event: { interactionType: "ON_CLICK" }, actions: [{ connectionType: "INTERNAL_NODE", navigationType: "NAVIGATE", transitionNodeID: guid(20) }] }]);
     const card = recs(slimmed, "nodeChanges")[5] ?? {};
     expect(recs(rec(card, "symbolData"), "symbolOverrides")[0]?.prototypeInteractions).toEqual(button?.prototypeInteractions);
   });

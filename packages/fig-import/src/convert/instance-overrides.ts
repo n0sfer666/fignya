@@ -10,6 +10,7 @@ import { modeFrames } from "./mode-frames";
 import { modeOwner } from "./mode-owner";
 import { pathModes } from "./mode-paths";
 import { modeTargets } from "./mode-targets";
+import { overlayFields } from "./overlay-fields";
 import { overridePatch } from "./override-patch";
 import { settledRaw, swappedTo } from "./swap-rebase";
 import type { BlobPaths } from "./vector";
@@ -59,7 +60,7 @@ export const instanceOverrides = (byKey: ReadonlyMap<string, FigNode>, pathOf: B
     const base = baseOf(node, target.ids);
     const fields = mergedFields(target);
     if (!changes(base.raw, fields) && !paints.bound(base.raw)) return undefined;
-    const raw = repaintAt(instance, target.ids, settledRaw(byKey, node, { ...base.fields, ...fields }));
+    const raw = repaintAt(instance, target.ids, settledRaw(byKey, node, overlayFields(base.fields, fields)));
     if (!changes(base.raw, fields) && !repainted(base.raw, raw)) return undefined;
     const to = swappedTo(raw);
     const swapped = to !== undefined && byKey.has(to) && to !== swappedTo(base.raw);

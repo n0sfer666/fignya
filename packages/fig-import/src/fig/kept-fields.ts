@@ -42,7 +42,7 @@ const ASSIGNMENT: Shape = {
 };
 
 const INTERACTIONS: Shape = {
-  keep: new Set(["isDeleted", "event", "actions"]),
+  keep: new Set(["id", "isDeleted", "event", "actions"]),
   nested: { event: { keep: new Set(["interactionType"]) }, actions: { keep: new Set(["connectionType", "navigationType", "transitionNodeID"]) } },
 };
 
