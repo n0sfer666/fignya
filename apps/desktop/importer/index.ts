@@ -5,7 +5,7 @@ import { fingerprint } from "./fingerprint";
 import { createImporterHandler, type LoadedFig } from "./handler";
 import { IMPORT_PACE, paced } from "./paced";
 import type { ImporterEvent } from "./protocol";
-import { isImporterRequest } from "./protocol-guards";
+import { isImporterRequest, refusalOf } from "./protocol-guards";
 import type { BaseFingerprint } from "./sidecar-format";
 import { sidecarStore } from "./sidecar-store";
 
@@ -51,7 +51,13 @@ const settle = ({ document }: FigImport): void => {
 
 const handle = createImporterHandler({ send, load, store: sidecarStore, settle });
 
+const refuse = (data: unknown): void => {
+  const refusal = refusalOf(data);
+  if (refusal) send(refusal);
+  console.error("fignya: importer: unknown request");
+};
+
 port.on("message", ({ data }: { data: unknown }) => {
-  if (!isImporterRequest(data)) return console.error("fignya: importer: unknown request");
+  if (!isImporterRequest(data)) return refuse(data);
   handle(data).catch((error: unknown) => console.error(`fignya: importer: ${errorMessage(error)}`));
 });

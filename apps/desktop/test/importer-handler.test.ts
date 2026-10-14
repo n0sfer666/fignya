@@ -115,17 +115,44 @@ describe("createImporterHandler", () => {
     await handle({ type: "undo", reqId: 3 });
     await handle({ type: "redo", reqId: 4 });
     await handle({ type: "edit", reqId: 5, edit: { target: ["9:9"], style: { width: 1 } } });
-    const change = { screenId: "1:2", target: ["1:2"] };
+    const changes = [{ screenId: "1:2", target: ["1:2"] }];
     expect(sent.slice(1)).toEqual([
-      { type: "edited", reqId: 1, change, dirty: true },
-      { type: "edited", reqId: 2, change, dirty: false },
-      { type: "edited", reqId: 3, change: undefined, dirty: false },
-      { type: "edited", reqId: 4, change, dirty: true },
+      { type: "edited", reqId: 1, changes, top: { step: 1, origin: "user" }, dirty: true },
+      { type: "edited", reqId: 2, changes, dirty: false },
+      { type: "edited", reqId: 3, changes: [], dirty: false },
+      { type: "edited", reqId: 4, changes, top: { step: 1, origin: "user" }, dirty: true },
       { type: "refused", request: "edit", reqId: 5, message: "invalid edit" },
     ]);
     expect(nodes.get("1:2")?.style.width).toBe(140);
     await handle({ type: "save", reqId: 6 });
     expect(sent.at(-1)).toEqual({ type: "saved", reqId: 6, dirty: false });
     expect(written.at(-1)).toContain('"width": 140');
+  });
+
+  it("applies an agent batch as one step, rejects a bad one whole and undoes only its own step", async () => {
+    const title: DesignNode = { id: "1:3", name: "Title", kind: "text", children: [], style: {}, text: "Hello", parentId: "1:2" };
+    const frame: DesignNode = { id: "1:2", name: "Screen", kind: "frame", children: ["1:3"], style: { width: 100 } };
+    const nodes = new Map<NodeId, DesignNode>([[frame.id, frame], [title.id, title]]);
+    const editable: FigImport = { document: { nodes, pages: [{ id: "0:1", name: "Page", screens: [{ id: "1:2", name: "Screen", x: 0, y: 0, width: 100, height: 50 }] }] }, images: new Map() };
+    const { sent, handle } = setup(async () => editable);
+    await handle({ type: "load", path: "a.fig" });
+    await handle({ type: "batch", reqId: 1, edits: [{ target: ["1:3"], text: "Bye" }, { target: ["9:9"], text: "x" }], origin: "agent", affectsInstances: false });
+    expect(sent.at(-1)).toEqual({ type: "rejected", reqId: 1, index: 1, reason: "no node at this address" });
+    expect(nodes.get("1:3")).toBe(title);
+    await handle({ type: "batch", reqId: 2, edits: [{ target: ["1:3"], text: "Bye" }, { target: ["1:2"], style: { width: 140 } }], origin: "agent", affectsInstances: false });
+    expect(sent.at(-1)).toEqual({
+      type: "edited",
+      reqId: 2,
+      changes: [{ screenId: "1:2", target: ["1:3"] }, { screenId: "1:2", target: ["1:2"] }],
+      top: { step: 1, origin: "agent" },
+      dirty: true,
+    });
+    await handle({ type: "outline", reqId: 3, address: ["1:2"], limit: 10 });
+    expect(sent.at(-1)).toMatchObject({ type: "outlined", reqId: 3, text: expect.stringContaining('1:3 "Title" text') });
+    await handle({ type: "undo", reqId: 4, origin: "agent" });
+    expect(sent.at(-1)).toEqual({ type: "edited", reqId: 4, changes: [{ screenId: "1:2", target: ["1:3"] }, { screenId: "1:2", target: ["1:2"] }], dirty: false });
+    expect([nodes.get("1:3"), nodes.get("1:2")]).toEqual([title, frame]);
+    await handle({ type: "undo", reqId: 5, origin: "agent" });
+    expect(sent.at(-1)).toEqual({ type: "refused", request: "undo", reqId: 5, message: "nothing to undo" });
   });
 });
