@@ -41,16 +41,22 @@ const ASSIGNMENT: Shape = {
   },
 };
 
+const INTERACTIONS: Shape = {
+  keep: new Set(["isDeleted", "event", "actions"]),
+  nested: { event: { keep: new Set(["interactionType"]) }, actions: { keep: new Set(["connectionType", "navigationType", "transitionNodeID"]) } },
+};
+
 const OVERRIDE: Shape = {
-  keep: new Set([...STYLE_FIELDS, ...REF_KEYS, "guidPath", "overriddenSymbolID", "componentPropAssignments"]),
-  nested: { textData: TEXT, componentPropAssignments: ASSIGNMENT, variableConsumptionMap: CONSUMPTION, ...REF_SHAPES },
+  keep: new Set([...STYLE_FIELDS, ...REF_KEYS, "guidPath", "overriddenSymbolID", "componentPropAssignments", "prototypeInteractions"]),
+  nested: { textData: TEXT, componentPropAssignments: ASSIGNMENT, variableConsumptionMap: CONSUMPTION, prototypeInteractions: INTERACTIONS, ...REF_SHAPES },
 };
 
 const NODE: Shape = {
   keep: new Set([...STYLE_FIELDS, ...REF_KEYS, "guid", "parentIndex", "type", "name", "horizontalConstraint", "verticalConstraint", "symbolData", "overrideKey", "derivedSymbolData", "componentPropAssignments", "componentPropRefs", "key", "styleType",
-    "variableDataValues", "variableSetID", "variableSetModes", "variableModeBySetMap"]),
+    "variableDataValues", "variableSetID", "variableSetModes", "variableModeBySetMap", "prototypeInteractions"]),
   nested: {
     ...REF_SHAPES,
+    prototypeInteractions: INTERACTIONS,
     textData: TEXT,
     variableConsumptionMap: CONSUMPTION,
     symbolData: { keep: new Set(["symbolID", "symbolOverrides"]), nested: { symbolOverrides: OVERRIDE } },

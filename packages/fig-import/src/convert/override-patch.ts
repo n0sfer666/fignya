@@ -17,6 +17,7 @@ export const overridePatch = (path: NodeId[], base: DesignNode, next: DesignNode
     ...(text === undefined || text === textOf(base) ? {} : { text }),
     ...(paths === undefined || samePaths(paths, pathsOf(base)) ? {} : { paths }),
     ...(componentId === undefined ? {} : { componentId }),
+    ...(next.link === undefined || next.link === base.link ? {} : { link: next.link }),
   };
   return Object.keys(override).length > 1 ? override : undefined;
 };
