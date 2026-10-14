@@ -35,7 +35,15 @@ type ExportItem = Pick<MenuItemConstructorOptions, "id" | "label" | "accelerator
 
 export const exportItems = (run: () => void): ExportItem[] => [{ id: EXPORT_ITEM_ID, label: "Export Screen…", accelerator: "CmdOrCtrl+E", enabled: false, click: run }];
 
-export const menuTemplate = (send: SendZoom, mac: boolean, history: DocumentHistory, exportScreen: () => void): MenuItemConstructorOptions[] => [
+export const PLAY_ITEM_ID = "play-screen";
+
+type PlayItem = Pick<MenuItemConstructorOptions, "id" | "label" | "accelerator" | "registerAccelerator" | "enabled"> & { click: () => void };
+
+export const playItems = (run: () => void): PlayItem[] => [
+  { id: PLAY_ITEM_ID, label: "Play", accelerator: "Alt+CmdOrCtrl+Enter", registerAccelerator: false, enabled: false, click: run },
+];
+
+export const menuTemplate = (send: SendZoom, mac: boolean, history: DocumentHistory, exportScreen: () => void, play: () => void): MenuItemConstructorOptions[] => [
   ...(mac ? [{ role: "appMenu" } satisfies MenuItemConstructorOptions] : []),
   { label: "File", submenu: exportItems(exportScreen) },
   {
@@ -45,6 +53,8 @@ export const menuTemplate = (send: SendZoom, mac: boolean, history: DocumentHist
   {
     label: "View",
     submenu: [
+      ...playItems(play),
+      { type: "separator" },
       { role: "reload" },
       { role: "forceReload" },
       { role: "toggleDevTools" },

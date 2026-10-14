@@ -1,4 +1,4 @@
-import { dialog, ipcMain, Menu, shell, type BrowserWindow } from "electron";
+import { dialog, ipcMain, shell, type BrowserWindow } from "electron";
 import { join } from "node:path";
 import { EXPORT_AVAILABLE_CHANNEL, EXPORT_CHANNEL, EXPORT_FAILED_CHANNEL, EXPORT_IMAGES_CHANNEL } from "../shared/api";
 import { errorMessage } from "../shared/error-message";
@@ -12,6 +12,7 @@ import { writeExport } from "./export-writer";
 import type { FontLibrary } from "./font-library";
 import { assertApp } from "./ipc";
 import type { LoadedDocument } from "./load-document";
+import { registerMenuAvailability } from "./menu-availability";
 import { isAppUrl } from "./windows";
 
 const MAX_MESSAGE_LENGTH = 2000;
@@ -35,11 +36,7 @@ const save = async (window: BrowserWindow, doc: LoadedDocument, fonts: FontLibra
 
 export const registerExportIpc = (window: BrowserWindow, loaded: Promise<LoadedDocument>, fonts: FontLibrary): void => {
   const images = createImageStage(async (hash) => (await loaded).image(hash));
-  ipcMain.on(EXPORT_AVAILABLE_CHANNEL, (event, screenId: unknown) => {
-    if (!isAppUrl(event.senderFrame?.url ?? "")) return;
-    const item = Menu.getApplicationMenu()?.getMenuItemById(EXPORT_ITEM_ID);
-    if (item) item.enabled = typeof screenId === "string";
-  });
+  registerMenuAvailability(EXPORT_AVAILABLE_CHANNEL, EXPORT_ITEM_ID);
   ipcMain.on(EXPORT_FAILED_CHANNEL, (event, message: unknown) => {
     if (!isAppUrl(event.senderFrame?.url ?? "")) return;
     images.clear();

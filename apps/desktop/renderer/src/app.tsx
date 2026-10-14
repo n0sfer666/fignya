@@ -43,7 +43,7 @@ export const App = () => {
       <Match when={state()?.status === "ready"}>
         <div class="layout">
           <Sidebar pages={pages()} pageId={page()?.id} onPage={choosePage} onScreen={(id) => setFocus({ id })} />
-          <Workspace page={page()} focus={focus()} onSelect={(node) => setSelected(node)} />
+          <Workspace page={page()} screens={pages().flatMap((p) => p.screens)} focus={focus()} onSelect={(node) => setSelected(node)} />
           <SearchBox onPick={pick} />
           <Inspector selected={selected()} />
         </div>

@@ -19,6 +19,8 @@ import {
   HISTORY_CHANNEL,
   LOST_CHANNEL,
   PAGE_CHANNEL,
+  PLAY_AVAILABLE_CHANNEL,
+  PLAY_REQUEST_CHANNEL,
   PROGRESS_CHANNEL,
   SCREEN_CHANNEL,
   SEARCH_CHANNEL,
@@ -65,6 +67,8 @@ const api: FignyaApi = {
   exportImages: (hashes) => ipcRenderer.invoke(EXPORT_IMAGES_CHANNEL, hashes),
   exportScreen: (bundle) => ipcRenderer.invoke(EXPORT_CHANNEL, bundle),
   exportFailed: (message) => ipcRenderer.send(EXPORT_FAILED_CHANNEL, message),
+  playAvailable: (screenId) => ipcRenderer.send(PLAY_AVAILABLE_CHANNEL, screenId),
+  onPlayRequest: subscribe<undefined>(PLAY_REQUEST_CHANNEL),
 };
 
 contextBridge.exposeInMainWorld("fignya", api);

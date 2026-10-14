@@ -1,7 +1,7 @@
 import { app, Menu, net } from "electron";
 import { join } from "node:path";
-import { CANVAS_ZOOM_CHANNEL, CHANGED_CHANNEL, EXPORT_REQUEST_CHANNEL, LOST_CHANNEL, PROGRESS_CHANNEL, type DocumentChanged } from "../shared/api";
-import { menuTemplate } from "./app-menu";
+import { CANVAS_ZOOM_CHANNEL, CHANGED_CHANNEL, EXPORT_REQUEST_CHANNEL, LOST_CHANNEL, PLAY_AVAILABLE_CHANNEL, PLAY_REQUEST_CHANNEL, PROGRESS_CHANNEL, type DocumentChanged } from "../shared/api";
+import { menuTemplate, PLAY_ITEM_ID } from "./app-menu";
 import { createDocumentEditor } from "./document-editor";
 import { registerEditIpc } from "./edit-ipc";
 import { registerExportIpc } from "./export-ipc";
@@ -10,6 +10,7 @@ import { createFontLibrary } from "./font-library";
 import { registerDocumentIpc } from "./ipc";
 import { registerPageIpc } from "./page-ipc";
 import { loadDocument, type LoadedDocument } from "./load-document";
+import { registerMenuAvailability } from "./menu-availability";
 import { registerScheme, serveAssets } from "./protocol";
 import { createThumbnails } from "./thumbnails";
 import { createWindow, loadPage } from "./windows";
@@ -53,8 +54,10 @@ app.whenReady().then(() => {
   });
   registerEditIpc(editor);
   registerExportIpc(window, loaded, fonts);
+  registerMenuAvailability(PLAY_AVAILABLE_CHANNEL, PLAY_ITEM_ID);
   const exportScreen = (): void => toWindow(EXPORT_REQUEST_CHANNEL, undefined);
-  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate((zoom) => toWindow(CANVAS_ZOOM_CHANNEL, zoom), process.platform === "darwin", editor, exportScreen)));
+  const play = (): void => toWindow(PLAY_REQUEST_CHANNEL, undefined);
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate((zoom) => toWindow(CANVAS_ZOOM_CHANNEL, zoom), process.platform === "darwin", editor, exportScreen, play)));
   serveAssets(async (asset) => {
     if (asset.kind === "image") return (await loaded).image(asset.id);
     if (asset.kind === "font") return fonts.read(asset.id);

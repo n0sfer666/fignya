@@ -39,6 +39,8 @@ export type FignyaApi = {
   exportImages: (hashes: string[]) => Promise<ImageFiles>;
   exportScreen: (bundle: ScreenExport) => Promise<ExportResult>;
   exportFailed: (message: string) => void;
+  playAvailable: (screenId: string | undefined) => void;
+  onPlayRequest: (handler: () => void) => () => void;
 };
 
 export const DOCUMENT_CHANNEL = "document:state";
@@ -64,3 +66,5 @@ export const EXPORT_REQUEST_CHANNEL = "export:request";
 export const EXPORT_IMAGES_CHANNEL = "export:images";
 export const EXPORT_CHANNEL = "export:screen";
 export const EXPORT_FAILED_CHANNEL = "export:failed";
+export const PLAY_AVAILABLE_CHANNEL = "play:available";
+export const PLAY_REQUEST_CHANNEL = "play:request";
