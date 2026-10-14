@@ -20,12 +20,41 @@ export const zoomItems = (send: SendZoom): ZoomItem[] => [
   zoomItem("Zoom Out", "CmdOrCtrl+-", "out", send),
 ];
 
-export const menuTemplate = (send: SendZoom, mac: boolean): MenuItemConstructorOptions[] => [
+export type DocumentHistory = { undo: () => void; redo: () => void };
+
+type EditItem = Pick<MenuItemConstructorOptions, "label" | "accelerator" | "registerAccelerator"> & { click: () => void };
+
+export const editItems = ({ undo, redo }: DocumentHistory): EditItem[] => [
+  { label: "Undo", accelerator: "CmdOrCtrl+Z", registerAccelerator: false, click: undo },
+  { label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", registerAccelerator: false, click: redo },
+];
+
+export const EXPORT_ITEM_ID = "export-screen";
+
+type ExportItem = Pick<MenuItemConstructorOptions, "id" | "label" | "accelerator" | "enabled"> & { click: () => void };
+
+export const exportItems = (run: () => void): ExportItem[] => [{ id: EXPORT_ITEM_ID, label: "Export Screen…", accelerator: "CmdOrCtrl+E", enabled: false, click: run }];
+
+export const PLAY_ITEM_ID = "play-screen";
+
+type PlayItem = Pick<MenuItemConstructorOptions, "id" | "label" | "accelerator" | "registerAccelerator" | "enabled"> & { click: () => void };
+
+export const playItems = (run: () => void): PlayItem[] => [
+  { id: PLAY_ITEM_ID, label: "Play", accelerator: "Alt+CmdOrCtrl+Enter", registerAccelerator: false, enabled: false, click: run },
+];
+
+export const menuTemplate = (send: SendZoom, mac: boolean, history: DocumentHistory, exportScreen: () => void, play: () => void): MenuItemConstructorOptions[] => [
   ...(mac ? [{ role: "appMenu" } satisfies MenuItemConstructorOptions] : []),
-  { role: "editMenu" },
+  { label: "File", submenu: exportItems(exportScreen) },
+  {
+    label: "Edit",
+    submenu: [...editItems(history), { type: "separator" }, { role: "cut" }, { role: "copy" }, { role: "paste" }, { role: "selectAll" }],
+  },
   {
     label: "View",
     submenu: [
+      ...playItems(play),
+      { type: "separator" },
       { role: "reload" },
       { role: "forceReload" },
       { role: "toggleDevTools" },

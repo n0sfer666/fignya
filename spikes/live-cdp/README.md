@@ -179,7 +179,7 @@ bash spikes/live-cdp/run-search.sh <tag>
 
 `search-jump.ts`: ⌘F через `Input.dispatchKeyEvent`, ввод `Input.insertText`, Enter. Сценарий: `2479-25954` → живой экран;
 из его shadow root — текст вне инстансов и текст внутри инстанса; переход на другую страницу; ссылка Figma на первый текст и
-`I<инстанс>;<текст>` на второй → обводка `.node-mark` совпадает с прямоугольником элемента (< 0.5 px; `delta -2` — цепочка
+`I<инстанс>;<текст>` на второй → обводка `.node-selection` совпадает с прямоугольником элемента (< 0.5 px; `delta -2` — цепочка
 `[data-id]` в DOM не найдена целиком) и в окне холста; `padding` первому тексту → обводка следует за relayout; `13160:88951` → живой экран; `9:99999999` → «Nothing found»; Esc закрывает поле, живой экран остаётся; поле открыто, приложение
 скрыто и показано снова (`setElectronVisible`) → поле не закрылось, ввод на месте. Скриншоты —
 `out/search-<tag>/`. Ожидаемый вывод (ROI Navigator, mtime 26-10-02 15:16; 26-10-06):
@@ -200,6 +200,171 @@ focus, hasFocus}`. 26-10-06 флак s3/s7: окно без фокуса ОС (`
 
 Коды: 0 — все проверки; 7 — часть `FAIL`; 2 — импорт не закончился; 1 — сбой CDP/скрипта. Буфер обмена перед прогоном лучше
 очистить от id ноды: поле подставит его при ⌘F (скрипт выделяет и перезаписывает ввод через 400 мс).
+
+## Выделение и инспектор
+
+```nu
+$env.FIG_FILE = ("~/Downloads/ROI Navigator.fig" | path expand)
+bash spikes/live-cdp/run-select.sh <tag> [screen-id]
+```
+
+`select-pick.ts`: ⌘F `<screen-id>` (по умолчанию `2479:25954`) → выделен корень экрана; Esc снимает выделение, экран живой.
+Цель — видимый текст глубже 3 уровней, по возможности внутри инстанса (`elementFromPoint` в shadow root попадает в него же).
+Мышь через `Input.dispatchMouseEvent`: наведение → `.node-hover` на верхнем уровне; клик → верхний уровень; повторный клик
+через 600 мс — тот же; двойной (`clickCount` 2 в пределах 500 мс) → шаг вглубь, текст при этом не выделен (без `user-select: none` на
+`.workspace` падает); ⌘+клик → сам текст и секция Typography;
+двойными кликами до инстанса → строка `component`; ctrl+колесо → рамка на элементе; Esc снимает выделение, второй Esc
+закрывает экран. Каждое выделение: одна `.node-selection` совпадает с прямоугольником элемента (< 0.5 px), `id` инспектора —
+тот элемент, `width` инспектора = inline `width` элемента. Код 3 — на экране нет подходящего текста, 7 — проверки упали.
+Скриншоты — `out/select-<tag>/`. Ожидаемый вывод (ROI Navigator, mtime 26-10-02 15:16; 26-10-14):
+
+```
+16.2s target {…"kinds":["frame","frame","frame","frame","frame","frame","instance","frame","frame","text"]}
+16.4s ok   hover outlines the top level {"count":1,"delta":0,"width":"1440px"}
+16.6s ok   click → 2479:25978 (depth 1): …, inspector id 2479:25978 width 1440px
+18.5s ok   double click → 2479:25979 (depth 2): …, inspector id 2479:25979 width 900px
+18.5s ok   double click does not select text
+19.3s ok   ⌘+click → 456:32603 (depth 9): …, inspector id 456:32603 width 131px
+23.3s ok   inspector names the instance component
+23.6s ok   selection follows zoom {"count":1,"delta":0.0087890625,"width":""}
+24.1s ok   second Esc closes the live screen
+24.1s all checks passed
+```
+
+## Правка из инспектора
+
+```nu
+$env.FIG_FILE = ("~/Downloads/ROI Navigator.fig" | path expand)
+bash spikes/live-cdp/run-edit.sh <tag> [screen-id]
+```
+
+`edit-flow.ts` (помощники — `ui.ts`): ⌘F `<screen-id>` → Esc → ⌘+клик по видимому тексту внутри инстанса. Поле `font-size`
+(фокус и выделение через JS, ввод `Input.insertText`, Enter) +10 px → computed `font-size` элемента под рамкой, инспектор держит
+тот же `id`; тот же слой в других инстансах компонента не меняется; `text` → новый `textContent`; `abc` в `font-size` →
+`.field.invalid`, холст прежний; Esc — поле откатилось, выделение есть. ⌘Z ×2 (`rawKeyDown` с `code: KeyZ` — ловит renderer,
+пункт меню без регистрации хоткея) → исходные текст и размер, ⇧⌘Z → снова +10. Esc, Esc → `img` экрана с `r=` в `src` загружена;
+повторное открытие → правка на месте; `width` +20 → левый верхний угол рамки на месте, ширина больше, фокус остался в поле
+`width`; ⌘Z в том же поле без blur → `width` прежняя, ⇧⌘Z → снова +20 и поле показывает его. `height`: `999` и ⌘Z → в поле снова прежнее значение, документ не тронут; `height` +10 без Enter и клик по пустому холсту
+→ через 1.5 с выделения нет (перерисовка его не вернула), ⌘+клик по тому же тексту → `height` новый. Код 3 — нет видимого текста в
+инстансе, 7 — проверки упали. Скриншоты — `out/edit-<tag>/`. Ожидаемый вывод (ROI Navigator, mtime 26-10-02 15:16; 26-10-14):
+
+```
+16.5s selected 456:32603 font-size 13px text "Название сценария:"
+16.7s ok   font-size 23px shows in the live screen 23px
+16.7s same layer in all instances: ["23px","13px"]
+17.4s ok   broken input is flagged and not applied
+17.9s ok   ⌘Z restores the text Название сценария:
+18.1s ok   ⌘Z restores font-size 13px
+18.4s ok   ⌘⇧Z redoes font-size
+18.5s ok   closed screen shows a thumbnail of the edited revision
+19.4s ok   reopened screen keeps the edit
+19.7s box before [638.2,348.2,79.7] after [638.2,348.2,91.9]
+19.7s ok   width inside an instance grows the box in place
+19.7s ok   the field keeps focus after the live screen redraws (width)
+19.9s ok   ⌘Z right after Enter, still in the field, undoes the edit
+20.2s ok   ⌘⇧Z in the same field redoes it
+20.2s ok   the field shows the redone value
+20.7s ok   ⌘Z in a field undoes the typing, not the document (18px)
+22.2s ok   a click away commits the field and the redraw keeps the new (empty) selection
+22.5s ok   the edit from blur landed on the old layer
+22.6s all checks passed
+```
+
+## Экспорт экрана (File → Export Screen…)
+
+```nu
+$env.FIG_FILE = ("~/Downloads/ROI Navigator.fig" | path expand)
+bash spikes/live-cdp/run-export.sh <tag> [screen-id]
+```
+
+`export-flow.ts`: кроме renderer-CDP (`PORT`), main-процесс под Node-инспектором (`INSPECT`, по умолчанию 9446; `app.sh`
+передаёт `--inspect`, подключение — `main-cdp.ts`). Пункт меню `export-screen` неактивен без живого экрана → ⌘F `<screen-id>`
+→ пункт активен → `window.fignya.edit` opacity 0.5 у корня экрана → в main подменяются `dialog.showSaveDialog` (папка
+`out/export-<tag>/site`) и `shell.showItemInFolder`, клик по пункту меню. Проверки папки: `index.html` и `styles.css` есть, в HTML
+нет `style="`, нигде нет `fignya://`, все `images/…` и `fonts/…` из HTML/CSS существуют, и других файлов там нет (картинки —
+только отрисованные: `screenImages`, а не все хэши модели). Затем `index.html` открывается в новом
+`BrowserWindow` с file:// (снимок `export.png`), у начертаний `document.fonts` нет статуса `error` (а при непустом `fonts/` хотя
+бы одно `loaded`), у каждого `[data-id]` бокс
+(±1 px, в координатах экрана) и computed-стиль совпадают с живым экраном (`live.png`); наследуемые свойства текста (`color`,
+`font-*`, `line-height`) сравниваются только у `text`: у прочих узлов живой экран наследует их от UI приложения, а экспорт — от
+дефолтов браузера, и на отрисовку это не влияет. Затем `showSaveDialog` подменяется медленным (1 с) с путём на существующий
+файл `as-file`, `showErrorBox` — счётчиком, пункт меню кликается дважды подряд: диалог один, ошибка одна (`EEXIST`), файл цел. Код 2 — импорт не закончился, 1 — проверки упали. Ожидаемый вывод (26-10-14):
+
+```
+15.3s ok   export menu item disabled without a live screen
+16.2s ok   search 2479:25954 opens the screen
+16.2s ok   export menu item enabled with a live screen
+16.5s ok   edit redraws the live screen
+18.0s live nodes: 247
+18.3s ok   File → Export Screen writes the folder
+18.3s html 30325 B, css 30205 B, 1 images, 0 fonts
+18.3s ok   index.html and styles.css written
+18.3s ok   no inline styles in index.html
+18.3s ok   no fignya:// urls
+18.3s ok   all 1 referenced files exist
+18.3s ok   every written file is referenced
+19.0s export fonts: []
+19.0s ok   exported faces load from file://
+19.0s ok   exported page matches the live screen (247 nodes, 0 diffs)
+19.0s ok   export carries the edit
+20.5s ok   export onto a file shows an error
+22.0s errors: ["Export failed: EEXIST: file already exists, mkdir '…/out/export-<tag>/as-file'"]
+22.0s ok   a second ⌘E during an export opens no second dialog
+22.0s ok   the file in the way is left as is
+22.0s all checks passed
+```
+
+С `89:2590` (Roboto из кэша Google Fonts): `0 images, 27 fonts`, `all 27 referenced files exist`, в `export fonts` у используемого
+начертания `Roboto 400 loaded`, у прочих `unloaded`, `55 nodes, 0 diffs`.
+
+## Play (View → Play, ⌥⌘↩)
+
+```nu
+$env.FIG_FILE = ("~/Downloads/ROI Navigator.fig" | path expand)
+bash spikes/live-cdp/run-play.sh <tag> [screen-id]
+```
+
+`play-flow.ts` (renderer-CDP + main под `INSPECT`, как экспорт): пункт `play-screen` неактивен и ⌥⌘↩ (`Input.dispatchKeyEvent`
+с Alt+Meta — клавишу ловит renderer) ничего не открывает без живого экрана → ⌘F `<screen-id>` (по умолчанию `9402:158357`,
+«Загрузка файла») → пункт активен → opacity 0.5 у корня → снимок холста (живой экран, рамка выделения, текст инспектора) →
+⌥⌘↩: оверлей `.play` с этим экраном, имя в шапке, правка видна, ширина сцены ≤ окна, хотспоты `[data-hotspot]` есть, `export-screen` серый, окно под оверлеем `inert` (`start.png`)
+→ клик по пункту меню при открытом Play второго оверлея не даёт → клик по шапке ставит `flash` на хост и через 0,5 с снимает
+(`flash.png`) → клик в центр первого хотспота, который сверху в своей точке → другой экран (`target.png`) → Backspace — назад, ←
+на первом экране — на месте → Esc: оверлей снят, снимок холста тот же (`after.png`), Play и экспорт активны, `inert` снят. Снимки — `out/play-<tag>/`.
+Код 2 — импорт не закончился, 1 — проверки упали. Ожидаемый вывод (26-10-14):
+
+```
+15.3s ok   Play menu item disabled without a live screen
+15.8s ok   ⌥⌘↩ without a live screen does nothing
+16.7s ok   search 9402:158357 opens the screen
+16.7s ok   Play menu item enabled with a live screen
+17.0s ok   edit redraws the live screen
+17.0s ok   a layer is selected before Play
+17.0s ok   ⌥⌘↩ plays the live screen
+17.0s playing "Загрузка файла"
+17.0s ok   header names the screen
+17.0s ok   Play shows the edit
+17.0s fit {"stage":1440,"window":1440,"transform":"scale(1)"}
+17.0s ok   screen fits the window width
+17.0s hotspots: 2
+17.0s ok   screen has hotspots
+17.0s ok   Export is disabled while playing
+17.0s ok   the window under Play is inert
+17.6s ok   View → Play while playing opens no second Play
+17.6s ok   a click past the links flashes the hotspots
+18.2s ok   the flash fades
+18.2s ok   a hotspot is clickable
+18.5s ok   a click on a hotspot opens its target
+18.5s navigated to 9402:158442 "Загрузил файл"
+18.8s ok   Backspace goes back
+19.3s ok   ← on the first screen stays
+19.3s ok   Escape leaves Play
+19.3s ok   canvas keeps the live screen, selection and inspector
+19.3s ok   Play stays available after leaving
+19.3s ok   Export is back after leaving
+19.3s ok   the window is live again
+19.4s all checks passed
+```
 
 ## Зум холста с клавиатуры
 

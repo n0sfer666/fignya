@@ -35,13 +35,13 @@ const search = async (query: string): Promise<unknown> => {
 };
 
 const settled = (screenId: string): Promise<boolean> =>
-  waitFor(async () => (await ev(`document.querySelector(".screen.live")?.dataset.screenId === ${JSON.stringify(screenId)} && !!document.querySelector(".node-mark")`)) === true, 15000);
+  waitFor(async () => (await ev(`document.querySelector(".screen.live")?.dataset.screenId === ${JSON.stringify(screenId)} && !!document.querySelector(".node-selection")`)) === true, 15000);
 
 const state = (): Promise<unknown> =>
-  ev(`(() => { const w = document.querySelector(".world"); const m = document.querySelector(".node-mark")?.getBoundingClientRect(); const box = w?.parentElement?.getBoundingClientRect(); return { page: document.querySelector("ul.pages li.active")?.firstChild?.textContent?.trim(), live: document.querySelector(".screen.live")?.dataset.screenId, zoom: w?.style.transform.match(/scale\\(([^)]+)\\)/)?.[1], mark: m && [m.x, m.y, m.width, m.height].map(Math.round), inView: !!(m && box && m.x >= box.x && m.right <= box.right && m.y >= box.y && m.bottom <= box.bottom) }; })()`);
+  ev(`(() => { const w = document.querySelector(".world"); const m = document.querySelector(".node-selection")?.getBoundingClientRect(); const box = w?.parentElement?.getBoundingClientRect(); return { page: document.querySelector("ul.pages li.active")?.firstChild?.textContent?.trim(), live: document.querySelector(".screen.live")?.dataset.screenId, zoom: w?.style.transform.match(/scale\\(([^)]+)\\)/)?.[1], mark: m && [m.x, m.y, m.width, m.height].map(Math.round), inView: !!(m && box && m.x >= box.x && m.right <= box.right && m.y >= box.y && m.bottom <= box.bottom) }; })()`);
 
 const markDelta = (chain: string[]): Promise<unknown> =>
-  ev(`(() => { let scope = document.querySelector(".screen.live > [data-screen]")?.shadowRoot; let el; for (const id of ${JSON.stringify(chain)}) { const next = scope?.querySelector('[data-id="' + CSS.escape(id) + '"]'); if (!next) return -2; el = next; scope = next; } const m = document.querySelector(".node-mark")?.getBoundingClientRect(); if (!el || !m) return -1; const r = el.getBoundingClientRect(); return Math.max(Math.abs(r.x - m.x), Math.abs(r.y - m.y), Math.abs(r.width - m.width), Math.abs(r.height - m.height)); })()`);
+  ev(`(() => { let scope = document.querySelector(".screen.live > [data-screen]")?.shadowRoot; let el; for (const id of ${JSON.stringify(chain)}) { const next = scope?.querySelector('[data-id="' + CSS.escape(id) + '"]'); if (!next) return -2; el = next; scope = next; } const m = document.querySelector(".node-selection")?.getBoundingClientRect(); if (!el || !m) return -1; const r = el.getBoundingClientRect(); return Math.max(Math.abs(r.x - m.x), Math.abs(r.y - m.y), Math.abs(r.width - m.width), Math.abs(r.height - m.height)); })()`);
 
 const shot = async (name: string): Promise<void> => {
   const result = await send("Page.captureScreenshot", { format: "png" });

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FigImport } from "@fignya/fig-import";
+import type { DesignNode, NodeId } from "@fignya/model";
 import { createImporterHandler } from "../importer/handler";
 import type { ImporterEvent } from "../importer/protocol";
 
@@ -81,5 +82,29 @@ describe("createImporterHandler", () => {
     await vi.waitFor(() => expect(logged).toHaveBeenCalledWith("fignya: importer: load: port closed"));
     expect(settled).toEqual([doc]);
     logged.mockRestore();
+  });
+
+  it("applies edits to the loaded document, undoes and redoes them", async () => {
+    const frame: DesignNode = { id: "1:2", name: "Screen", kind: "frame", children: [], style: { width: 100 } };
+    const nodes = new Map<NodeId, DesignNode>([[frame.id, frame]]);
+    const editable: FigImport = { document: { nodes, pages: [{ id: "0:1", name: "Page", screens: [{ id: "1:2", name: "Screen", x: 0, y: 0, width: 100, height: 50 }] }] }, images: new Map() };
+    const { sent, handle } = setup(async () => editable);
+    await handle({ type: "load", path: "a.fig" });
+    await handle({ type: "edit", reqId: 1, edit: { target: ["1:2"], style: { width: 140 } } });
+    expect(nodes.get("1:2")?.style.width).toBe(140);
+    await handle({ type: "undo", reqId: 2 });
+    expect(nodes.get("1:2")).toBe(frame);
+    await handle({ type: "undo", reqId: 3 });
+    await handle({ type: "redo", reqId: 4 });
+    await handle({ type: "edit", reqId: 5, edit: { target: ["9:9"], style: { width: 1 } } });
+    const change = { screenId: "1:2", target: ["1:2"] };
+    expect(sent.slice(1)).toEqual([
+      { type: "edited", reqId: 1, change },
+      { type: "edited", reqId: 2, change },
+      { type: "edited", reqId: 3, change: undefined },
+      { type: "edited", reqId: 4, change },
+      { type: "refused", request: "edit", reqId: 5, message: "invalid edit" },
+    ]);
+    expect(nodes.get("1:2")?.style.width).toBe(140);
   });
 });

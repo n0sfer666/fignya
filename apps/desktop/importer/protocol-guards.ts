@@ -1,3 +1,4 @@
+import type { EditChange } from "@fignya/model";
 import type { ImporterEvent, ImporterRequest, Query } from "./protocol";
 
 type Fields = Record<string, unknown>;
@@ -6,7 +7,9 @@ const isFields = (value: unknown): value is Fields => typeof value === "object" 
 
 const isAssetType = (value: unknown): value is "screen" | "image" => value === "screen" || value === "image";
 
-const isQueryType = (value: unknown): value is Query["type"] => isAssetType(value) || value === "search";
+const isHistoryType = (value: unknown): value is "undo" | "redo" => value === "undo" || value === "redo";
+
+const isQueryType = (value: unknown): value is Query["type"] => isAssetType(value) || isHistoryType(value) || value === "search" || value === "edit";
 
 const isOptional = <T>(value: unknown, check: (v: unknown) => v is T): boolean => value === undefined || check(value);
 
@@ -15,6 +18,9 @@ const isFaceUse = (value: unknown): boolean => isFields(value) && typeof value.w
 const isFontUsage = (value: unknown): boolean =>
   isFields(value) && typeof value.family === "string" && typeof value.nodes === "number" && Array.isArray(value.faces) && value.faces.every(isFaceUse);
 
+const isEditChange = (value: unknown): value is EditChange =>
+  isFields(value) && typeof value.screenId === "string" && Array.isArray(value.target) && value.target.every((id) => typeof id === "string");
+
 const isBytes = (value: unknown): value is Uint8Array => value instanceof Uint8Array;
 
 export const isImporterRequest = (value: unknown): value is ImporterRequest => {
@@ -22,6 +28,8 @@ export const isImporterRequest = (value: unknown): value is ImporterRequest => {
   if (value.type === "load") return typeof value.path === "string";
   if (typeof value.reqId !== "number") return false;
   if (value.type === "search") return typeof value.query === "string";
+  if (value.type === "edit") return isFields(value.edit);
+  if (isHistoryType(value.type)) return true;
   return isAssetType(value.type) && typeof value.id === "string";
 };
 
@@ -42,6 +50,8 @@ export const isImporterEvent = (value: unknown): value is ImporterEvent => {
       return typeof value.reqId === "number" && isOptional(value.bytes, isBytes);
     case "found":
       return typeof value.reqId === "number" && Array.isArray(value.hits);
+    case "edited":
+      return typeof value.reqId === "number" && isOptional(value.change, isEditChange);
     case "refused":
       return isQueryType(value.request) && typeof value.reqId === "number" && typeof value.message === "string";
     default:

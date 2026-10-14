@@ -1,4 +1,4 @@
-import type { DesignDocument } from "@fignya/model";
+import type { EditableDocument } from "@fignya/model";
 import type { Rec } from "./fig/guards";
 import { slimNode } from "./fig/kept-fields";
 import type { FigArchive } from "./fig/read-archive";
@@ -9,7 +9,7 @@ import { takeOnce } from "./take-once";
 import { blobsOf } from "./tree/node-index";
 import { preparedNodes } from "./tree/prepared-nodes";
 
-export type FigImport = { document: DesignDocument; images: ReadonlyMap<string, Uint8Array> };
+export type FigImport = { document: EditableDocument; images: ReadonlyMap<string, Uint8Array> };
 
 type Decoded = { nodes: Rec[]; blobs: Uint8Array[] };
 

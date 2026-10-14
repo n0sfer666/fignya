@@ -1,6 +1,7 @@
 import { applyOverride, cssText, expandedComponentId, type DesignNode, type ImageUrl, type NodeId, type NodeMap, type Style } from "@fignya/model";
 import { carriesResize, constrainedStyle, hasOwnBox, resizeOf, type Resize } from "./constrain";
 import { stackChildren } from "./flow-stacking";
+import { rememberNode } from "./rendered-node";
 import { EMPTY_SCOPE, nestedScope, type OverrideScope } from "./override-scope";
 import { centerSvg, renderSvg } from "./svg";
 import { viewBoxOf } from "./view-box";
@@ -39,6 +40,7 @@ const renderTree = (ctx: RenderContext, id: NodeId, branch: Branch, style: (node
   const el = document.createElement("div");
   el.dataset.id = node.id;
   el.dataset.kind = node.kind;
+  rememberNode(el, node, ctx.nodes);
   const own = style(node);
   el.style.cssText = cssText(own, ctx.imageUrl);
   if (node.kind === "text") el.textContent = node.text;

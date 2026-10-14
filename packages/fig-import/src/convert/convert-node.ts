@@ -6,6 +6,7 @@ import type { FigNode } from "../tree/node-index";
 import { decorationStyle } from "./decoration";
 import { constraintsOf } from "./constraints";
 import { boxStyle, containerStyle } from "./layout";
+import { linkOf } from "./link";
 import { paintsOf } from "./paint";
 import { textOf, textStyle } from "./text";
 import { isVectorNode, vectorPaths, type BlobPaths } from "./vector";
@@ -39,6 +40,7 @@ export const convertNode = (node: FigNode, place: NodePlace, ctx: ConvertContext
     children: place.children,
     ...(raw.visible === false ? { hidden: true } : {}),
     ...constraintsOf(raw),
+    ...linkOf(raw),
   };
   if (node.type === "TEXT") return { ...base, kind: "text", style: { ...style, ...textStyle(raw) }, text: textOf(raw) };
   if (isVector) return { ...base, kind: "vector", style, paths: vectorPaths(raw, ctx.pathOf) };

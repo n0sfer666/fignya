@@ -1,4 +1,4 @@
-import type { DesignDocument, DesignNode, NodeId } from "@fignya/model";
+import type { DesignDocument, DesignNode, EditableDocument, NodeId } from "@fignya/model";
 import { recs, type Rec } from "./fig/guards";
 import { convertNode, type ConvertContext } from "./convert/convert-node";
 import { instanceOverrides } from "./convert/instance-overrides";
@@ -15,7 +15,7 @@ import { childIdsOf, placementsOf } from "./tree/placements";
 
 export const SERVICE_PAGES: ReadonlySet<string> = new Set(["Internal Only Canvas"]);
 
-export function* convertSteps({ nodes: prepared, variables }: Prepared, blobs: Uint8Array[]): Generator<ImportProgress, DesignDocument> {
+export function* convertSteps({ nodes: prepared, variables }: Prepared, blobs: Uint8Array[]): Generator<ImportProgress, EditableDocument> {
   const index = buildIndex(prepared, blobs);
   const paints = withFrozenModes(index.byKey.values(), variablePaints(variables, (key) => index.byKey.get(key)?.raw));
   const pathOf = blobPaths(index.blobs);

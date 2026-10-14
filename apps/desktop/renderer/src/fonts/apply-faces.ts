@@ -4,7 +4,7 @@ import type { FontFaces } from "../../../shared/fonts";
 const applied = new Set<string>();
 
 export const applyFaces = ({ faces }: FontFaces): void => {
-  const fresh = faces.map(fontFaceRule).filter((rule) => !applied.has(rule));
+  const fresh = faces.map((face) => fontFaceRule(face)).filter((rule) => !applied.has(rule));
   if (fresh.length === 0) return;
   for (const rule of fresh) applied.add(rule);
   const style = document.createElement("style");

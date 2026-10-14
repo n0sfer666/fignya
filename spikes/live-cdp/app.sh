@@ -17,7 +17,7 @@ app_start() {
   cp -c "${FIG_FILE:?}" "$FIG" && touch "$FIG" || exit 1
   app_stop
   ls "$THUMBS" | sort > "$OUT/before-$1.txt"
-  (cd "$D" && FIG_FILE="$FIG" ./node_modules/.bin/electron-vite dev --remoteDebuggingPort "$PORT" > "$OUT/app-$1.log" 2>&1 &)
+  (cd "$D" && FIG_FILE="$FIG" ./node_modules/.bin/electron-vite dev --remoteDebuggingPort "$PORT" ${INSPECT:+--inspect "$INSPECT"} > "$OUT/app-$1.log" 2>&1 &)
 }
 
 app_finish() {

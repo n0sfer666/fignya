@@ -11,7 +11,7 @@ export type Constraint = "min" | "center" | "max" | "stretch" | "scale";
 
 export type Constraints = readonly [Constraint, Constraint];
 
-export type Override = { path: NodeId[]; style?: Style; text?: string; hidden?: boolean; paths?: VectorPath[]; componentId?: NodeId };
+export type Override = { path: NodeId[]; style?: Style; text?: string; hidden?: boolean; paths?: VectorPath[]; componentId?: NodeId; link?: NodeId };
 
 type NodeBase = {
   id: NodeId;
@@ -21,6 +21,7 @@ type NodeBase = {
   style: Style;
   hidden?: boolean;
   constraints?: Constraints;
+  link?: NodeId;
 };
 
 export type FrameNode = NodeBase & { kind: "frame" };
