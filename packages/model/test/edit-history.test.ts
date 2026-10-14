@@ -56,3 +56,24 @@ describe("createEditHistory", () => {
     expect(widthOf(nodes)).toBe(1);
   });
 });
+
+describe("createEditHistory edits", () => {
+  it("lists the applied edits compacted, seeds first and never undoable", () => {
+    const nodes = new Map<NodeId, DesignNode>([[frame.id, { ...frame, style: { width: 130 } }]]);
+    const history = createEditHistory(nodes, [{ target: ["f"], style: { width: 130 } }]);
+    expect(history.undo()).toBeUndefined();
+    history.apply({ target: ["f"], style: { opacity: 0.5 } });
+    expect(history.edits()).toEqual([{ target: ["f"], style: { width: 130, opacity: 0.5 } }]);
+    history.undo();
+    expect(history.edits()).toEqual([{ target: ["f"], style: { width: 130 } }]);
+    history.redo();
+    expect(history.edits()).toEqual([{ target: ["f"], style: { width: 130, opacity: 0.5 } }]);
+  });
+
+  it("keeps edits forgotten by undo past the limit", () => {
+    const { history } = setup();
+    for (let width = 1; width <= 201; width += 1) history.apply({ target: ["f"], style: { width } });
+    while (history.undo()) continue;
+    expect(history.edits()).toEqual([{ target: ["f"], style: { width: 1 } }]);
+  });
+});
