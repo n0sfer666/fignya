@@ -38,6 +38,21 @@ describe("screenModel", () => {
     expect([...(screenModel(nodes, "s")?.nodes.keys() ?? [])].sort()).toEqual(["c", "d", "e", "i", "s", "x"]);
   });
 
+  it("pulls variants reachable through swaps of layers and instance overrides", () => {
+    const nodes = mapOf([
+      frame("s", ["i"]),
+      { ...instance("i", "v1", [{ path: ["tab"], swaps: [{ on: "click", to: "v3" }] }]), swaps: [{ on: "hover", to: "v2" }] },
+      component("v1", ["tab"]),
+      frame("tab"),
+      { ...component("v2", ["hovered"]), swaps: [{ on: "leave", to: "v4" }] },
+      frame("hovered"),
+      component("v3"),
+      component("v4"),
+      component("unused"),
+    ]);
+    expect([...(screenModel(nodes, "s")?.nodes.keys() ?? [])].sort()).toEqual(["hovered", "i", "s", "tab", "v1", "v2", "v3", "v4"]);
+  });
+
   it("returns undefined for a missing root", () => {
     expect(screenModel(mapOf([frame("s")]), "ghost")).toBeUndefined();
   });
