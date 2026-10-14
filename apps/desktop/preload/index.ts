@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import type { ImportProgress } from "@fignya/fig-import";
 import {
+  AGENT_FOCUS_CHANNEL,
+  AGENT_STATUS_CHANNEL,
   CANVAS_ZOOM_CHANNEL,
   CHANGED_CHANNEL,
   DOCUMENT_CHANNEL,
@@ -26,6 +28,8 @@ import {
   SEARCH_CHANNEL,
   THUMB_DONE_CHANNEL,
   THUMB_JOB_CHANNEL,
+  VIEW_CHANNEL,
+  type AgentFocus,
   type CanvasZoom,
   type DocumentChanged,
   type FignyaApi,
@@ -50,7 +54,7 @@ const api: FignyaApi = {
   onThumbJob: (handler) => {
     ipcRenderer.on(THUMB_JOB_CHANNEL, (_event, job: ThumbJob) => handler(job));
   },
-  thumbRendered: (id) => ipcRenderer.send(THUMB_DONE_CHANNEL, id),
+  thumbRendered: (id, box) => ipcRenderer.send(THUMB_DONE_CHANNEL, id, box),
   showPage: (pageId) => ipcRenderer.send(PAGE_CHANNEL, pageId),
   focusScreens: (focus) => ipcRenderer.send(FOCUS_CHANNEL, focus),
   documentFonts: () => ipcRenderer.invoke(FONT_USAGE_CHANNEL),
@@ -69,6 +73,9 @@ const api: FignyaApi = {
   exportFailed: (message) => ipcRenderer.send(EXPORT_FAILED_CHANNEL, message),
   playAvailable: (screenId) => ipcRenderer.send(PLAY_AVAILABLE_CHANNEL, screenId),
   onPlayRequest: subscribe<undefined>(PLAY_REQUEST_CHANNEL),
+  reportView: (view) => ipcRenderer.send(VIEW_CHANNEL, view),
+  onAgentFocus: subscribe<AgentFocus>(AGENT_FOCUS_CHANNEL),
+  onAgentStatus: subscribe<boolean>(AGENT_STATUS_CHANNEL),
 };
 
 contextBridge.exposeInMainWorld("fignya", api);

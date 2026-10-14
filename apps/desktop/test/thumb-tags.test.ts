@@ -31,4 +31,10 @@ describe("thumbnail tags", () => {
     expect(focused(tag(spilled, 1))).toBe(true);
     expect(focused(tag(spilled, 2))).toBe(false);
   });
+
+  it("keeps and prefers agent shots whatever the page and focus", () => {
+    const shot: ThumbTag = { page: "q", screen: tall, tier: 0.5, agent: true };
+    expect(onPage("p")(shot)).toBe(true);
+    expect(inFocus({ tier: 2, screenIds: [wide.id] })(shot)).toBe(true);
+  });
 });
