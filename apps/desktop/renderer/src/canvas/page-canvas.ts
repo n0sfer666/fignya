@@ -130,7 +130,7 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
     live = { id: screen.id, host };
     selection.attach({ frame, host }, target && host.shadowRoot ? findEditTarget(host.shadowRoot, target) : undefined);
   };
-  const changed = async ({ screenId, revision }: DocumentChanged): Promise<void> => {
+  const changed = async ({ screenId, revision, targets, origin }: DocumentChanged): Promise<void> => {
     revisions.set(screenId, revision);
     const frame = frameEl(screenId);
     const screen = screens.get(screenId);
@@ -140,6 +140,7 @@ export const createPageCanvas = (el: HTMLElement, openScreen: OpenScreen, focusS
     if (live?.id === screenId) {
       staleThumbs.add(screenId);
       await redraw(screen);
+      if (origin === "agent") selection.flash(targets);
       return;
     }
     sharpener.renew(frame);
