@@ -8,6 +8,7 @@ import { constraintsOf } from "./constraints";
 import { boxStyle, containerStyle } from "./layout";
 import { linkOf } from "./link";
 import { paintsOf } from "./paint";
+import { swapsOf } from "./swaps";
 import { textOf, textStyle } from "./text";
 import { isVectorNode, vectorPaths, type BlobPaths } from "./vector";
 
@@ -41,6 +42,7 @@ export const convertNode = (node: FigNode, place: NodePlace, ctx: ConvertContext
     ...(raw.visible === false ? { hidden: true } : {}),
     ...constraintsOf(raw),
     ...linkOf(raw),
+    ...swapsOf(raw),
   };
   if (node.type === "TEXT") return { ...base, kind: "text", style: { ...style, ...textStyle(raw) }, text: textOf(raw) };
   if (isVector) return { ...base, kind: "vector", style, paths: vectorPaths(raw, ctx.pathOf) };

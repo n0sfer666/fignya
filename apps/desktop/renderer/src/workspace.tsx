@@ -1,5 +1,5 @@
 import { createEffect, onCleanup, onMount } from "solid-js";
-import type { Page, Screen } from "@fignya/model";
+import type { Page, Screen, ScreenModel } from "@fignya/model";
 import { renderScreen } from "@fignya/render-dom";
 import type { FontFaces } from "../../shared/fonts";
 import { imageUrl } from "../../shared/urls";
@@ -14,9 +14,13 @@ import { startPlay } from "./play/play-session";
 
 export type WorkspaceProps = { page: Page | undefined; screens: Screen[]; focus: Focus | undefined; onSelect: SelectNode };
 
+const loadScreen = (screen: Screen): Promise<ScreenModel | undefined> => window.fignya.screen(screen.id);
+
+const paintScreen = (model: ScreenModel): HTMLElement => renderScreen(model, { imageUrl });
+
 const openScreen = async (screen: Screen): Promise<HTMLElement | undefined> => {
-  const model = await window.fignya.screen(screen.id);
-  return model ? renderScreen(model, { imageUrl }) : undefined;
+  const model = await loadScreen(screen);
+  return model ? paintScreen(model) : undefined;
 };
 
 export const Workspace = (props: WorkspaceProps) => {
@@ -30,7 +34,7 @@ export const Workspace = (props: WorkspaceProps) => {
     const playing = bindPlay(
       window.fignya,
       () => props.screens,
-      (screen, onExit) => startPlay(screen, { screens: new Map(props.screens.map((s) => [s.id, s])), render: openScreen }, onExit),
+      (screen, onExit) => startPlay(screen, { screens: new Map(props.screens.map((s) => [s.id, s])), load: loadScreen, paint: paintScreen }, onExit),
       (on) => {
         inPlay = on;
         exporting.onLive(on ? undefined : live);

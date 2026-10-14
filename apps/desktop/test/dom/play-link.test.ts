@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderScreen } from "@fignya/render-dom";
 import { HOTSPOT, markHotspots } from "../../renderer/src/play/play-hotspots";
-import { linkAt } from "../../renderer/src/play/play-link";
+import { clickAt, isHotspot } from "../../renderer/src/play/play-click";
 import { component, frame, instance, modelOf } from "./play-nodes";
 
 const imageUrl = (hash: string): string => `fignya://image/${hash}`;
@@ -21,7 +21,12 @@ const pathOf = (root: ShadowRoot, id: string): EventTarget[] => {
   return [...path, root, root.host];
 };
 
-describe("linkAt", () => {
+const linkAt = (path: EventTarget[], screen: (id: string) => boolean): string | undefined => {
+  const action = clickAt(path, screen);
+  return action?.kind === "link" ? action.to : undefined;
+};
+
+describe("clickAt links", () => {
   const root = rendered();
 
   it("takes the deepest link on the path to a screen", () => {
@@ -39,7 +44,7 @@ describe("linkAt", () => {
 describe("markHotspots", () => {
   it("marks layers linked to a screen and styles them", () => {
     const root = rendered();
-    markHotspots(root, isScreen);
+    markHotspots(root, (el) => isHotspot(el, isScreen));
     expect([...root.querySelectorAll(`[${HOTSPOT}]`)].map((el) => el.getAttribute("data-id"))).toEqual(["b", "i", "x"]);
     expect(root.querySelector("style:last-of-type")?.textContent).toContain(`[${HOTSPOT}]`);
   });

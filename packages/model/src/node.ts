@@ -1,5 +1,6 @@
 import type { Color } from "./color";
 import type { ImageFit, Style } from "./style";
+import type { Swap } from "./swap";
 
 export type NodeId = string;
 
@@ -11,7 +12,7 @@ export type Constraint = "min" | "center" | "max" | "stretch" | "scale";
 
 export type Constraints = readonly [Constraint, Constraint];
 
-export type Override = { path: NodeId[]; style?: Style; text?: string; hidden?: boolean; paths?: VectorPath[]; componentId?: NodeId; link?: NodeId };
+export type Override = { path: NodeId[]; style?: Style; text?: string; hidden?: boolean; paths?: VectorPath[]; componentId?: NodeId; link?: NodeId; swaps?: Swap[] };
 
 type NodeBase = {
   id: NodeId;
@@ -22,6 +23,7 @@ type NodeBase = {
   hidden?: boolean;
   constraints?: Constraints;
   link?: NodeId;
+  swaps?: Swap[];
 };
 
 export type FrameNode = NodeBase & { kind: "frame" };

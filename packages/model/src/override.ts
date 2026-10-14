@@ -7,8 +7,8 @@ export const mergeOverride = (inner: Override | undefined, outer: Override): Ove
 
 export const applyOverride = (node: DesignNode, override: Override | undefined): DesignNode => {
   if (!override) return node;
-  const { style, hidden, text, paths, componentId, link } = override;
-  const base = { ...node, ...(style ? { style: { ...node.style, ...style } } : {}), ...(hidden === undefined ? {} : { hidden }), ...(link === undefined ? {} : { link }) };
+  const { style, hidden, text, paths, componentId, link, swaps } = override;
+  const base = { ...node, ...(style ? { style: { ...node.style, ...style } } : {}), ...(hidden === undefined ? {} : { hidden }), ...(link === undefined ? {} : { link }), ...(swaps === undefined ? {} : { swaps }) };
   if (base.kind === "text" && text !== undefined) return { ...base, text };
   if (base.kind === "vector" && paths) return { ...base, paths };
   if (base.kind === "instance" && componentId !== undefined) return { ...base, componentId };

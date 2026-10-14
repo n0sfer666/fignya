@@ -1,43 +1,61 @@
-import type { NodeId, Screen } from "@fignya/model";
+import type { NodeId, Screen, ScreenModel } from "@fignya/model";
 import { errorMessage } from "../../../shared/error-message";
+import { clickAt, isHotspot } from "./play-click";
 import { createPlayHistory } from "./play-history";
-import { markHotspots } from "./play-hotspots";
+import { markHotspots, markSubtree } from "./play-hotspots";
+import { createHover, type Hover } from "./play-hover";
 import { playKey } from "./play-key";
-import { linkAt } from "./play-link";
+import { createVariants, type Variants } from "./play-variants";
 import { createPlayView } from "./play-view";
 
-export type PlayDeps = { screens: ReadonlyMap<NodeId, Screen>; render: (screen: Screen) => Promise<HTMLElement | undefined> };
+export type PlayDeps = {
+  screens: ReadonlyMap<NodeId, Screen>;
+  load: (screen: Screen) => Promise<ScreenModel | undefined>;
+  paint: (model: ScreenModel) => HTMLElement;
+};
 
 const failed = (id: NodeId, reason: string): void => console.error(`fignya: play: screen ${id}: ${reason}`);
 
 export const startPlay = (start: Screen, deps: PlayDeps, onExit: () => void): (() => void) => {
   const history = createPlayHistory(start.id);
   const isScreen = (id: NodeId): boolean => deps.screens.has(id);
+  const isHot = (el: Element): boolean => isHotspot(el, isScreen);
   const focused = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
   let loading = false;
   let closed = false;
+  let variants: Variants | undefined;
+  let hover: Hover = () => undefined;
   const open = async (screen: Screen, commit: () => void, onFail: () => void): Promise<void> => {
     loading = true;
-    const host = await deps.render(screen).catch((error: unknown) => {
-      failed(screen.id, errorMessage(error));
-      return undefined;
-    });
+    const painted = await deps
+      .load(screen)
+      .then((model) => model && { model, host: deps.paint(model) })
+      .catch((error: unknown) => {
+        failed(screen.id, errorMessage(error));
+        return undefined;
+      });
     loading = false;
     if (closed) return;
-    if (!host?.shadowRoot) return onFail();
-    markHotspots(host.shadowRoot, isScreen);
+    const root = painted?.host.shadowRoot;
+    if (!painted || !root) return onFail();
+    markHotspots(root, isHot);
+    variants = createVariants(root, painted.model.nodes, (el) => markSubtree(el, isHot));
+    hover = createHover(variants);
     commit();
-    view.show(screen, host);
+    view.show(screen, painted.host);
   };
   const goTo = (id: NodeId | undefined, commit: () => void): void => {
     const screen = id === undefined ? undefined : deps.screens.get(id);
     if (screen && !loading) void open(screen, commit, () => failed(screen.id, "not loaded"));
   };
-  const view = createPlayView((path) => {
-    const target = linkAt(path, isScreen);
-    if (target === undefined) view.flash();
-    else goTo(target, () => history.go(target));
-  });
+  const view = createPlayView(
+    (path) => {
+      const action = clickAt(path, isScreen);
+      if (action?.kind === "link") goTo(action.to, () => history.go(action.to));
+      else if (!action || !variants?.swap(action.holder, action.to)) view.flash();
+    },
+    (path) => hover(path),
+  );
   const exit = (): void => {
     if (closed) return;
     closed = true;

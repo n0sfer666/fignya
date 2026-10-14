@@ -1,6 +1,7 @@
 export type { Color } from "./color";
 export type * from "./style";
 export type * from "./node";
+export type * from "./swap";
 export type * from "./document";
 export { quoted, rgba, type Declaration, type ImageUrl } from "./css-values";
 export { cssDeclarations, cssText } from "./css-text";
@@ -24,3 +25,5 @@ export { fieldEdit, isEditField, type EditField } from "./edit-fields";
 export { isNoopEdit } from "./edit-noop";
 export { isStylePatch } from "./style-patch-guard";
 export { locateNode } from "./locate-node";
+export { twinPath, type SwappedAt } from "./variant-twin";
+export { swapVariant } from "./swap-variant";

@@ -1,4 +1,4 @@
-import { styleDiff, type DesignNode, type NodeId, type Override, type VectorPath } from "@fignya/model";
+import { sameValue, styleDiff, type DesignNode, type NodeId, type Override, type VectorPath } from "@fignya/model";
 import { samePaths } from "./same-paths";
 
 const textOf = (node: DesignNode): string | undefined => (node.kind === "text" ? node.text : undefined);
@@ -18,6 +18,7 @@ export const overridePatch = (path: NodeId[], base: DesignNode, next: DesignNode
     ...(paths === undefined || samePaths(paths, pathsOf(base)) ? {} : { paths }),
     ...(componentId === undefined ? {} : { componentId }),
     ...(next.link === undefined || next.link === base.link ? {} : { link: next.link }),
+    ...(sameValue(next.swaps ?? [], base.swaps ?? []) ? {} : { swaps: next.swaps ?? [] }),
   };
   return Object.keys(override).length > 1 ? override : undefined;
 };

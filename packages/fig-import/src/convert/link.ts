@@ -1,15 +1,8 @@
 import type { NodeId } from "@fignya/model";
 import { rec, recs, str, type Rec } from "../fig/guards";
-import { guidKey } from "../tree/node-index";
-
-const NO_NODE = 0xffffffff;
+import { targetOf } from "./interaction-target";
 
 const isNavigation = (action: Rec): boolean => str(action, "connectionType") === "INTERNAL_NODE" && str(action, "navigationType") === "NAVIGATE";
-
-const targetOf = (action: Rec): NodeId | undefined => {
-  const target = rec(action, "transitionNodeID");
-  return target && target.sessionID !== NO_NODE && target.localID !== NO_NODE ? guidKey(target) : undefined;
-};
 
 const clickTarget = (interaction: Rec): NodeId | undefined => {
   if (interaction.isDeleted === true || str(rec(interaction, "event"), "interactionType") !== "ON_CLICK") return undefined;

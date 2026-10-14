@@ -5,11 +5,3 @@ export const linkOfElement = (el: Element, isScreen: (id: NodeId) => boolean): N
   const link = renderedNode(el)?.node.link;
   return link !== undefined && isScreen(link) ? link : undefined;
 };
-
-export const linkAt = (path: readonly EventTarget[], isScreen: (id: NodeId) => boolean): NodeId | undefined => {
-  for (const target of path) {
-    const link = target instanceof Element ? linkOfElement(target, isScreen) : undefined;
-    if (link !== undefined) return link;
-  }
-  return undefined;
-};

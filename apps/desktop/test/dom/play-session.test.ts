@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Screen } from "@fignya/model";
+import type { Screen, ScreenModel } from "@fignya/model";
 import { renderScreen } from "@fignya/render-dom";
 import { startPlay } from "../../renderer/src/play/play-session";
 import { frame, modelOf } from "./play-nodes";
@@ -15,10 +15,9 @@ const MODELS = new Map([
 
 const SCREENS = new Map(["a", "b", "c"].map((id) => [id, screen(id)]));
 
-const render = async (s: Screen): Promise<HTMLElement | undefined> => {
-  const model = MODELS.get(s.id);
-  return model ? renderScreen(model, { imageUrl }) : undefined;
-};
+const load = async (s: Screen): Promise<ScreenModel | undefined> => MODELS.get(s.id);
+
+const paint = (model: ScreenModel): HTMLElement => renderScreen(model, { imageUrl });
 
 const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -35,7 +34,7 @@ const press = (key: string): void => void window.dispatchEvent(new KeyboardEvent
 
 const sessions: (() => void)[] = [];
 
-const play = (onExit: () => void = () => undefined): void => void sessions.push(startPlay(screen("a"), { screens: SCREENS, render }, onExit));
+const play = (onExit: () => void = () => undefined): void => void sessions.push(startPlay(screen("a"), { screens: SCREENS, load, paint }, onExit));
 
 const started = async (onExit?: () => void): Promise<void> => {
   play(onExit);
@@ -122,10 +121,10 @@ describe("startPlay", () => {
 
   it("ignores input while a screen loads and drops a load finished after exit", async () => {
     let release = (): void => undefined;
-    const gated = (s: Screen): Promise<HTMLElement | undefined> =>
-      s.id === "a" ? render(s) : new Promise((resolve) => (release = () => void render(s).then(resolve)));
+    const gated = (s: Screen): Promise<ScreenModel | undefined> =>
+      s.id === "a" ? load(s) : new Promise((resolve) => (release = () => void load(s).then(resolve)));
     const onExit = vi.fn();
-    sessions.push(startPlay(screen("a"), { screens: SCREENS, render: gated }, onExit));
+    sessions.push(startPlay(screen("a"), { screens: SCREENS, load: gated, paint }, onExit));
     await settle();
     click("go");
     click("go");
@@ -146,7 +145,7 @@ describe("startPlay", () => {
   it("leaves Play when the start screen does not load", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const onExit = vi.fn();
-    sessions.push(startPlay(screen("c"), { screens: SCREENS, render }, onExit));
+    sessions.push(startPlay(screen("c"), { screens: SCREENS, load, paint }, onExit));
     await settle();
     expect([document.querySelector(".play"), onExit.mock.calls.length, error.mock.calls.length]).toEqual([null, 1, 1]);
     error.mockRestore();

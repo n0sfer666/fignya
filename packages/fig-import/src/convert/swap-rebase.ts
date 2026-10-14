@@ -2,6 +2,7 @@ import { sameValue, type NodeId } from "@fignya/model";
 import { rec, type Rec } from "../fig/guards";
 import { componentOf } from "../tree/component-keys";
 import { guidKey, type FigNode } from "../tree/node-index";
+import { overlayFields } from "./overlay-fields";
 import { unbound } from "./unbound";
 
 const OWN_FIELDS: ReadonlySet<string> = new Set([
@@ -36,9 +37,9 @@ const inheritedFields = (raw: Rec, from: Rec, to: Rec): Rec => {
 };
 
 export const settledRaw = (byKey: ReadonlyMap<string, FigNode>, node: FigNode, fields: Rec): Rec => {
-  const raw = { ...node.raw, ...fields };
+  const raw = overlayFields(node.raw, fields);
   const from = byKey.get(componentOf(node.raw) ?? "");
   const to = byKey.get(swappedTo(raw) ?? "");
   if (!from || !to || from === to) return raw;
-  return { ...node.raw, ...inheritedFields(node.raw, from.raw, to.raw), ...fields };
+  return overlayFields({ ...node.raw, ...inheritedFields(node.raw, from.raw, to.raw) }, fields);
 };

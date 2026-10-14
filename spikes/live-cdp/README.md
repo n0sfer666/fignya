@@ -418,6 +418,41 @@ were applied», правка не применена, `.bak` нет → прав
 17.0s ok   the new sidecar is for this base
 ```
 
+## Смена вариантов в Play (SWAP_STATE)
+
+```nu
+$env.FIG_FILE = ("~/Downloads/ROI Navigator.fig" | path expand)
+bash spikes/live-cdp/run-swap.sh <tag> [screen-id]
+```
+
+`swap-flow.ts` (renderer-CDP): ⌘F `<screen-id>` (по умолчанию `12645:34121`, «analysis / comparison») → ⌥⌘↩ → внешние
+инстансы, видимые в своей точке, по очереди: `mouseMoved` в центр → элемент заменён и его `innerHTML` другой (смена) →
+уход в угол → `innerHTML` прежний (откат). Время обработчика `pointerover` — медиана и максимум, порог 50 мс → клик в центр
+хотспотов `[data-hotspot]`, пока один не сменит вариант без перехода (переход — Backspace и следующий) → Esc. Снимки
+элемента до и после — `out/swap-<tag>/hover-before.png`, `hover-on.png`, `click-before.png`, `click-after.png`. Клик
+попадает в уже выбранный таб: смена — другой вариант с разделителем в 1px, на снимке почти не видна. Код 2 — импорт не
+закончился, 1 — проверки упали. Без Electron, по сырому `FIG_FILE`: `bun spikes/live-cdp/swap-scan.ts` — счёт SWAP_STATE
+по событиям, держателям и целям; `bun spikes/live-cdp/swap-carry.ts` — сколько оверрайдов ложится на новый вариант по
+именам. Ожидаемый вывод `run-swap.sh` (26-10-14):
+
+```
+12.4s ok   search 12645:34121 opens the screen
+12.4s ok   ⌥⌘↩ plays the screen
+12.4s playing "analysis / comparison"
+12.4s outer instances in view: 29
+12.6s first hover swap: 12645:34165
+13.0s hover swaps: 13, content changed: 13, back on leave: 13, kept after leave: 0
+13.0s swap handler ms: median 0.3, max 0.8
+13.0s ok   hover swaps a variant and changes its content
+13.0s ok   the variant goes back once the pointer leaves
+13.0s ok   a swap takes under 50 ms
+13.0s hotspots: 12
+13.3s click swap: 13156:246425
+13.3s ok   a click swaps a variant without leaving the screen
+13.3s ok   Escape leaves Play
+13.3s all checks passed
+```
+
 ## Зум холста с клавиатуры
 
 ```nu

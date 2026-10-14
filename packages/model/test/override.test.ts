@@ -31,6 +31,12 @@ describe("applyOverride", () => {
     expect(applyOverride({ ...text, link: "s1" }, { path: ["t"], link: "s2" })).toEqual({ ...text, link: "s2" });
     expect(applyOverride(instance, { path: ["i"], link: "s2" })).toEqual({ ...instance, link: "s2" });
   });
+
+  it("replaces the variant swaps of any kind", () => {
+    const swaps = [{ on: "hover" as const, to: "v2" }];
+    expect(applyOverride({ ...text, swaps: [{ on: "click", to: "v1" }] }, { path: ["t"], swaps })).toEqual({ ...text, swaps });
+    expect(applyOverride(instance, { path: ["i"], swaps })).toEqual({ ...instance, swaps });
+  });
 });
 
 describe("mergeOverride", () => {
