@@ -1,10 +1,13 @@
 import { readFile } from "node:fs/promises";
-import { documentFonts, importSteps, readArchive, settleOverrides, type FigImport } from "@fignya/fig-import";
+import { documentFonts, importSteps, readArchive, settleOverrides, type FigImport, type ImportProgress } from "@fignya/fig-import";
 import { errorMessage } from "../shared/error-message";
-import { createImporterHandler } from "./handler";
+import { fingerprint } from "./fingerprint";
+import { createImporterHandler, type LoadedFig } from "./handler";
 import { IMPORT_PACE, paced } from "./paced";
 import type { ImporterEvent } from "./protocol";
 import { isImporterRequest } from "./protocol-guards";
+import type { BaseFingerprint } from "./sidecar-format";
+import { sidecarStore } from "./sidecar-store";
 
 const port = process.parentPort;
 
@@ -15,12 +18,20 @@ const readBytes = async (path: string): Promise<Uint8Array> => {
   return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
 };
 
-const load = async (path: string): Promise<FigImport> => {
+type ReadFig = { steps: Generator<ImportProgress, FigImport>; base: BaseFingerprint };
+
+const readFig = async (path: string): Promise<ReadFig> => {
+  const bytes = await readBytes(path);
+  return { steps: importSteps(readArchive(bytes)), base: fingerprint(bytes) };
+};
+
+const load = async (path: string): Promise<LoadedFig> => {
   const started = performance.now();
-  const imported = await paced(importSteps(readArchive(await readBytes(path))), IMPORT_PACE, (progress) => send({ type: "progress", progress }));
+  const { steps, base } = await readFig(path);
+  const imported = await paced(steps, IMPORT_PACE, (progress) => send({ type: "progress", progress }));
   const screens = imported.document.pages.reduce((sum, p) => sum + p.screens.length, 0);
   console.log(`fignya: imported ${imported.document.pages.length} pages, ${screens} screens in ${Math.round(performance.now() - started)} ms`);
-  return imported;
+  return { doc: imported, base };
 };
 
 const settle = ({ document }: FigImport): void => {
@@ -38,7 +49,7 @@ const settle = ({ document }: FigImport): void => {
     });
 };
 
-const handle = createImporterHandler({ send, load, settle });
+const handle = createImporterHandler({ send, load, store: sidecarStore, settle });
 
 port.on("message", ({ data }: { data: unknown }) => {
   if (!isImporterRequest(data)) return console.error("fignya: importer: unknown request");

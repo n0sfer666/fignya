@@ -22,5 +22,7 @@
 - Main ↔ importer: контракт в `apps/desktop/importer/protocol.ts`, сообщения — `unknown` + гарды
   `importer/protocol-guards.ts` (дискриминатор и поля верхнего уровня). На каждый запрос с `reqId`
   importer отвечает всегда — значением или `refused`, иначе промис в main повиснет.
+- Код, общий для main и importer, — `apps/desktop/shared/` (входит в web-tsconfig, без node types); node-зависимое
+  (`main/write-atomic.ts`) importer импортирует из `main/`.
 - Всё, что main пишет в `userData`, — только в своём подкаталоге (`thumbs/`, `fonts/`); удаление —
   лишь по маске своих имён, рядом лежат служебные каталоги Electron.

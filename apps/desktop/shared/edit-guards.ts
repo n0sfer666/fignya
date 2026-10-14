@@ -20,3 +20,5 @@ const hasChange = ({ style, text }: Fields): boolean =>
   (style !== undefined || text !== undefined) && (style === undefined || isStylePatch(style)) && (text === undefined || isText(text));
 
 export const isEdit = (value: unknown): value is Edit => isFields(value) && isTarget(value.target) && hasChange(value);
+
+export const pickEdit = ({ target, style, text }: Edit): Edit => ({ target, ...(style === undefined ? {} : { style }), ...(text === undefined ? {} : { text }) });

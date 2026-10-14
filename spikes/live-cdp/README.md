@@ -366,6 +366,58 @@ bash spikes/live-cdp/run-play.sh <tag> [screen-id]
 19.4s all checks passed
 ```
 
+## Сохранение (File → Save, ⌘S)
+
+```nu
+$env.FIG_FILE = ("~/Downloads/ROI Navigator.fig" | path expand)
+bash spikes/live-cdp/run-save.sh <tag> [screen-id]
+```
+
+`run-save.sh` удаляет `out/copy.fig.fignya` и `.bak`, затем три запуска приложения подряд с тегами `<tag>-save`,
+`<tag>-reopen`, `<tag>-stale` (`app_start` пересоздаёт `out/copy.fig` тем же содержимым, sidecar остаётся). `save-flow.ts`
+(renderer-CDP + main под `INSPECT`; окно — видимое из `BrowserWindow.getAllWindows()`, остальные — offscreen-рендер миниатюр):
+`save` — sidecar нет, `isDocumentEdited()` false → opacity 0.5 у корня → true → клик по `save-document` → файл есть, false,
+одна правка → вторая правка → true → Undo из меню → false (`saved.png`) → третья правка, `dialog.showMessageBox` застаблен
+ответом Cancel, `close()` → один вопрос с `copy.fig`, окно на месте, sidecar прежний → ответ Don't Save, `close()`.
+`reopen` — opacity 0.5 восстановлена, не edited (`restored.png`), Undo ничего не меняет. Перед `stale` скрипт ставит в sidecar
+`base.sha256` из нулей; стаб диалога — сразу после подключения к main, до конца импорта → предупреждение «Not all saved changes
+were applied», правка не применена, `.bak` нет → правка + Save → `.bak` есть, новый sidecar с настоящим sha256. Снимки —
+`out/save-<tag>-<фаза>/`. Код 2 — импорт не закончился, 1 — проверки упали. Хвост лога после конца фазы (`importer exited`,
+`ERR_CONNECTION_REFUSED` у `thumb.html`) — миниатюры в полёте при остановке, не дефект. Ожидаемый вывод (26-10-14):
+
+```
+16.2s ok   search 9402:158357 opens the screen
+16.2s ok   no sidecar before the first save
+16.2s ok   a fresh document is not edited
+16.5s ok   edit redraws the live screen
+16.5s ok   an edit marks the window edited
+16.7s ok   File → Save writes the sidecar
+16.7s ok   after Save the window is not edited
+16.7s sidecar {"format":"fignya-edits","version":1,"base":{"size":178839545,"sha256":"404f59bbf0b9f6e9f55eba1025d227c7cf28d0b7b8658561408f70ca9adea467"},"edits":[{"target":["9402:158357"],"style":{"opacity":0.5}}]}
+16.7s ok   sidecar holds one edit
+16.7s ok   a second edit marks it edited again
+16.7s ok   undo goes back to the saved look
+17.0s ok   undo back to the saved state clears the mark
+17.1s ok   a third edit marks it edited
+17.7s ok   close with changes asks to save (["Do you want to save the changes you made to “copy.fig”?"])
+17.7s ok   Cancel keeps the window
+17.7s ok   Cancel writes nothing
+18.8s ok   Don't Save leaves the sidecar as saved
+16.5s ok   search 9402:158357 opens the screen
+16.5s ok   the saved edit is back after a restart
+16.5s ok   a restored document is not edited
+17.5s ok   undo after a restart does nothing
+16.7s ok   search 9402:158357 opens the screen
+16.7s ok   a sidecar for another base warns (["Not all saved changes were applied"])
+16.7s ok   edits from another base are not applied
+16.7s ok   the warned document is not edited
+16.7s ok   no backup before Save
+16.7s ok   an edit marks it edited
+17.0s ok   the first Save moves the old sidecar to .bak
+17.0s ok   after Save the window is not edited
+17.0s ok   the new sidecar is for this base
+```
+
 ## Зум холста с клавиатуры
 
 ```nu
