@@ -14,7 +14,7 @@ const part = <K extends keyof HTMLElementTagNameMap>(tag: K, className: string, 
   return el;
 };
 
-export const createPlayView = (onClick: (path: EventTarget[]) => void): PlayView => {
+export const createPlayView = (onClick: (path: EventTarget[]) => void, onPointer: (path: EventTarget[]) => void): PlayView => {
   const root = part("div", "play");
   const name = part("span", "play-name");
   const header = part("header", "play-header");
@@ -37,7 +37,12 @@ export const createPlayView = (onClick: (path: EventTarget[]) => void): PlayView
     host.style.transform = `scale(${scale})`;
   };
   const click = (e: MouseEvent): void => onClick(e.composedPath());
+  const pointer = (e: Event): void => onPointer(e.composedPath());
+  const away = (): void => onPointer([]);
   root.addEventListener("click", click);
+  root.addEventListener("pointerover", pointer);
+  root.addEventListener("pointermove", pointer);
+  root.addEventListener("pointerleave", away);
   window.addEventListener("resize", fit);
   return {
     show: (screen, host) => {
