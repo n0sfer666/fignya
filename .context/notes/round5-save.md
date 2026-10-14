@@ -59,8 +59,8 @@ Runbook — шаг 14 (`apps/desktop/README.md`), закрытие окна — 
 Сессия 26-10-14 (2): T3 по шагу 14 пройден, дефектов нет; в вопросе при закрытии проверены и Save (сохранилось), и
 Don't Save (не сохранилось). Срез закрыт.
 
-Дальше: PR `feat/document-save` (в `main` после мержа
-PR #2 или в `feat/selection-inspector`), опрос следующего среза раунда 5 (SWAP_STATE в Play, ИИ/MCP поверх Command API).
+Дальше: PR #3 открыт (`feat/document-save` → `feat/selection-inspector`); раунд 5 закрыт — дальше
+`round5-swap-state.md` → «Промпт следующей сессии». Хвосты ниже — в backlog `decisions.md`.
 
 Хвосты:
 - ⌘Q с несохранённой правкой CDP не гоняет (закрывает окно `close()`); в T3 26-10-14 подтверждён вопрос при закрытии
@@ -71,4 +71,4 @@ PR #2 или в `feat/selection-inspector`), опрос следующего с�
 - Importer берёт `write-atomic` из `main/` (shared без node types) — если появится второй такой модуль, `shared-node/`.
 - Хвост лога после конца фазы CDP (`importer exited`, `ERR_CONNECTION_REFUSED` у `thumb.html`) — миниатюры в полёте.
 
-Мини-промпт следующей сессии: «Раунд 5: статус PR #2, PR `feat/document-save`, опрос следующего среза».
+Мини-промпт следующей сессии — в `round5-swap-state.md` (раунд 5 закрыт).
