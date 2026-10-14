@@ -7,7 +7,7 @@ Shell (Electron | Tauri)
     live-слой: открытый экран → DOM (Shadow DOM на фрейм)
     tile-слой: миниатюры/снапшоты остальных экранов
     overlay: выделение, хэндлы, снаппинг
-  Play-режим: экран в <iframe>, interactions → state machine
+  Play-режим: тот же shadow-root рендер поверх окна, ON_CLICK → NAVIGATE по `link`
 Command API — единая точка правки (UI, ИИ-агенты, MCP, плагины)
 Core (Rust)
   fig-import: kiwi + zstd → FigTree → Document Model
@@ -80,6 +80,11 @@ Core (Rust)
   `exportFiles` (картинки из документа, начертания семейств экрана из кэша шрифтов → `fonts/` + `@font-face` перед CSS) →
   `writeExport` (атомарно, чужие файлы папки не трогает) → Finder. Наследуемое (цвет и шрифт UI) живой экран получает от
   приложения, экспорт — от браузера; узлы с текстом задают их явно.
+  Play (раунд 4, срез 4): fig-import `linkOf` → `link` узла/оверрайда (`kept-fields` держит `prototypeInteractions`); меню
+  View → Play (`play-screen`, ⌥⌘↩ без регистрации акселератора) доступно по `play:available` (`menu-availability.ts`, общий с
+  экспортом) → `play:request` или клавиша в renderer → `play-binding.ts` → `startPlay` (`renderer/src/play/`): оверлей в
+  `document.body`, `renderScreen` через тот же `openScreen`, `markHotspots` (атрибут + стиль в shadow root), `linkAt` по
+  `composedPath` (глубокий слой побеждает), история Play, keydown в capture с `stopImmediatePropagation` — холст клавиш не видит.
 
 - `spikes/<id>-<name>/` — выбрасываемый код без TDD, каждый спайк самодостаточен (свой
   `package.json`/`Cargo.toml`, свой README с runbook и ожидаемым выводом).
