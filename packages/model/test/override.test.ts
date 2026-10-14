@@ -26,6 +26,11 @@ describe("applyOverride", () => {
     expect(applyOverride(instance, { path: ["i"], componentId: "d", text: "x" })).toEqual({ ...instance, componentId: "d" });
     expect(applyOverride(text, { path: ["t"], componentId: "d" })).toEqual(text);
   });
+
+  it("replaces the click link of any kind", () => {
+    expect(applyOverride({ ...text, link: "s1" }, { path: ["t"], link: "s2" })).toEqual({ ...text, link: "s2" });
+    expect(applyOverride(instance, { path: ["i"], link: "s2" })).toEqual({ ...instance, link: "s2" });
+  });
 });
 
 describe("mergeOverride", () => {
