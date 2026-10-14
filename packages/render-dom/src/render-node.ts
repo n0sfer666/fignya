@@ -1,9 +1,8 @@
-import { applyOverride, cssText, expandedComponentId, type DesignNode, type ImageUrl, type NodeId, type NodeMap, type Style } from "@fignya/model";
+import { applyOverride, cssText, EMPTY_SCOPE, expandedComponentId, nestedScope, type DesignNode, type ImageUrl, type NodeId, type NodeMap, type OverrideScope, type Style } from "@fignya/model";
 import { carriesResize, constrainedStyle, hasOwnBox, resizeOf, type Resize } from "./constrain";
 import { stackChildren } from "./flow-stacking";
 import { rememberNode } from "./rendered-node";
 import { rememberRerender } from "./rerender";
-import { EMPTY_SCOPE, nestedScope, type OverrideScope } from "./override-scope";
 import { centerSvg, renderSvg } from "./svg";
 import { viewBoxOf } from "./view-box";
 

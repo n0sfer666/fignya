@@ -1,4 +1,5 @@
-import { mergeOverride, pathKey, type DesignNode, type Override } from "@fignya/model";
+import type { DesignNode, Override } from "./node";
+import { mergeOverride, pathKey } from "./override";
 
 export type OverrideScope = ReadonlyMap<string, Override>;
 

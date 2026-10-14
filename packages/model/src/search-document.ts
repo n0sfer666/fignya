@@ -5,13 +5,13 @@ import type { SearchHit } from "./search-hit";
 
 export type Matcher = (doc: DesignDocument, query: string, limit: number) => SearchHit[];
 
-const byId: Matcher = (doc, query) => {
+export const byIdMatcher: Matcher = (doc, query) => {
   const chain = parseNodeQuery(query);
   const hit = chain && locateNode(doc, chain);
   return hit ? [hit] : [];
 };
 
-const MATCHERS: Matcher[] = [byId];
+const MATCHERS: Matcher[] = [byIdMatcher];
 
 export const SEARCH_LIMIT = 50;
 
