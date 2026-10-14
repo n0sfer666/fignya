@@ -317,6 +317,55 @@ bash spikes/live-cdp/run-export.sh <tag> [screen-id]
 С `89:2590` (Roboto из кэша Google Fonts): `0 images, 27 fonts`, `all 27 referenced files exist`, в `export fonts` у используемого
 начертания `Roboto 400 loaded`, у прочих `unloaded`, `55 nodes, 0 diffs`.
 
+## Play (View → Play, ⌥⌘↩)
+
+```nu
+$env.FIG_FILE = ("~/Downloads/ROI Navigator.fig" | path expand)
+bash spikes/live-cdp/run-play.sh <tag> [screen-id]
+```
+
+`play-flow.ts` (renderer-CDP + main под `INSPECT`, как экспорт): пункт `play-screen` неактивен и ⌥⌘↩ (`Input.dispatchKeyEvent`
+с Alt+Meta — клавишу ловит renderer) ничего не открывает без живого экрана → ⌘F `<screen-id>` (по умолчанию `9402:158357`,
+«Загрузка файла») → пункт активен → opacity 0.5 у корня → снимок холста (живой экран, рамка выделения, текст инспектора) →
+⌥⌘↩: оверлей `.play` с этим экраном, имя в шапке, правка видна, ширина сцены ≤ окна, хотспоты `[data-hotspot]` есть, `export-screen` серый, окно под оверлеем `inert` (`start.png`)
+→ клик по пункту меню при открытом Play второго оверлея не даёт → клик по шапке ставит `flash` на хост и через 0,5 с снимает
+(`flash.png`) → клик в центр первого хотспота, который сверху в своей точке → другой экран (`target.png`) → Backspace — назад, ←
+на первом экране — на месте → Esc: оверлей снят, снимок холста тот же (`after.png`), Play и экспорт активны, `inert` снят. Снимки — `out/play-<tag>/`.
+Код 2 — импорт не закончился, 1 — проверки упали. Ожидаемый вывод (26-10-14):
+
+```
+15.3s ok   Play menu item disabled without a live screen
+15.8s ok   ⌥⌘↩ without a live screen does nothing
+16.7s ok   search 9402:158357 opens the screen
+16.7s ok   Play menu item enabled with a live screen
+17.0s ok   edit redraws the live screen
+17.0s ok   a layer is selected before Play
+17.0s ok   ⌥⌘↩ plays the live screen
+17.0s playing "Загрузка файла"
+17.0s ok   header names the screen
+17.0s ok   Play shows the edit
+17.0s fit {"stage":1440,"window":1440,"transform":"scale(1)"}
+17.0s ok   screen fits the window width
+17.0s hotspots: 2
+17.0s ok   screen has hotspots
+17.0s ok   Export is disabled while playing
+17.0s ok   the window under Play is inert
+17.6s ok   View → Play while playing opens no second Play
+17.6s ok   a click past the links flashes the hotspots
+18.2s ok   the flash fades
+18.2s ok   a hotspot is clickable
+18.5s ok   a click on a hotspot opens its target
+18.5s navigated to 9402:158442 "Загрузил файл"
+18.8s ok   Backspace goes back
+19.3s ok   ← on the first screen stays
+19.3s ok   Escape leaves Play
+19.3s ok   canvas keeps the live screen, selection and inspector
+19.3s ok   Play stays available after leaving
+19.3s ok   Export is back after leaving
+19.3s ok   the window is live again
+19.4s all checks passed
+```
+
 ## Зум холста с клавиатуры
 
 ```nu
