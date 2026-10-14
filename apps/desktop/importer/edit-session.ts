@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { createEditHistory, restoreEdits, type DesignNode, type Edit, type EditHistory, type NodeId } from "@fignya/model";
+import { createEditHistory, restoreEdits, type ApplyFailure, type BatchRejection, type DesignNode, type Edit, type EditHistory, type HistoryTop, type NodeId } from "@fignya/model";
 import { errorMessage } from "../shared/error-message";
 import type { EditQuery, Restored } from "./protocol";
 import { parseSidecar, sameBase, serializeSidecar, type BaseFingerprint } from "./sidecar-format";
@@ -7,7 +7,8 @@ import type { SidecarStore } from "./sidecar-store";
 
 export type EditSession = {
   restored: Restored;
-  step: (query: EditQuery) => NodeId[] | undefined;
+  step: (query: EditQuery) => NodeId[][] | BatchRejection | undefined;
+  top: () => HistoryTop | undefined;
   dirty: () => boolean;
   save: () => Promise<boolean>;
 };
@@ -28,12 +29,26 @@ const keyOf = (edits: Edit[]): string => JSON.stringify(edits);
 
 const restoredKey = (edits: Edit[]): string => (edits.length === 0 ? "" : createHash("sha1").update(keyOf(edits)).digest("hex").slice(0, 16));
 
-const stepped = (history: EditHistory, query: EditQuery): NodeId[] | undefined => {
-  if (query.type === "undo") return history.undo();
+const undoable = (history: EditHistory, origin: "agent" | undefined): void => {
+  const top = history.top();
+  if (origin === "agent" && !top) throw new Error("nothing to undo");
+  if (origin === "agent" && top?.origin !== "agent") throw new Error("the top of the history is a user edit");
+};
+
+const appliedOrThrow = (result: NodeId[][] | ApplyFailure): NodeId[][] => {
+  if (!Array.isArray(result)) throw new Error("invalid edit");
+  return result;
+};
+
+const stepped = (history: EditHistory, query: EditQuery): NodeId[][] | BatchRejection | undefined => {
+  if (query.type === "undo") {
+    undoable(history, query.origin);
+    return history.undo();
+  }
   if (query.type === "redo") return history.redo();
-  const target = history.apply(query.edit);
-  if (!target) throw new Error("invalid edit");
-  return target;
+  if (query.type === "edit") return appliedOrThrow(history.apply([query.edit], "user"));
+  const result = history.apply(query.edits, query.origin);
+  return Array.isArray(result) ? result : { index: result.failed, reason: "the edit does not apply to this node" };
 };
 
 export const openEditSession = async (nodes: Map<NodeId, DesignNode>, base: BaseFingerprint, store: SidecarStore): Promise<EditSession> => {
@@ -56,6 +71,7 @@ export const openEditSession = async (nodes: Map<NodeId, DesignNode>, base: Base
   return {
     restored: { edits: applied.length, skipped, stale, key: restoredKey(history.edits()) },
     step: (query) => stepped(history, query),
+    top: () => history.top(),
     dirty,
     save: () => {
       const snapshot = history.edits();

@@ -1,4 +1,4 @@
-import { EDIT_KEYS, type EditKey, type StylePatch } from "./edit";
+import { isEditKey, type EditKey, type StylePatch } from "./edit";
 
 type Fields = Record<string, unknown>;
 
@@ -33,8 +33,6 @@ const VALUE_CHECKS: Record<EditKey, (value: unknown) => boolean> = {
   borderRadius: (value) => value === "50%" || isSides(value),
   background: (value) => Array.isArray(value) && value.length === 1 && value.every(isSolid),
 };
-
-const isEditKey = (key: string): key is EditKey => EDIT_KEYS.some((k) => k === key);
 
 export const isStylePatch = (value: unknown): value is StylePatch => {
   const entries = isFields(value) ? Object.entries(value) : [];

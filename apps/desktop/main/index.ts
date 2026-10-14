@@ -1,7 +1,9 @@
 import { app, Menu, net } from "electron";
 import { join } from "node:path";
 import { CANVAS_ZOOM_CHANNEL, CHANGED_CHANNEL, EXPORT_REQUEST_CHANNEL, LOST_CHANNEL, PLAY_AVAILABLE_CHANNEL, PLAY_REQUEST_CHANNEL, PROGRESS_CHANNEL, type DocumentChanged } from "../shared/api";
-import { menuTemplate, PLAY_ITEM_ID } from "./app-menu";
+import { startAgentBridge } from "./agent-bridge";
+import { menuTemplate, PLAY_ITEM_ID, UNDO_AGENT_ITEM_ID } from "./app-menu";
+import { byScreen } from "./changed-screens";
 import { createDocumentEditor } from "./document-editor";
 import { reportRestored } from "./restore-report";
 import { bindDocumentSave } from "./save-binding";
@@ -50,14 +52,19 @@ app.whenReady().then(() => {
   const thumbnails = createThumbnails(loaded, join(app.getPath("userData"), "thumbs"), async () => (await fonts.faces()).version);
   registerPageIpc(thumbnails);
   const editor = createDocumentEditor(loaded, {
-    applied: (change) => {
+    applied: (changes, origin) => {
       thumbnails.touched();
-      if (!change) return;
-      const changed: DocumentChanged = { ...change, revision: thumbnails.changed(change.screenId) };
-      toWindow(CHANGED_CHANNEL, changed);
+      for (const [screenId, targets] of byScreen(changes)) {
+        const changed: DocumentChanged = { screenId, targets, revision: thumbnails.changed(screenId), origin };
+        toWindow(CHANGED_CHANNEL, changed);
+      }
     },
     dirty: (dirty) => {
       if (mac && !window.isDestroyed()) window.setDocumentEdited(dirty);
+    },
+    top: (top) => {
+      const item = Menu.getApplicationMenu()?.getMenuItemById(UNDO_AGENT_ITEM_ID);
+      if (item) item.enabled = top?.origin === "agent";
     },
   });
   registerEditIpc(editor);
@@ -67,7 +74,15 @@ app.whenReady().then(() => {
   registerMenuAvailability(PLAY_AVAILABLE_CHANNEL, PLAY_ITEM_ID);
   const exportScreen = (): void => toWindow(EXPORT_REQUEST_CHANNEL, undefined);
   const play = (): void => toWindow(PLAY_REQUEST_CHANNEL, undefined);
-  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate((zoom) => toWindow(CANVAS_ZOOM_CHANNEL, zoom), mac, editor, save, exportScreen, play)));
+  const mcp = startAgentBridge({ window, loaded, editor, thumbnails, send: toWindow });
+  const logged = (run: () => Promise<void>) => (): void => {
+    run().catch((error: unknown) => console.error(`fignya: mcp: ${String(error)}`));
+  };
+  app.on("will-quit", logged(mcp.stop));
+  const history = { undo: editor.undo, redo: editor.redo, undoAgent: logged(async () => void (await editor.undoAgent())) };
+  const mcpMenu = { toggle: (enabled: boolean) => logged(() => mcp.toggle(enabled))(), copyCommand: logged(mcp.copyCommand), resetToken: logged(mcp.resetToken) };
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate((zoom) => toWindow(CANVAS_ZOOM_CHANNEL, zoom), mac, history, save, exportScreen, play, mcpMenu)));
+  logged(mcp.start)();
   serveAssets(async (asset) => {
     if (asset.kind === "image") return (await loaded).image(asset.id);
     if (asset.kind === "font") return fonts.read(asset.id);

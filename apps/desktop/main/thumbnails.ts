@@ -1,4 +1,5 @@
 import { contentOf, type Page, type Screen } from "@fignya/model";
+import { BASE_TIER } from "../shared/thumb-tiers";
 import type { ThumbFocus } from "../shared/api";
 import type { LoadedDocument } from "./load-document";
 import { retrying } from "./retrying";
@@ -6,6 +7,7 @@ import { screenRevisions } from "./screen-revisions";
 import { priorityQueue } from "./priority-queue";
 import { fontKey } from "./thumb-cache";
 import { thumbGeometry } from "./thumb-geometry";
+import { takeShot, type Shot, type ShotRequest } from "./thumb-shot";
 import { createThumbRenderer, type ThumbRenderer } from "./thumb-renderer";
 import { effectiveTier } from "./thumb-scale";
 import { createThumbStore, type ThumbStore } from "./thumb-store";
@@ -17,6 +19,7 @@ export type Thumbnails = {
   focusScreens: (focus: ThumbFocus) => void;
   changed: (screenId: string) => number;
   touched: () => void;
+  shot: (request: ShotRequest) => Promise<Shot>;
 };
 
 type Located = { page: Page; screen: Screen };
@@ -24,6 +27,8 @@ type Located = { page: Page; screen: Screen };
 const RENDER_ATTEMPTS = 2;
 const FIRST_RENDER_TIMEOUT_MS = 3000;
 const RETRY_RENDER_TIMEOUT_MS = 15000;
+
+const AGENT_PRIORITY = -1;
 
 const logError = (what: string) => (error: unknown): void => console.error(`fignya: ${what}: ${String(error)}`);
 
@@ -69,7 +74,7 @@ export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string, 
     const model = await doc.screen(screen.id);
     if (!model) return undefined;
     const { scale, origin, width, height } = thumbGeometry(screen, tier);
-    const draw = await rendererOf();
+    const { draw } = await rendererOf();
     const image = await draw({ model, scale, origin }, width, height, timeoutMs);
     return image.toPNG();
   };
@@ -107,5 +112,15 @@ export const createThumbnails = (loaded: Promise<LoadedDocument>, root: string, 
     return pending;
   };
 
-  return { image, activate: (pageId) => queue.keepOnly(onPage(pageId)), focusScreens: (focus) => queue.prefer(inFocus(focus)), changed: revisions.bump, touched: revisions.touch };
+  const shot = async ({ screenId, address }: ShotRequest): Promise<Shot> => {
+    const doc = await loaded;
+    const located = locate(doc.pages, screenId);
+    if (!located) throw new Error("no screen with this id");
+    const tag: ThumbTag = { page: located.page.id, screen: located.screen, tier: BASE_TIER, agent: true };
+    const taken = await queue.run(AGENT_PRIORITY, tag, async () => takeShot(doc, located.screen, address, await rendererOf()));
+    if (!taken) throw new Error("the screenshot was dropped, retry");
+    return taken;
+  };
+
+  return { image, shot, activate: (pageId) => queue.keepOnly(onPage(pageId)), focusScreens: (focus) => queue.prefer(inFocus(focus)), changed: revisions.bump, touched: revisions.touch };
 };

@@ -1,8 +1,9 @@
 import type { FigImport } from "@fignya/fig-import";
-import { locateNode, screenModel, searchDocument, type EditChange, type NodeId } from "@fignya/model";
+import { locateNode, screenModel, searchDocument, searchNames, type EditChange, type NodeId } from "@fignya/model";
 import { errorMessage } from "../shared/error-message";
+import { preparedBatch, readReply } from "./agent-replies";
 import { openEditSession, type EditSession } from "./edit-session";
-import type { ImporterEvent, ImporterRequest, Query } from "./protocol";
+import type { EditQuery, ImporterEvent, ImporterRequest, Query } from "./protocol";
 import type { BaseFingerprint } from "./sidecar-format";
 import type { SidecarStore } from "./sidecar-store";
 
@@ -19,18 +20,28 @@ export type ImporterDeps = {
 
 type Opened = { doc: FigImport; session: EditSession };
 
-const changeOf = (doc: FigImport, target: NodeId[] | undefined): EditChange | undefined => {
-  const screenId = target && locateNode(doc.document, target)?.place?.screenId;
-  return target && screenId !== undefined ? { screenId, target } : undefined;
+const changesOf = (doc: FigImport, targets: NodeId[][] | undefined): EditChange[] =>
+  (targets ?? []).flatMap((target) => {
+    const screenId = locateNode(doc.document, target)?.place?.screenId;
+    return screenId === undefined ? [] : [{ screenId, target }];
+  });
+
+const edited = ({ doc, session }: Opened, query: EditQuery): ImporterEvent => {
+  const ready = query.type === "batch" ? preparedBatch(doc, query) : query;
+  if (ready.type === "rejected") return ready;
+  const stepped = session.step(ready);
+  if (stepped && !Array.isArray(stepped)) return { type: "rejected", reqId: query.reqId, index: stepped.index, reason: stepped.reason };
+  const changes = changesOf(doc, stepped);
+  const top = session.top();
+  return { type: "edited", reqId: query.reqId, changes, ...(top ? { top } : {}), dirty: session.dirty() };
 };
 
-const reply = async ({ doc, session }: Opened, query: Query): Promise<ImporterEvent> => {
-  if (query.type === "edit" || query.type === "undo" || query.type === "redo") {
-    const change = changeOf(doc, session.step(query));
-    return { type: "edited", reqId: query.reqId, change, dirty: session.dirty() };
-  }
+const reply = async (opened: Opened, query: Query): Promise<ImporterEvent> => {
+  const { doc, session } = opened;
+  if (query.type === "edit" || query.type === "batch" || query.type === "undo" || query.type === "redo") return edited(opened, query);
+  if (query.type === "outline" || query.type === "inspect") return readReply(doc, query);
   if (query.type === "save") return { type: "saved", reqId: query.reqId, dirty: await session.save() };
-  if (query.type === "search") return { type: "found", reqId: query.reqId, hits: searchDocument(doc.document, query.query) };
+  if (query.type === "search") return { type: "found", reqId: query.reqId, hits: (query.names ? searchNames : searchDocument)(doc.document, query.query) };
   if (query.type === "screen") return { type: "screen", reqId: query.reqId, model: screenModel(doc.document.nodes, query.id) };
   return { type: "image", reqId: query.reqId, bytes: doc.images.get(query.id) };
 };

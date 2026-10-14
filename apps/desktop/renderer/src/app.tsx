@@ -1,5 +1,6 @@
 import { batch, createResource, createSignal, Match, onCleanup, Switch } from "solid-js";
 import type { NodeId, SearchPlace } from "@fignya/model";
+import { AgentBadge } from "./agent-badge";
 import type { Selected } from "./canvas/live-selection";
 import type { Focus } from "./focus";
 import { ImportStatus } from "./import-status";
@@ -28,12 +29,15 @@ export const App = () => {
     setPageId(id);
     setFocus(undefined);
   };
-  const pick = (place: SearchPlace, target: NodeId[]): void => {
+  const pick = (place: SearchPlace, target?: NodeId[]): void => {
     batch(() => {
       if (place.pageId !== page()?.id) setPageId(place.pageId);
-      setFocus({ id: place.screenId, target });
+      setFocus(target ? { id: place.screenId, target } : { id: place.screenId });
     });
   };
+  onCleanup(window.fignya.onAgentFocus((focus) => pick(focus.place, focus.target)));
+  const [agent, setAgent] = createSignal(false);
+  onCleanup(window.fignya.onAgentStatus(setAgent));
   return (
     <Switch>
       <Match when={state.loading}>
@@ -46,6 +50,7 @@ export const App = () => {
           <Workspace page={page()} screens={pages().flatMap((p) => p.screens)} focus={focus()} onSelect={(node) => setSelected(node)} />
           <SearchBox onPick={pick} />
           <Inspector selected={selected()} />
+          <AgentBadge connected={agent()} />
         </div>
       </Match>
     </Switch>

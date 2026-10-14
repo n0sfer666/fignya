@@ -3,12 +3,12 @@ import type { ThumbFocus } from "../shared/api";
 import { BASE_TIER } from "../shared/thumb-tiers";
 import { effectiveTier } from "./thumb-scale";
 
-export type ThumbTag = { page: string; screen: Screen; tier: number };
+export type ThumbTag = { page: string; screen: Screen; tier: number; agent?: true };
 
 export const onPage =
   (pageId: string) =>
   (tag: ThumbTag): boolean =>
-    tag.page === pageId;
+    tag.agent === true || tag.page === pageId;
 
 export const inFocus = ({ tier, screenIds }: ThumbFocus): ((tag: ThumbTag) => boolean) => {
   const ids = new Set(screenIds);
@@ -16,5 +16,5 @@ export const inFocus = ({ tier, screenIds }: ThumbFocus): ((tag: ThumbTag) => bo
     const box = contentOf(screen);
     return effectiveTier(box.width, box.height, tier);
   };
-  return (tag) => ids.has(tag.screen.id) && (tag.tier === BASE_TIER || tag.tier === wanted(tag.screen));
+  return (tag) => tag.agent === true || (ids.has(tag.screen.id) && (tag.tier === BASE_TIER || tag.tier === wanted(tag.screen)));
 };

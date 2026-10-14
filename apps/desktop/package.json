@@ -13,11 +13,13 @@
     "@fignya/fig-import": "workspace:*",
     "@fignya/model": "workspace:*",
     "@fignya/render-dom": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.31.0",
     "@types/node": "^26.6.2",
     "electron": "^44.4.5",
     "electron-vite": "^5.0.0",
     "solid-js": "^1.9.15",
     "vite": "^7.3.6",
-    "vite-plugin-solid": "^2.11.14"
+    "vite-plugin-solid": "^2.11.14",
+    "zod": "4.6.5"
   }
 }

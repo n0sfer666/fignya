@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isImporterEvent, isImporterRequest } from "../importer/protocol-guards";
+import { isImporterEvent, isImporterRequest, refusalOf } from "../importer/protocol-guards";
 
 describe("isImporterRequest", () => {
   it("accepts load and asset queries", () => {
@@ -14,6 +14,33 @@ describe("isImporterRequest", () => {
     expect(isImporterRequest({ type: "redo", reqId: 3 })).toBe(true);
     expect(isImporterRequest({ type: "edit", reqId: 4 })).toBe(false);
     expect(isImporterRequest({ type: "undo" })).toBe(false);
+  });
+
+  it("accepts agent queries", () => {
+    expect(isImporterRequest({ type: "search", reqId: 1, query: "card", names: true })).toBe(true);
+    expect(isImporterRequest({ type: "outline", reqId: 1, address: ["1:2"], limit: 50 })).toBe(true);
+    expect(isImporterRequest({ type: "inspect", reqId: 1, address: ["1:2", "3:4"] })).toBe(true);
+    expect(isImporterRequest({ type: "batch", reqId: 1, edits: [{ target: ["1:2"], text: "Hi" }], origin: "agent", affectsInstances: false })).toBe(true);
+    expect(isImporterRequest({ type: "undo", reqId: 1, origin: "agent" })).toBe(true);
+    expect(isImporterRequest({ type: "outline", reqId: 1, address: [], limit: 50 })).toBe(false);
+    expect(isImporterRequest({ type: "inspect", reqId: 1, address: "1:2" })).toBe(false);
+    expect(isImporterRequest({ type: "batch", reqId: 1, edits: [{ target: ["1:2"] }], origin: "agent", affectsInstances: false })).toBe(false);
+    expect(isImporterRequest({ type: "batch", reqId: 1, edits: [], origin: "user", affectsInstances: false })).toBe(false);
+    expect(isImporterRequest({ type: "undo", reqId: 1, origin: "user" })).toBe(false);
+    expect(isImporterRequest({ type: "batch", reqId: 1, edits: [], origin: "agent", affectsInstances: false })).toBe(false);
+    expect(isImporterRequest({ type: "inspect", reqId: 1, address: ["x".repeat(65)] })).toBe(false);
+    expect(isImporterRequest({ type: "outline", reqId: 1, address: ["1:2"], limit: 0 })).toBe(false);
+    expect(isImporterRequest({ type: "outline", reqId: 1, address: ["1:2"], limit: 1.5 })).toBe(false);
+    expect(isImporterRequest({ type: "outline", reqId: 1, address: ["1:2"], limit: Infinity })).toBe(false);
+    expect(isImporterRequest({ type: "batch", reqId: 1, edits: [{ target: ["x".repeat(65)], text: "Hi" }], origin: "agent", affectsInstances: false })).toBe(false);
+  });
+
+  it("refuses a malformed query that still names its request", () => {
+    const refused = { type: "refused", request: "batch", reqId: 7, message: "invalid request" };
+    expect(refusalOf({ type: "batch", reqId: 7, edits: [{ target: ["x".repeat(65)], text: "Hi" }] })).toEqual(refused);
+    expect(refusalOf({ type: "batch", reqId: "7" })).toBeUndefined();
+    expect(refusalOf({ type: "drop", reqId: 7 })).toBeUndefined();
+    expect(refusalOf({ type: "load", reqId: 7 })).toBeUndefined();
   });
 
   it("accepts save", () => {
@@ -43,8 +70,13 @@ describe("isImporterEvent", () => {
     expect(isImporterEvent({ type: "refused", request: "screen", reqId: 1, message: "x" })).toBe(true);
     expect(isImporterEvent({ type: "found", reqId: 1, hits: [] })).toBe(true);
     expect(isImporterEvent({ type: "refused", request: "search", reqId: 1, message: "x" })).toBe(true);
-    expect(isImporterEvent({ type: "edited", reqId: 1, change: { screenId: "1:2", target: ["1:2"] }, dirty: true })).toBe(true);
-    expect(isImporterEvent({ type: "edited", reqId: 1, change: undefined, dirty: false })).toBe(true);
+    expect(isImporterEvent({ type: "edited", reqId: 1, changes: [{ screenId: "1:2", target: ["1:2"] }], dirty: true })).toBe(true);
+    expect(isImporterEvent({ type: "edited", reqId: 1, changes: [], top: { step: 2, origin: "agent" }, dirty: false })).toBe(true);
+    expect(isImporterEvent({ type: "rejected", reqId: 1, index: 0, reason: "invalid address" })).toBe(true);
+    expect(isImporterEvent({ type: "outlined", reqId: 1, text: "1:2 \"Screen\" frame" })).toBe(true);
+    expect(isImporterEvent({ type: "outlined", reqId: 1, text: undefined })).toBe(true);
+    expect(isImporterEvent({ type: "inspected", reqId: 1, details: undefined })).toBe(true);
+    expect(isImporterEvent({ type: "refused", request: "batch", reqId: 1, message: "x" })).toBe(true);
     expect(isImporterEvent({ type: "saved", reqId: 1, dirty: false })).toBe(true);
     expect(isImporterEvent({ type: "refused", request: "save", reqId: 1, message: "x" })).toBe(true);
     expect(isImporterEvent({ type: "refused", request: "edit", reqId: 1, message: "x" })).toBe(true);
@@ -61,11 +93,14 @@ describe("isImporterEvent", () => {
     expect(isImporterEvent({ type: "found", reqId: 1, hits: "1:2" })).toBe(false);
     expect(isImporterEvent({ type: "ready", pages: [] })).toBe(false);
     expect(isImporterEvent({ type: "ready", pages: [], restored: { edits: 0, skipped: 0, stale: "no", key: "" } })).toBe(false);
-    expect(isImporterEvent({ type: "edited", reqId: 1, change: undefined })).toBe(false);
+    expect(isImporterEvent({ type: "edited", reqId: 1, changes: [] })).toBe(false);
+    expect(isImporterEvent({ type: "edited", reqId: 1, changes: [], top: { step: 1, origin: "robot" }, dirty: true })).toBe(false);
+    expect(isImporterEvent({ type: "rejected", reqId: 1, index: "0", reason: "x" })).toBe(false);
+    expect(isImporterEvent({ type: "outlined", reqId: 1, text: 1 })).toBe(false);
     expect(isImporterEvent({ type: "saved", reqId: 1 })).toBe(false);
-    expect(isImporterEvent({ type: "edited", reqId: 1, change: "1:2", dirty: true })).toBe(false);
-    expect(isImporterEvent({ type: "edited", reqId: 1, change: { screenId: 1, target: ["1:2"] } })).toBe(false);
-    expect(isImporterEvent({ type: "edited", reqId: 1, change: { screenId: "1:2", target: [2] } })).toBe(false);
-    expect(isImporterEvent({ type: "edited", reqId: 1, change: { screenId: "1:2" } })).toBe(false);
+    expect(isImporterEvent({ type: "edited", reqId: 1, changes: "1:2", dirty: true })).toBe(false);
+    expect(isImporterEvent({ type: "edited", reqId: 1, changes: [{ screenId: 1, target: ["1:2"] }], dirty: true })).toBe(false);
+    expect(isImporterEvent({ type: "edited", reqId: 1, changes: [{ screenId: "1:2", target: [2] }], dirty: true })).toBe(false);
+    expect(isImporterEvent({ type: "edited", reqId: 1, changes: [{ screenId: "1:2" }], dirty: true })).toBe(false);
   });
 });

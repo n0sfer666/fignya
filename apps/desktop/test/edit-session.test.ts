@@ -34,7 +34,7 @@ describe("openEditSession", () => {
     const session = await openEditSession(nodesOf(), base, memoryStore().store);
     expect(session.restored).toEqual({ edits: 0, skipped: 0, stale: false, key: "" });
     expect(session.dirty()).toBe(false);
-    expect(session.step({ type: "edit", reqId: 1, edit: wide })).toEqual(["f"]);
+    expect(session.step({ type: "edit", reqId: 1, edit: wide })).toEqual([["f"]]);
     expect(session.dirty()).toBe(true);
     session.step({ type: "undo", reqId: 2 });
     expect(session.dirty()).toBe(false);
@@ -115,5 +115,26 @@ describe("openEditSession", () => {
     await expect(session.save()).rejects.toThrow("disk full");
     expect(session.dirty()).toBe(true);
     expect(await session.save()).toBe(false);
+  });
+
+  it("rejects an agent batch with the index of the edit that does not apply", async () => {
+    const session = await openEditSession(nodesOf(), base, memoryStore().store);
+    const edits = [wide, { target: ["x"], style: { width: 1 } }];
+    expect(session.step({ type: "batch", reqId: 1, edits, origin: "agent", affectsInstances: false })).toEqual({ index: 1, reason: "the edit does not apply to this node" });
+    expect(session.top()).toBeUndefined();
+    expect(session.dirty()).toBe(false);
+  });
+
+  it("undoes only an agent batch on top of the history for the agent", async () => {
+    const session = await openEditSession(nodesOf(), base, memoryStore().store);
+    expect(() => session.step({ type: "undo", reqId: 1, origin: "agent" })).toThrow("nothing to undo");
+    session.step({ type: "batch", reqId: 2, edits: [wide], origin: "agent", affectsInstances: false });
+    expect(session.top()).toEqual({ step: 1, origin: "agent" });
+    session.step({ type: "edit", reqId: 3, edit: { target: ["f"], style: { width: 120 } } });
+    expect(() => session.step({ type: "undo", reqId: 4, origin: "agent" })).toThrow("the top of the history is a user edit");
+    session.step({ type: "undo", reqId: 5 });
+    expect(session.step({ type: "undo", reqId: 6, origin: "agent" })).toEqual([["f"]]);
+    expect(session.top()).toBeUndefined();
+    expect(session.dirty()).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 import type { NodeId } from "@fignya/model";
 import { renderedNode, type RenderedNode } from "@fignya/render-dom";
-import { editTarget } from "./edit-target";
+import { editTarget, findEditTarget } from "./edit-target";
 import type { GesturePoint, GestureTap } from "./gestures";
 import { hitNode } from "./hit-node";
 import { outlineBox, type OutlineBox } from "./outline-box";
@@ -18,7 +18,10 @@ export type LiveSelection = {
   hover: (point: GesturePoint | undefined) => void;
   select: (el: Element | undefined) => Bounds | undefined;
   clear: () => boolean;
+  flash: (targets: readonly NodeId[][]) => void;
 };
+
+const FLASH_MS = 1000;
 
 type Outlined = { el: Element; box: OutlineBox };
 
@@ -78,6 +81,15 @@ export const createLiveSelection = (zoom: () => number, onSelect: (node: Selecte
       if (!selected) return false;
       select(undefined);
       return true;
+    },
+    flash: (targets) => {
+      const root = screen?.host.shadowRoot;
+      if (!root) return;
+      for (const target of targets) {
+        const el = findEditTarget(root, target);
+        const flashed = el && outline(el, "agent-flash");
+        if (flashed) setTimeout(flashed.box.dispose, FLASH_MS);
+      }
     },
   };
 };

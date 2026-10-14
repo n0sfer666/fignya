@@ -20,13 +20,28 @@ export const zoomItems = (send: SendZoom): ZoomItem[] => [
   zoomItem("Zoom Out", "CmdOrCtrl+-", "out", send),
 ];
 
-export type DocumentHistory = { undo: () => void; redo: () => void };
+export type DocumentHistory = { undo: () => void; redo: () => void; undoAgent: () => void };
 
-type EditItem = Pick<MenuItemConstructorOptions, "label" | "accelerator" | "registerAccelerator"> & { click: () => void };
+export const UNDO_AGENT_ITEM_ID = "undo-agent-edit";
 
-export const editItems = ({ undo, redo }: DocumentHistory): EditItem[] => [
+type EditItem = Pick<MenuItemConstructorOptions, "id" | "label" | "accelerator" | "registerAccelerator" | "enabled"> & { click: () => void };
+
+export const editItems = ({ undo, redo, undoAgent }: DocumentHistory): EditItem[] => [
   { label: "Undo", accelerator: "CmdOrCtrl+Z", registerAccelerator: false, click: undo },
   { label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", registerAccelerator: false, click: redo },
+  { id: UNDO_AGENT_ITEM_ID, label: "Undo Agent Edit", enabled: false, click: undoAgent },
+];
+
+export const MCP_ITEM_ID = "mcp-server";
+
+export type McpMenu = { toggle: (enabled: boolean) => void; copyCommand: () => void; resetToken: () => void };
+
+type McpItem = Pick<MenuItemConstructorOptions, "id" | "label" | "type" | "checked"> & { click: (item: { checked: boolean }) => void };
+
+export const mcpItems = ({ toggle, copyCommand, resetToken }: McpMenu): McpItem[] => [
+  { id: MCP_ITEM_ID, label: "Enable MCP Server", type: "checkbox", checked: false, click: (item) => toggle(item.checked) },
+  { label: "Copy Claude Code Command", click: copyCommand },
+  { label: "Reset MCP Token", click: resetToken },
 ];
 
 export const SAVE_ITEM_ID = "save-document";
@@ -56,9 +71,10 @@ export const menuTemplate = (
   save: () => void,
   exportScreen: () => void,
   play: () => void,
+  mcp: McpMenu,
 ): MenuItemConstructorOptions[] => [
   ...(mac ? [{ role: "appMenu" } satisfies MenuItemConstructorOptions] : []),
-  { label: "File", submenu: [...saveItems(save), { type: "separator" }, ...exportItems(exportScreen)] },
+  { label: "File", submenu: [...saveItems(save), { type: "separator" }, ...exportItems(exportScreen), { type: "separator" }, ...mcpItems(mcp)] },
   {
     label: "Edit",
     submenu: [...editItems(history), { type: "separator" }, { role: "cut" }, { role: "copy" }, { role: "paste" }, { role: "selectAll" }],

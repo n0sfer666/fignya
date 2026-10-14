@@ -11,6 +11,7 @@ import { applyFaces } from "./fonts/apply-faces";
 import { historyStep, inTextField } from "./history-step";
 import { bindPlay } from "./play/play-binding";
 import { startPlay } from "./play/play-session";
+import { createViewReport } from "./view-report";
 
 export type WorkspaceProps = { page: Page | undefined; screens: Screen[]; focus: Focus | undefined; onSelect: SelectNode };
 
@@ -26,6 +27,7 @@ const openScreen = async (screen: Screen): Promise<HTMLElement | undefined> => {
 export const Workspace = (props: WorkspaceProps) => {
   let el: HTMLDivElement | undefined;
   let canvas: PageCanvas | undefined;
+  const report = createViewReport(window.fignya.reportView);
   onMount(() => {
     const exporting = bindExport(window.fignya, () => props.page?.screens ?? [], exportLive);
     onCleanup(exporting.dispose);
@@ -45,8 +47,13 @@ export const Workspace = (props: WorkspaceProps) => {
       live = screenId;
       if (!inPlay) exporting.onLive(screenId);
       playing.onLive(screenId);
+      report.live(screenId);
     };
-    if (el) canvas = createPageCanvas(el, openScreen, window.fignya.focusScreens, (node) => props.onSelect(node), onLive);
+    const onSelect: SelectNode = (node) => {
+      report.selected(node?.target);
+      props.onSelect(node);
+    };
+    if (el) canvas = createPageCanvas(el, openScreen, window.fignya.focusScreens, onSelect, onLive);
     const refonted = (faces: FontFaces): void => {
       applyFaces(faces);
       canvas?.reload(faces.version);
@@ -72,6 +79,7 @@ export const Workspace = (props: WorkspaceProps) => {
   onCleanup(() => canvas?.dispose());
   createEffect(() => {
     if (!props.page) return;
+    report.page(props.page.id);
     window.fignya.showPage(props.page.id);
     canvas?.show(props.page);
   });

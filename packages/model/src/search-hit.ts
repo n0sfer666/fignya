@@ -1,6 +1,6 @@
 import type { DesignNode, NodeId } from "./node";
 
-export type SearchMatch = "id";
+export type SearchMatch = "id" | "name";
 
 export type SearchPlace = { pageId: string; screenId: NodeId };
 

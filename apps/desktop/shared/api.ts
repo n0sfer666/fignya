@@ -1,17 +1,21 @@
 import type { FontUsage, ImportProgress } from "@fignya/fig-import";
-import type { Box, Edit, EditChange, Page, ScreenModel, SearchHit } from "@fignya/model";
+import type { Box, Edit, EditOrigin, NodeId, Page, ScreenModel, SearchHit, SearchPlace } from "@fignya/model";
 import type { ExportResult, ImageFiles, ScreenExport } from "./export";
 import type { FamilyFace, FontDownload, FontFaces, FontRequest } from "./fonts";
 
 export type DocumentState = { status: "ready"; pages: Page[] } | { status: "error"; message: string };
 
-export type ThumbJob = { id: number; model: ScreenModel; scale: number; origin: Pick<Box, "x" | "y"> };
+export type ThumbJob = { id: number; model: ScreenModel; scale: number; origin: Pick<Box, "x" | "y">; measure?: NodeId[] };
 
 export type ThumbFocus = { tier: number; screenIds: string[] };
 
 export type CanvasZoom = "in" | "out" | "actual";
 
-export type DocumentChanged = EditChange & { revision: number };
+export type DocumentChanged = { screenId: NodeId; targets: NodeId[][]; revision: number; origin: EditOrigin };
+
+export type AgentView = { pageId?: string; screenId?: NodeId; target?: NodeId[] };
+
+export type AgentFocus = { place: SearchPlace; target?: NodeId[] };
 
 export type HistoryStep = "undo" | "redo";
 
@@ -22,7 +26,7 @@ export type FignyaApi = {
   screen: (id: string) => Promise<ScreenModel | undefined>;
   search: (query: string) => Promise<SearchHit[]>;
   onThumbJob: (handler: (job: ThumbJob) => void) => void;
-  thumbRendered: (id: number) => void;
+  thumbRendered: (id: number, box?: Box) => void;
   showPage: (pageId: string) => void;
   focusScreens: (focus: ThumbFocus) => void;
   documentFonts: () => Promise<FontUsage[]>;
@@ -41,6 +45,9 @@ export type FignyaApi = {
   exportFailed: (message: string) => void;
   playAvailable: (screenId: string | undefined) => void;
   onPlayRequest: (handler: () => void) => () => void;
+  reportView: (view: AgentView) => void;
+  onAgentFocus: (handler: (focus: AgentFocus) => void) => () => void;
+  onAgentStatus: (handler: (connected: boolean) => void) => () => void;
 };
 
 export const DOCUMENT_CHANNEL = "document:state";
@@ -68,3 +75,6 @@ export const EXPORT_CHANNEL = "export:screen";
 export const EXPORT_FAILED_CHANNEL = "export:failed";
 export const PLAY_AVAILABLE_CHANNEL = "play:available";
 export const PLAY_REQUEST_CHANNEL = "play:request";
+export const VIEW_CHANNEL = "agent:view";
+export const AGENT_FOCUS_CHANNEL = "agent:focus";
+export const AGENT_STATUS_CHANNEL = "agent:status";
