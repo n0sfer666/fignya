@@ -2,6 +2,7 @@ import { applyOverride, cssText, expandedComponentId, type DesignNode, type Imag
 import { carriesResize, constrainedStyle, hasOwnBox, resizeOf, type Resize } from "./constrain";
 import { stackChildren } from "./flow-stacking";
 import { rememberNode } from "./rendered-node";
+import { rememberRerender } from "./rerender";
 import { EMPTY_SCOPE, nestedScope, type OverrideScope } from "./override-scope";
 import { centerSvg, renderSvg } from "./svg";
 import { viewBoxOf } from "./view-box";
@@ -41,6 +42,7 @@ const renderTree = (ctx: RenderContext, id: NodeId, branch: Branch, style: (node
   el.dataset.id = node.id;
   el.dataset.kind = node.kind;
   rememberNode(el, node, ctx.nodes);
+  if (branch.expanding.size === 0 && expandedComponentId(node) !== undefined) rememberRerender(el, (nodes) => renderTree({ ...ctx, nodes }, id, branch, style));
   const own = style(node);
   el.style.cssText = cssText(own, ctx.imageUrl);
   if (node.kind === "text") el.textContent = node.text;
