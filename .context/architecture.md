@@ -66,7 +66,7 @@ Core (Rust)
   Правка (раунд 4, срез 2): поле инспектора (`inspector-field.tsx`) → `fieldEdit` (`packages/model/edit-fields.ts`,
   разбор `css-input.ts`) → `Edit { target, style?, text? }`; `target` — `canvas/edit-target.ts`: цепочка развёрнутых
   инстансов + слой, как у поиска. `window.fignya.edit` → main (`edit-ipc.ts`, `edit-guards.ts` + `isStylePatch` проверяют недоверенный
-  ввод) → importer (`createEditHistory`: `editedNode` пишет стиль/текст узла или оверрайд внешнего инстанса, снимки до/после
+  ввод; `edit-guards.ts` в `shared/`, им же importer проверяет sidecar) → importer (`createEditHistory`: `editedNode` пишет стиль/текст узла или оверрайд внешнего инстанса, снимки до/после
   для undo/redo) → `EditChange { screenId, target }` → main бампит ревизию миниатюры (`screen-revisions.ts`) и шлёт
   `document:changed` → `page-canvas.changed`: миниатюра с `r=` (у живого экрана — при закрытии), живой экран
   перерисовывается, текущее выделение возвращается по точному адресу (`findEditTarget`). ⌘Z/⌘⇧Z — `history-step.ts` в
@@ -85,6 +85,15 @@ Core (Rust)
   экспортом) → `play:request` или клавиша в renderer → `play-binding.ts` → `startPlay` (`renderer/src/play/`): оверлей в
   `document.body`, `renderScreen` через тот же `openScreen`, `markHotspots` (атрибут + стиль в shadow root), `linkAt` по
   `composedPath` (глубокий слой побеждает), история Play, keydown в capture с `stopImmediatePropagation` — холст клавиш не видит.
+  Сохранение (раунд 5, срез 1): правки живут sidecar-ом `<file>.fig.fignya` рядом с `.fig` (JSON `fignya-edits` v1,
+  `base` — размер + SHA-256 исходника, `edits` — `compactEdits`: одна правка на адрес узла). Importer при открытии
+  (`index.ts` → `fingerprint.ts`, `sidecar-store.ts`) зовёт `openEditSession`: база совпала — `restoreEdits` накатывает правки
+  на узлы и они становятся seed истории (undo до них не доходит), не совпала или файл не читается — `stale`, правки не
+  применяются; `ready.restored` → main `reportRestored` (лог + предупреждение `document-dialogs.ts`). Первый Save при `stale` или
+  пропущенных правках копирует старый файл в `.fignya.bak`, затем атомарно пишет новый. Ответы `edited`/`saved` несут `dirty` (сравнение compact-правок
+  с сохранёнными) → `document-editor.ts` → `setDocumentEdited` (macOS). File → Save (`save-document`, ⌘S) → `save-binding.ts`;
+  `close-guard.ts` перехватывает `close` окна (и ⌘Q) при `dirty`: Save / Don't Save / Cancel. Ключ кэша миниатюр включает
+  `restored.key` (хэш восстановленных правок), без правок — прежний ключ.
 
 - `spikes/<id>-<name>/` — выбрасываемый код без TDD, каждый спайк самодостаточен (свой
   `package.json`/`Cargo.toml`, свой README с runbook и ожидаемым выводом).

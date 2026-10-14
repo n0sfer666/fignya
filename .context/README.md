@@ -1,7 +1,7 @@
 # fignya — контекст
 
 OSS desktop-аналог Figma: дизайн — живой HTML/CSS, импорт `.fig`, работа offline, локальный ИИ.
-Стадия: раунд 4 закрыт (MVP готов, уходит в `main` PR-ом), раунд 5 — направление не выбрано; статус раунда 4 — `notes/round4-selection.md` (срез 1),
+Стадия: раунд 4 закрыт (MVP готов, PR #2 в `main`), раунд 5 — сохранение документа (`notes/round5-save.md`, ветка `feat/document-save` стеком от `feat/selection-inspector`); статус раунда 4 — `notes/round4-selection.md` (срез 1),
 `notes/round4-edit.md` (срез 2), `notes/round4-export.md` (срез 3, экспорт HTML/CSS), `notes/round4-play.md` (срез 4, Play и переход по клику). Раунд 3 (каркас `packages/*`, `apps/desktop`) — `notes/round3-skeleton.md`,
 потоковый импорт — `notes/round3-streaming-import.md`, оверрайды инстансов — `notes/round3-overrides.md`.
 
